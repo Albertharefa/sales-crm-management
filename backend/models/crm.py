@@ -272,19 +272,69 @@ class PurchaseOrderCreate(BaseModel):
     shipping_address: Optional[str] = None
 
 
+class DashboardGroupMetric(BaseModel):
+    name: str
+    count: int
+    value: float
+
+
+class DashboardMonthlyMetric(BaseModel):
+    month: str
+    label: str
+    actual: float
+    target: float
+
+
+class DashboardRecentActivity(BaseModel):
+    id: str
+    subject: str
+    activity_type: str
+    customer_name: Optional[str] = None
+    sales_name: Optional[str] = None
+    date: Optional[str] = None
+    status: str
+
+
+class DashboardDealRisk(BaseModel):
+    id: str
+    opportunity_id: str
+    name: str
+    customer_name: str
+    sales_name: Optional[str] = None
+    value: float
+    stage: str
+    expected_close: Optional[str] = None
+    reason: str
+
+
 class DashboardMetrics(BaseModel):
     total_customer: int
+    total_contacts: int
+    total_leads: int
+    total_opportunities: int
     open_pipeline: float
     weighted_pipeline: float
     won_value: float
+    lost_value: float
+    win_rate: float
     total_quotation: int
+    active_quotations: int
+    quotation_value: float
     total_po: int
     po_value: float
-    activities: int
     open_orders: int
     completed_orders: int
     overdue_orders: int
-    pipeline_by_stage: List[Dict[str, Any]]
+    activities: int
+    overdue_activities: int
+    sales_target: float
+    target_achievement: float
+    pipeline_by_stage: List[DashboardGroupMetric]
+    pipeline_by_salesperson: List[DashboardGroupMetric]
+    monthly_sales_performance: List[DashboardMonthlyMetric]
+    recent_activities: List[DashboardRecentActivity]
+    deal_risks: List[DashboardDealRisk]
+    generated_at: datetime
 
 
 class AuditLog(BaseModel):

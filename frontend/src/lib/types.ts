@@ -159,17 +159,32 @@ export interface PurchaseOrder {
 
 export interface DashboardMetrics {
   total_customer: number;
+  total_contacts: number;
+  total_leads: number;
+  total_opportunities: number;
   open_pipeline: number;
   weighted_pipeline: number;
   won_value: number;
+  lost_value: number;
+  win_rate: number;
   total_quotation: number;
+  active_quotations: number;
+  quotation_value: number;
   total_po: number;
   po_value: number;
-  activities: number;
   open_orders: number;
   completed_orders: number;
   overdue_orders: number;
-  pipeline_by_stage: { stage: string; count: number; value: number }[];
+  activities: number;
+  overdue_activities: number;
+  sales_target: number;
+  target_achievement: number;
+  pipeline_by_stage: { name: string; count: number; value: number }[];
+  pipeline_by_salesperson: { name: string; count: number; value: number }[];
+  monthly_sales_performance: { month: string; label: string; actual: number; target: number }[];
+  recent_activities: { id: string; subject: string; activity_type: string; customer_name?: string | null; sales_name?: string | null; date?: string | null; status: string }[];
+  deal_risks: { id: string; opportunity_id: string; name: string; customer_name: string; sales_name?: string | null; value: number; stage: string; expected_close?: string | null; reason: string }[];
+  generated_at: string;
 }
 
 export interface AuditLog {

@@ -19,6 +19,7 @@ Reference-compatible Indonesian industrial B2B CRM. The delivered first release 
 
 ## Key flows
 1. Login with a seeded role, review real aggregated dashboard metrics, then logout.
+   The authenticated `GET /api/dashboard` route now delegates to `DashboardService`, which uses MongoDB aggregation pipelines with defensive `$convert` handling for mixed numeric/date fields, role-level visibility, and no client-side KPI math.
 2. Search/page customers, create validated customers with duplicate warnings, and delete records.
 3. Create opportunities and review weighted pipeline in table or Kanban mode.
 4. Record sales activities, review tasks, and mark tasks complete.

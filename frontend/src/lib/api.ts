@@ -31,6 +31,7 @@ async function request<T>(method: string, path: string, body?: JsonBody): Promis
   // Auth rides the httpOnly session cookie automatically — never add auth headers here.
   const res = await fetch(`${BASE}${path}`, {
     method,
+    credentials: "same-origin",
     headers: body === undefined ? undefined : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -57,7 +58,7 @@ export const apiDelete = <T>(path: string) => request<T>("DELETE", path);
 export async function apiUpload<T>(path: string, file: File): Promise<T> {
   const body = new FormData();
   body.append("file", file);
-  const res = await fetch(`${BASE}${path}`, { method: "POST", body });
+  const res = await fetch(`${BASE}${path}`, { method: "POST", credentials: "same-origin", body });
   if (!res.ok) {
     const errBody = await res.json().catch(() => null);
     throw new ApiError(res.status, errBody);
@@ -68,6 +69,7 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
 export async function apiStream(path: string, body: JsonBody, onEvent: (event: ApiStreamEvent) => void): Promise<void> {
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
+    credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });

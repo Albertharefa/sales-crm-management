@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet } from "@/lib/api";
+import { ApiError, apiGet } from "@/lib/api";
 import { endSession } from "@/lib/session";
 import type { User } from "@/lib/types";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { BarChart3, Bell, Boxes, ClipboardCheck, FileText, Gauge, LogOut, Menu, PackageCheck, PanelLeft, Settings, ShieldCheck, ShoppingCart, Target, Users, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import AICopilot from "@/components/AICopilot";
@@ -24,7 +24,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: user } = useCurrentUser();
+  const { data: user, error: sessionError, isLoading: sessionLoading, isError: sessionFailed, refetch: refetchSession } = useCurrentUser();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   async function logout() {
@@ -33,6 +33,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     toast.success("Sesi berhasil diakhiri");
     navigate("/login");
   }
+
+  useEffect(() => {
+    if (sessionError instanceof ApiError && sessionError.status === 401) {
+      queryClient.clear();
+      navigate("/login", { replace: true });
+    }
+  }, [navigate, queryClient, sessionError]);
+
+  if (sessionLoading) return <div className="flex min-h-svh items-center justify-center bg-slate-50" data-testid="session-loading"><div className="text-center"><div className="mx-auto size-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm text-slate-500">Memverifikasi sesi CRM...</p></div></div>;
+  if (sessionFailed || !user) return <div className="flex min-h-svh items-center justify-center bg-slate-50 p-6" data-testid="session-error"><div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm"><h1 className="font-heading text-lg font-semibold">Sesi tidak tersedia</h1><p className="mt-2 text-sm text-slate-500">Kami tidak dapat memverifikasi sesi Anda. Coba lagi atau masuk kembali.</p><Button className="mt-5" onClick={() => void refetchSession()} data-testid="session-retry-button">Coba lagi</Button></div></div>;
 
   return <div className="min-h-svh bg-slate-50 text-slate-900" data-testid="crm-app-shell">
     <Toaster position="top-right" richColors />

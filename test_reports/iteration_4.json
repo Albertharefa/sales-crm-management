@@ -1,0 +1,122 @@
+{
+  "iteration": 4,
+  "mode": "generate",
+  "summary": "Dashboard MongoDB-aggregation fix verified: 4 new backend tests (full schema, no-hardcoded-shape, customer-count consistency, pipeline-aggregate consistency) + 1 pre-existing auth test all pass (22/22 full backend suite). 3 new dashboard browser checks (auth-flow/redirect + full metric surface, customer refresh consistency, logout/login session persistence) all pass. Re-ran 7 pre-existing browser checks (AI copilot streaming + 6 CRM-module regression checks) unchanged and all still pass. Removed one stale backend test and one stale browser check that asserted an outdated dashboard response shape (field renamed stage->name, KPI testid pluralization) superseded by the new artifacts.",
+  "passed": 14,
+  "failed": 0,
+  "checks": [
+    {
+      "criterion": "Dashboard authenticated API flow",
+      "name": "test_tscheck_dashboard_full_schema_and_consistency.py::test_dashboard_requires_authentication",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/dashboard without a session cookie -> 401"
+    },
+    {
+      "criterion": "Dashboard authenticated API flow",
+      "name": "dashboard-auth-flow-and-metrics",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Navigating to '/' with no session redirects to /login (login-email-input visible) instead of rendering the dashboard-error alert; after logging in as admin@crm.co.id/Password123, dashboard-page renders with dashboard-error absent and dashboard-source-badge showing 'Live MongoDB aggregation'"
+    },
+    {
+      "criterion": "MongoDB aggregation correctness",
+      "name": "test_tscheck_dashboard_full_schema_and_consistency.py::test_dashboard_full_schema_and_no_hardcoded_shape",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/dashboard 200; every required scalar KPI field present and numeric, pipeline_by_stage covers exactly the 6 real stages with non-negative int counts, monthly_sales_performance has 12 real month rows, and recent_activities/deal_risks rows carry real customer_name/opportunity_id values rather than a static fallback payload"
+    },
+    {
+      "criterion": "Required dashboard metrics",
+      "name": "dashboard-auth-flow-and-metrics",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "All 16 dashboard-kpi-* cards visible (total customers/contacts/leads, opportunities, open/weighted pipeline, won/lost value, win rate, active quotations/value, purchase orders, order monitoring, activities, sales target, target achievement) plus all 6 pipeline-stage-* rows, dashboard-pipeline-salesperson-card, dashboard-monthly-performance, dashboard-recent-activities, and dashboard-deal-risks all visible on one authenticated load; screenshot dashboard-full-schema captured"
+    },
+    {
+      "criterion": "Customer consistency and refresh",
+      "name": "test_tscheck_dashboard_full_schema_and_consistency.py::test_dashboard_customer_count_matches_customers_api",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/dashboard total_customer == GET /api/customers?limit=1 total field (63 == 63)"
+    },
+    {
+      "criterion": "Customer consistency and refresh",
+      "name": "dashboard-customer-consistency-refresh",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Confirmed dashboard-kpi-total-customers value equals live /api/customers total via page.request before mutating; created tscheck-customer-<ts> through the Customers UI, returned to Dashboard, clicked page-refresh-button, and dashboard-kpi-total-customers incremented by exactly 1"
+    },
+    {
+      "criterion": "Pipeline consistency",
+      "name": "test_tscheck_dashboard_full_schema_and_consistency.py::test_dashboard_pipeline_aggregates_match_pipeline_api",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/pipeline?page_size=100 returned all 57 real opportunities; dashboard total_opportunities/open_pipeline/won_value/lost_value and every pipeline_by_stage count computed independently from those raw records exactly match the dashboard response (e.g. open_pipeline 17312500000.0, won_value 4180000000.0, lost_value 4320000000.0)"
+    },
+    {
+      "criterion": "Session persistence",
+      "name": "dashboard-session-persistence-relogin",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Login -> dashboard renders with no dashboard-error -> logout returns to /login -> login again -> dashboard-page visible, dashboard-error absent, dashboard-kpi-total-customers visible, and a direct GET /api/dashboard via page.request returns 200"
+    },
+    {
+      "criterion": "AI integration regression",
+      "name": "ai-copilot-authenticated-streaming",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: GPT-5.4 drawer opens on Dashboard, prompt streams real pipeline-context content (e.g. mentions of open/weighted pipeline values), and ai-confirm-save-button appears after streaming completes"
+    },
+    {
+      "criterion": "CRM regression smoke",
+      "name": "customer-create-search-workflow",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: customer create + search flow passes"
+    },
+    {
+      "criterion": "CRM regression smoke",
+      "name": "pipeline-view-toggle-and-create",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: kanban 6-stage view and opportunity creation pass"
+    },
+    {
+      "criterion": "CRM regression smoke",
+      "name": "activities-create-and-complete-task",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: activity creation and task completion pass"
+    },
+    {
+      "criterion": "CRM regression smoke",
+      "name": "quotation-po-order-workflows",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: quotation, purchase order, and order monitoring status update flows pass"
+    },
+    {
+      "criterion": "CRM regression smoke",
+      "name": "admin-products-users-audit-settings",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: products, users, audit log, settings RBAC flows pass"
+    },
+    {
+      "criterion": "CRM regression smoke",
+      "name": "responsive-nav-desktop-and-mobile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check unchanged: all 11 sidebar links visible desktop; mobile drawer opens/closes at 390x844"
+    }
+  ],
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false,
+  "notes": [
+    "Removed backend file test_tscheck_dashboard_aggregation.py and browser check dashboard-kpi-aggregation.mjs: both asserted a pre-fix dashboard response shape (pipeline_by_stage row key 'stage' instead of the current 'name', and a singular 'dashboard-kpi-total-customer' testid vs the current plural 'dashboard-kpi-total-customers'); their coverage is fully superseded by the new test_tscheck_dashboard_full_schema_and_consistency.py and dashboard-auth-flow-and-metrics artifacts.",
+    "Full backend suite: 22/22 passed (cd /app/backend && python -m pytest -q). 'MongoDB aggregation correctness' has no distinct UI surface beyond what 'Required dashboard metrics' and the consistency checks already cover, so it is verified purely via the backend schema/shape test per the pure-API-behavior rule.",
+    "The single console 401 seen during the AI copilot re-run and the single 422 seen during the customer-workflow re-run are pre-existing defensive probe/validation steps baked into those checks' own scripts (documented in earlier iterations), not related to this iteration's dashboard changes."
+  ]
+}
