@@ -15,6 +15,7 @@ Reference-compatible Indonesian industrial B2B CRM. The delivered first release 
 - Quotations and purchase orders contain validated line items referencing products.
 - Purchase orders feed the six-stage delivery workflow: Received → Processing → Indent → Ready Stock → Delivery → Completed.
 - Audit records capture login, create, update, delete, export, and status-change events.
+- AI conversations and messages persist in MongoDB; the server supplies only role-visible selected CRM context to GPT-5.4 and audits generation plus confirmed-save actions.
 
 ## Key flows
 1. Login with a seeded role, review real aggregated dashboard metrics, then logout.
@@ -24,6 +25,7 @@ Reference-compatible Indonesian industrial B2B CRM. The delivered first release 
 5. Create quotations with server-calculated totals and download PDF output.
 6. Create customer purchase orders with optional restricted document upload, then advance delivery status in Order Monitoring.
 7. Create products and users; inspect team KPIs, settings matrix, and audit history.
+8. Open the GPT-5.4 CRM AI Copilot globally or from route-aware dashboard/customer/opportunity/quotation context, stream a response, and explicitly confirm before saving it as a linked CRM note.
 
 ## Seed facts
 - 3 demo users, 50 customers, 50 opportunities, 100 activities, 50 tasks, 50 products, 30 quotations, and 20 purchase orders.

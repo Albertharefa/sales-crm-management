@@ -30,6 +30,7 @@ from routers.orders import router as orders_router
 from routers.dashboard import router as dashboard_router
 from routers.admin import router as admin_router
 from routers.uploads import router as uploads_router
+from routers.ai import router as ai_router
 
 api_router.include_router(auth_router)
 api_router.include_router(customers_router)
@@ -41,6 +42,7 @@ api_router.include_router(orders_router)
 api_router.include_router(dashboard_router)
 api_router.include_router(admin_router)
 api_router.include_router(uploads_router)
+api_router.include_router(ai_router)
 
 @api_router.get("/")
 async def root():

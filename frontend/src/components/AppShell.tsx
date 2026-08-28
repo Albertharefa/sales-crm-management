@@ -8,6 +8,7 @@ import { BarChart3, Bell, Boxes, ClipboardCheck, FileText, Gauge, LogOut, Menu, 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
+import AICopilot from "@/components/AICopilot";
 
 const navGroups = [
   { label: "CRM DATABASE", items: [{ label: "Dashboard", to: "/", icon: Gauge }, { label: "Customers", to: "/customers", icon: Users }, { label: "Sales Pipeline", to: "/pipeline", icon: BarChart3 }, { label: "Aktivitas", to: "/activities", icon: ClipboardCheck }, { label: "Quotations", to: "/quotations", icon: FileText }, { label: "Purchase Orders", to: "/purchase-orders", icon: ShoppingCart }, { label: "Order Monitoring", to: "/order-monitoring", icon: PackageCheck }] },
@@ -42,5 +43,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </aside>
     {mobileOpen && <button className="fixed inset-0 z-40 bg-slate-950/60 lg:hidden" onClick={() => setMobileOpen(false)} data-testid="mobile-sidebar-overlay" aria-label="Close navigation" />}
     <div className="lg:pl-64"><header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200 bg-white/90 px-4 backdrop-blur-md sm:px-6"><button className="rounded-md p-2 text-slate-600 hover:bg-slate-100 lg:hidden" onClick={() => setMobileOpen(true)} data-testid="mobile-menu-button"><Menu className="size-5" /></button><div className="hidden items-center gap-2 text-sm text-slate-500 lg:flex"><PanelLeft className="size-4" />Operasional Sales</div><div className="ml-auto flex items-center gap-3"><div className="hidden text-right sm:block"><div className="text-sm font-semibold" data-testid="header-user-name">{user?.name ?? "Admin"}</div><div className="text-xs text-slate-500">{user?.role ?? "SUPER_ADMIN"}</div></div><div className="rounded-full bg-slate-100 p-2 text-slate-600" data-testid="notification-indicator"><Bell className="size-4" /></div></div></header><main className="p-4 sm:p-6 lg:p-8">{children}</main></div>
+    <AICopilot />
   </div>;
 }

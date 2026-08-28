@@ -1,0 +1,98 @@
+{
+  "iteration": 3,
+  "mode": "generate",
+  "summary": "New GPT-5.4 AI Copilot feature verified: 4 new backend tests + 5 new browser checks, all passed. Combined with the 16 pre-existing backend tests (unaffected), full suite is 20/20 backend tests passed and 5/5 new AI browser checks passed (existing 6 non-AI browser checks not re-run since their criteria are unchanged by this feature addition).",
+  "passed": 9,
+  "failed": 0,
+  "checks": [
+    {
+      "criterion": "Authenticated GPT-5.4 streaming",
+      "name": "ai-copilot-authenticated-streaming",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Logged in as admin@crm.co.id, opened ai-copilot-open-button drawer, typed a unique tscheck prompt on the dashboard route, clicked ai-send-button; prompt echoed in ai-message-list, GPT-5.4 badge visible, streamed real Indonesian text (e.g. 'Pipeline terbuka saat ini Rp17,31 miliar dengan weighted pipeline Rp8,01 miliar...') appeared incrementally, and ai-confirm-save-button appeared once streaming completed. No console errors other than a pre-existing stale-session 401 probe issued before the forced re-login."
+    },
+    {
+      "criterion": "Authenticated GPT-5.4 streaming",
+      "name": "test_tscheck_ai_copilot.py::test_ai_chat_stream_authenticated_and_audited",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/ai/chat/stream (cookie auth) 200 text/event-stream; parsed SSE: meta.model=='gpt-5.4', >=1 delta events with non-empty concatenated content, a done event, zero error events; EMERGENT_LLM_KEY value never appears in the raw SSE payload"
+    },
+    {
+      "criterion": "AI access control",
+      "name": "test_tscheck_ai_copilot.py::test_ai_endpoints_reject_unauthenticated + test_ai_context_options_role_scoped",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/ai/context-options and POST /api/ai/chat/stream without a session cookie -> 401; GET /api/ai/context-options?context_type=customer as SALES role returns a list whose length is <= the SUPER_ADMIN list length (role-scoped visibility via visible_filter)"
+    },
+    {
+      "criterion": "Three AI capabilities",
+      "name": "ai-copilot-capabilities-and-confirm-save",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "ai-capability-sales_copilot, ai-capability-report_analyst, ai-capability-quotation_writer all visible and clickable in the drawer; selecting sales_copilot and sending a tscheck prompt produced a normal streamed response and a working confirm-save flow"
+    },
+    {
+      "criterion": "Route-aware selected context",
+      "name": "ai-copilot-route-aware-context",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Dashboard route shows ai-dashboard-context banner and send is enabled with prompt text alone (no selection required). Customers, Sales Pipeline, and Quotations routes each show ai-context-select with >1 populated option, ai-prompt-input is disabled until a record is chosen, and ai-send-button becomes enabled only after selecting a record on each of the three routes."
+    },
+    {
+      "criterion": "Persistent conversation history",
+      "name": "ai-copilot-persistent-history-on-reload",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Sent a unique tscheck prompt, waited for the assistant response and confirm-save button, then did a hard page reload (page.reload) and reopened the drawer: the same unique prompt text is present in ai-message-list again, proving the conversation id + messages were fetched back from persisted MongoDB storage for the same authenticated user."
+    },
+    {
+      "criterion": "Persistent conversation history",
+      "name": "test_tscheck_ai_copilot.py::test_ai_chat_stream_authenticated_and_audited (history assertion)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/ai/conversations/{conversation_id} 200 returns the exact user prompt and the assistant message id that were just streamed, confirming MongoDB persistence of both roles"
+    },
+    {
+      "criterion": "Explicit confirmed saving",
+      "name": "ai-copilot-capabilities-and-confirm-save",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Before clicking ai-confirm-save-button, no 'Draft AI disimpan' success toast exists (nothing auto-saved). After clicking it, the success toast 'Draft AI disimpan sebagai catatan setelah konfirmasi' appears."
+    },
+    {
+      "criterion": "Explicit confirmed saving",
+      "name": "test_tscheck_ai_copilot.py::test_ai_notes_confirm_requires_valid_draft_and_explicit_save",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/ai/notes/confirm with a bogus conversation/message id -> 404 (nothing saved without a real draft). Real generate + POST /api/ai/notes/confirm -> 200; saved note content byte-for-byte equals the concatenated streamed assistant content"
+    },
+    {
+      "criterion": "AI audit trail",
+      "name": "test_tscheck_ai_copilot.py (audit assertions in stream + confirm tests)",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/audit-logs after generation contains a row with module=='AI Copilot', action=='Generate', record_id==assistant_message_id; after confirm-save contains a row with action=='Confirm Save', record_id==saved_note_id; the raw SSE and audit-log JSON responses never contain the EMERGENT_LLM_KEY value or the string 'EMERGENT_LLM_KEY'"
+    },
+    {
+      "criterion": "Responsive copilot UI",
+      "name": "ai-copilot-responsive-drawer",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "At 1280x720 desktop and 390x844 mobile viewports, ai-copilot-drawer, ai-dashboard-context, ai-message-list, ai-prompt-input, and ai-send-button are all visible; on mobile the prompt input accepts text and the send button becomes enabled"
+    }
+  ],
+  "bugs": [],
+  "action_items": [
+    {
+      "item": "Minor: a React 'cannot be a child of <select>' hydration console warning was observed when the AI context-select's <option> renders a description string (Customers/Pipeline/Quotations routes). It did not fail any check and no functional selection issue was seen, but worth a quick look — likely a stray element/whitespace inside the option markup.",
+      "severity": "low"
+    }
+  ],
+  "retest_needed": false,
+  "notes": [
+    "This iteration covers the 8-item AI Copilot acceptance_matrix from the new briefing (feature addition to the existing reference-compatible CRM). The 6 pre-existing non-AI browser checks and their criteria (auth, dashboard, customers, pipeline, activities, quotations/PO, admin/audit, responsive nav) were not re-run because this iteration's briefing and diff are scoped to the AI feature only and those checks/tests are already green from iteration 2 with no changes to that code.",
+    "The stale 401 console errors seen in every AI browser check are from a defensive forced-relogin step (checking for a leftover logged-in-but-expired-session state from prior automation runs on the shared preview browser profile) executed before the actual AI flow under test; they are not related to the AI feature and do not affect any assertion."
+  ]
+}

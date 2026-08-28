@@ -138,3 +138,11 @@
     transform: translateY(-1px);
     }
 }
+
+[data-testid="ai-message-list"] {
+  min-height: 0;
+}
+
+[data-testid="ai-copilot-drawer"] footer {
+  flex-shrink: 0;
+}

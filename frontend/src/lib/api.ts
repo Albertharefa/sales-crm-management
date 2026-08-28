@@ -18,6 +18,15 @@ export class ApiError extends Error {
 
 type JsonBody = unknown;
 
+export interface ApiStreamEvent {
+  type: "meta" | "delta" | "done" | "error";
+  content?: string;
+  message?: string;
+  conversation_id?: string;
+  assistant_message_id?: string;
+  model?: string;
+}
+
 async function request<T>(method: string, path: string, body?: JsonBody): Promise<T> {
   // Auth rides the httpOnly session cookie automatically — never add auth headers here.
   const res = await fetch(`${BASE}${path}`, {
@@ -54,4 +63,34 @@ export async function apiUpload<T>(path: string, file: File): Promise<T> {
     throw new ApiError(res.status, errBody);
   }
   return (await res.json()) as T;
+}
+
+export async function apiStream(path: string, body: JsonBody, onEvent: (event: ApiStreamEvent) => void): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const errBody = await res.json().catch(() => null);
+    throw new ApiError(res.status, errBody);
+  }
+  if (!res.body) throw new ApiError(502, { detail: "Streaming response tidak tersedia" });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    buffer = buffer.replaceAll("\r\n", "\n");
+    let boundary = buffer.indexOf("\n\n");
+    while (boundary >= 0) {
+      const block = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      const data = block.split("\n").find(line => line.startsWith("data: "))?.slice(6);
+      if (data) onEvent(JSON.parse(data) as ApiStreamEvent);
+      boundary = buffer.indexOf("\n\n");
+    }
+  }
 }
