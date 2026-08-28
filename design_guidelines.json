@@ -1,0 +1,160 @@
+{
+  "project_name": "CRM Sales Management Production",
+  "theme": {
+    "default": "light",
+    "supported": ["light", "dark"],
+    "description": "Enterprise-grade high-contrast theme focused on data clarity, readability, and authority. Follows the Swiss & High-Contrast archetype. Uses solid structural greys with Sapphire Blue accents for actions."
+  },
+  "typography": {
+    "font_strategy": "The Soft Utility",
+    "families": {
+      "headings": "Cabinet Grotesk, sans-serif",
+      "body": "Inter, sans-serif",
+      "monospace": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-3xl sm:text-4xl tracking-tight font-bold text-slate-900 dark:text-white",
+      "h2": "text-2xl sm:text-3xl tracking-tight font-semibold text-slate-800 dark:text-slate-100",
+      "h3": "text-xl sm:text-2xl tracking-tight font-medium text-slate-800 dark:text-slate-100",
+      "h4": "text-lg sm:text-xl font-medium text-slate-800 dark:text-slate-100",
+      "body": "text-sm sm:text-base leading-relaxed text-slate-600 dark:text-slate-300",
+      "labels": "text-xs tracking-[0.05em] uppercase font-semibold text-slate-500 dark:text-slate-400"
+    },
+    "rules": [
+      "Headings over 32px MUST use tracking-tight.",
+      "Overlines and table headers MUST be uppercase, tiny, with tracking-wider.",
+      "Never use Inter for headings. Use it exclusively for body text to ensure maximum legibility in dense data tables."
+    ]
+  },
+  "colors": {
+    "archetype": "SWISS & HIGH-CONTRAST",
+    "palette": {
+      "primary": {
+        "DEFAULT": "#2563eb",
+        "hover": "#1d4ed8",
+        "foreground": "#ffffff"
+      },
+      "background": {
+        "DEFAULT": "#f8fafc",
+        "card": "#ffffff",
+        "dark": "#0f172a",
+        "dark_card": "#1e293b"
+      },
+      "surface": {
+        "border": "#e2e8f0",
+        "dark_border": "#334155"
+      },
+      "status": {
+        "success": "#16a34a",
+        "warning": "#eab308",
+        "danger": "#dc2626",
+        "info": "#0284c7"
+      }
+    },
+    "rules": [
+      "Color is for function only. 95% of the UI should be monochrome structural greys.",
+      "Only use Primary color (Sapphire Blue) for CTAs, active states, and key data points.",
+      "Ensure text below 18px maintains 4.5:1 contrast, and large text maintains 3:1.",
+      "Never use pure #000000. Use tinted greys like #0f172a."
+    ]
+  },
+  "layouts": {
+    "dashboard": {
+      "type": "High Density Grid",
+      "base_grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4",
+      "gap": "gap-4 sm:gap-6",
+      "padding": "p-4 sm:p-6 lg:p-8",
+      "sidebar": "w-64 fixed h-screen border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+    },
+    "kanban": {
+      "type": "Horizontal Scroll Area",
+      "column_width": "w-80",
+      "gap": "gap-4",
+      "item_spacing": "space-y-3"
+    },
+    "rules": [
+      "Direct Children Only: Grid items MUST be direct children of grid containers.",
+      "Cards and widgets must stretch to fill their grid cells (h-full).",
+      "Use optical alignment for icons and text in sidebars."
+    ]
+  },
+  "surfaces": {
+    "cards": {
+      "style": "Flat Solid surfaces. No heavy shadows.",
+      "classes": "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm"
+    },
+    "headers": {
+      "style": "Crystal Glass or Solid Background",
+      "classes": "sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800"
+    },
+    "rules": [
+      "NO transparent backgrounds under text-heavy areas.",
+      "Use a 1px solid stroke to define surface edges, do not rely solely on shadows."
+    ]
+  },
+  "components": {
+    "tables": {
+      "library": "Shadcn UI + TanStack Table",
+      "style": "Dense padding (py-2 px-4), hover state on rows, sticky header.",
+      "action": "Right-aligned action menus using Shadcn DropdownMenu."
+    },
+    "forms": {
+      "library": "Shadcn UI Form, Input, Select, Checkbox",
+      "style": "Left-aligned labels, subtle focus rings (focus:ring-2 focus:ring-primary/20 focus:border-primary).",
+      "date_picker": "Shadcn Calendar + Popover (Never native input type=date)."
+    },
+    "navigation": {
+      "style": "Left sidebar for desktop, hidden on mobile behind a hamburger menu. Top header for user profile and notifications."
+    },
+    "notifications": {
+      "library": "sonner",
+      "position": "top-right"
+    }
+  },
+  "motion": {
+    "hover_states": "transition-colors duration-200 ease-in-out",
+    "transform_states": "transition-transform duration-200 hover:-translate-y-0.5",
+    "rules": [
+      "DO NOT use 'transition-all'. Target specific properties.",
+      "Keep animations fast and subtle. Dashboards are for efficiency, not slow reveals."
+    ]
+  },
+  "accessibility": {
+    "rules": [
+      "All interactive elements MUST include data-testid (e.g., data-testid='sidebar-nav-link').",
+      "Focus states must have higher contrast than default.",
+      "Use explicit hover text colors (hover:bg-slate-100 hover:text-slate-900)."
+    ]
+  },
+  "media": {
+    "icons": {
+      "library": "lucide-react",
+      "usage": "Use crisp, consistent stroke widths (usually 2px) and sizes."
+    },
+    "images": {
+      "users": [
+        {
+          "role": "admin",
+          "url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHwyfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMHByb2ZpbGV8ZW58MHx8fHwxNzg3OTAyMTYwfDA&ixlib=rb-4.1.0&q=85",
+          "description": "Professional headshot of admin user"
+        }
+      ]
+    }
+  },
+  "instructions_to_main_agent": {
+    "general": [
+      "Build a COMPLETE production-ready CRM and Sales Management Web Application.",
+      "This is NOT a UI mockup. Implement fully functional real database-backed operations.",
+      "Match the reference application's workflows and modules, maintaining service-layer boundaries."
+    ],
+    "universal_guidelines": [
+      "Avoid 'AI slop' aesthetic. Create depth with borders and z-index hierarchy.",
+      "Use 2x more padding inside cards and modals than feels comfortable.",
+      "Do NOT center align the app container. Dashboards are left-aligned.",
+      "Never use AI assistant Emojis for icons. Use lucide-react.",
+      "Implement sonner for toasts at /app/frontend/src/components/ui/sonner.js",
+      "Use pills and modern input fields instead of generic html elements.",
+      "Remember to include proper 'data-testid' for all inputs and buttons."
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+import { useQuery } from "@tanstack/react-query";
+import { apiGet } from "@/lib/api";
+import type { SalesTeamMetric } from "@/lib/types";
+import PageHeader from "@/components/PageHeader";
+import DataTable from "@/components/DataTable";
+import { Badge } from "@/components/ui/badge";
+
+const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", notation: "compact", maximumFractionDigits: 1 }).format(value);
+type TeamRow = SalesTeamMetric & { id: string };
+export default function SalesTeam() { const query = useQuery({ queryKey: ["sales-team"], queryFn: () => apiGet<SalesTeamMetric[]>("/sales-team") }); const rows: TeamRow[] = (query.data ?? []).map((item, index) => ({ ...item, id: `${index}-${item.sales}` })); return <div data-testid="sales-team-page"><PageHeader title="Sales Team & KPI" description="KPI per sales dihitung dengan grouped aggregation — bukan query per orang" onRefresh={() => void query.refetch()} onExport={() => window.open("/api/exports/sales-team", "_blank")} /><DataTable testId="sales-team-table" items={rows} loading={query.isLoading} columns={[{ key: "sales", label: "Sales", render: i => <span className="font-medium">{i.sales}</span> }, { key: "role", label: "Peran", render: i => <Badge variant="outline">{i.role}</Badge> }, { key: "manager", label: "Manager", render: i => i.manager }, { key: "open", label: "Open Pipeline", render: i => money(i.open_pipeline) }, { key: "weighted", label: "Weighted", render: i => money(i.weighted) }, { key: "won", label: "Won", render: i => money(i.won) }, { key: "po", label: "PO", render: i => i.po }, { key: "value", label: "PO Value", render: i => money(i.po_value) }, { key: "activities", label: "Aktivitas", render: i => i.activities }, { key: "indent", label: "Indent", render: i => i.indent }, { key: "overdue", label: "Overdue", render: i => i.overdue }]} /></div>; }

@@ -1,0 +1,129 @@
+{
+  "iteration": 1,
+  "summary": "16 backend tests passed; 7/8 browser checks passed; 1 browser check failed revealing a real Customer-create validation bug (email empty string rejected by backend despite being optional in the UI).",
+  "passed": 22,
+  "failed": 1,
+  "checks": [
+    {
+      "criterion": "Authentication and session security",
+      "name": "test_tscheck_auth_session.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/auth/login 200 (HttpOnly cookie set, role=SUPER_ADMIN); GET /api/auth/me 200 identity match; POST /api/auth/logout 204 then GET /api/auth/me 401; invalid password -> 401"
+    },
+    {
+      "criterion": "Authentication and session security",
+      "name": "auth-login-and-logout",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Login with admin@crm.co.id/Password123 shows crm-app-shell with current-user-name=Admin, email=admin@crm.co.id, role=SUPER_ADMIN; Logout returns to login-page. Re-verified through APP_URL ingress (sales-crm-master.preview.emergentagent.com) - passed."
+    },
+    {
+      "criterion": "Real dashboard aggregation",
+      "name": "test_tscheck_dashboard_aggregation.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/dashboard 200: total_customer=52 (>=50), total_quotation=30, total_po=20, activities=100, pipeline_by_stage covers Lead/Qualification/Proposal/Negotiation/Won/Lost; unauthenticated GET /api/dashboard -> 401/403"
+    },
+    {
+      "criterion": "Real dashboard aggregation",
+      "name": "dashboard-kpi-aggregation",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "dashboard-kpi-total-customer card shows >=50; all 6 pipeline-stage-* rows visible on dashboard-pipeline-stage-card"
+    },
+    {
+      "criterion": "Customer server-side workflow",
+      "name": "test_tscheck_customer_workflow.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/customers?page=1&page_size=5 200 total>=50; POST /api/customers {} -> 422; POST with full valid payload (incl. email) -> 200/201; search filter returns created row"
+    },
+    {
+      "criterion": "Customer server-side workflow",
+      "name": "customer-create-search-workflow",
+      "lane": "browser",
+      "status": "failed",
+      "evidence": "Filling only Nama Customer/Kota/Nama PIC (email left blank, as UI does not mark it required) and clicking Simpan fails silently: modal stays open, browser console shows 'Failed to load resource: 422 (Unprocessable Entity)' x2. Cross-check via curl: POST /api/customers with email:\"\" -> 422 {'msg': 'value is not a valid email address: An email address must have an @-sign.'}. Backend requires EmailStr or null but frontend form defaults email to empty string \"\" instead of omitting/nulling it."
+    },
+    {
+      "criterion": "Opportunity pipeline",
+      "name": "test_tscheck_opportunity_pipeline.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/pipeline 200 total>=40; GET /api/pipeline/kanban 200 covers all 6 stages; POST /api/pipeline with seeded customer_id -> 200/201 linked opportunity; invalid payload (missing customer_id) -> 422"
+    },
+    {
+      "criterion": "Opportunity pipeline",
+      "name": "pipeline-view-toggle-and-create",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "pipeline-count visible; kanban toggle shows all 6 pipeline-kanban-column-* stages; created opportunity linked to seeded customer appears in table after save"
+    },
+    {
+      "criterion": "Activities and tasks",
+      "name": "test_tscheck_activities_tasks.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/activities 200 total>=50; POST /api/activities with customer_id -> 200/201; GET /api/activities/tasks 200 total>=40; PATCH /api/activities/tasks/{id}?status=Completed -> 200 status=Completed"
+    },
+    {
+      "criterion": "Activities and tasks",
+      "name": "activities-create-and-complete-task",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Created customer-linked activity visible in list; switched to Tasks tab; clicked an enabled task-complete-* button which became disabled after mutation (marked Completed)"
+    },
+    {
+      "criterion": "Quotation and order workflows",
+      "name": "test_tscheck_quotation_order_workflows.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/quotations 200 total>=25; POST /api/quotations qty=2,price=1000000 -> subtotal=2000000, grand_total>subtotal (tax applied); GET /api/quotations/{id}/pdf -> 200 application/pdf; POST /api/purchase-orders -> 200/201 total=500000; GET /api/purchase-orders/monitoring total>=15; PATCH /api/purchase-orders/{id}/status?status=Processing -> 200 status=Processing"
+    },
+    {
+      "criterion": "Quotation and order workflows",
+      "name": "quotation-po-order-workflows",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Quotation created via form; PDF download triggered from quotation-pdf-* button; Purchase Order created with unique po number and visible in table; Order Monitoring status select on the newly-created PO row updated to 'Processing'"
+    },
+    {
+      "criterion": "Administration and auditability",
+      "name": "test_tscheck_admin_auditability.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "POST /api/products -> 200/201, search finds it, DELETE /api/products/{id} -> 204; POST /api/users (SUPER_ADMIN creating SALES role) -> 200/201; GET /api/sales-team -> 200 non-empty KPI rows; GET /api/audit-logs -> 200 total>0 with action/module fields"
+    },
+    {
+      "criterion": "Administration and auditability",
+      "name": "admin-products-users-audit-settings",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Product created then deleted (own fixture row disappears from table); new Super-Admin-created user email visible in Users table; Sales Team and Audit Log tables render seeded rows; Settings page renders an RBAC matrix table"
+    },
+    {
+      "criterion": "Responsive reference-compatible navigation",
+      "name": "responsive-nav-desktop-and-mobile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "All 11 sidebar-link-* module links visible at 1280x720 desktop viewport; at 390x844 mobile viewport, mobile-menu-button opens sidebar-navigation and sidebar-close-button closes it (overlay disappears)"
+    }
+  ],
+  "bugs": [
+    {
+      "severity": "medium",
+      "criterion": "Customer server-side workflow",
+      "title": "Add Customer form fails when email is left blank (not marked required in UI, but rejected by backend)",
+      "evidence": "Browser: customer-create-search-workflow check - modal stays open after Simpan, console logs 'Failed to load resource: 422 (Unprocessable Entity)' x2. Backend cross-check: curl -X POST /api/customers with email:\"\" returns 422 'value is not a valid email address: An email address must have an @-sign.' The React form (Customers.tsx) defaults/keeps email as empty string \"\" rather than sending null when the field is left blank, and CustomerCreate.email is typed Optional[EmailStr] which rejects empty-string input under pydantic's EmailStr validator. Any user who fills only the required Nama Customer field and skips the optional Email field cannot save a new customer.",
+      "screenshot": "/root/.emergent/automation_output/20260828_074638_985/customer-create-search-workflow-failure.png"
+    }
+  ],
+  "action_items": [
+    {
+      "item": "Fix Customers.tsx create-customer mutation to send email as null (or omit the key) when the Email field is left blank, matching how phone/address/notes are treated, OR relax CustomerCreate.email validation to accept empty string as no-email.",
+      "severity": "medium"
+    }
+  ],
+  "retest_needed": true
+}

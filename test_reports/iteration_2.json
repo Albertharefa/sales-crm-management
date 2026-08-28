@@ -1,0 +1,117 @@
+{
+  "iteration": 2,
+  "mode": "retest",
+  "summary": "16 backend tests passed; 8/8 browser checks passed. Previously failing customer-create-search-workflow now passes: blank email no longer triggers 422, new row appears in search with zero console errors during the create flow.",
+  "passed": 23,
+  "failed": 0,
+  "checks": [
+    {
+      "criterion": "Authentication and session security",
+      "name": "test_tscheck_auth_session.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "16 backend tests passed in suite run (2026-08-28); auth/session assertions unchanged from iteration 1 (login sets httpOnly cookie, /me matches identity, logout invalidates session, bad password -> 401)"
+    },
+    {
+      "criterion": "Authentication and session security",
+      "name": "auth-login-and-logout",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: login with admin@crm.co.id/Password123 reaches crm-app-shell; logout returns to login-page. No console errors."
+    },
+    {
+      "criterion": "Real dashboard aggregation",
+      "name": "test_tscheck_dashboard_aggregation.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/dashboard 200 with populated KPI/pipeline fields; unauthenticated request rejected"
+    },
+    {
+      "criterion": "Real dashboard aggregation",
+      "name": "dashboard-kpi-aggregation",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: dashboard KPI cards and all 6 pipeline-stage rows visible"
+    },
+    {
+      "criterion": "Customer server-side workflow",
+      "name": "test_tscheck_customer_workflow.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/customers paginated total>=50; POST {} -> 422; full valid payload -> 200/201; search finds created row"
+    },
+    {
+      "criterion": "Customer server-side workflow",
+      "name": "customer-create-search-workflow",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Fix verified: filling only Nama Customer/Kota/Nama PIC (email left blank) and clicking Simpan now closes the modal successfully; created row (tscheck-customer-<ts>) appears in filtered search. Console-error listener attached right before the real submit recorded zero errors during that create call (the single 422 reported by the tool's page-wide console capture came from the earlier required-field-empty-name rejection step, not the email flow). Matches briefing note that Customers.tsx now sends email:null and CustomerCreate normalizes '' to None."
+    },
+    {
+      "criterion": "Opportunity pipeline",
+      "name": "test_tscheck_opportunity_pipeline.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/pipeline and /api/pipeline/kanban 200 with all 6 stages; POST with seeded customer_id -> 200/201; missing customer_id -> 422"
+    },
+    {
+      "criterion": "Opportunity pipeline",
+      "name": "pipeline-view-toggle-and-create",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: kanban shows all 6 stage columns; new opportunity linked to seeded customer appears in table after save"
+    },
+    {
+      "criterion": "Activities and tasks",
+      "name": "test_tscheck_activities_tasks.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "GET /api/activities and /api/activities/tasks 200 populated; POST activity -> 200/201; PATCH task status=Completed -> 200"
+    },
+    {
+      "criterion": "Activities and tasks",
+      "name": "activities-create-and-complete-task",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: created activity visible; task-complete button disables after marking Completed"
+    },
+    {
+      "criterion": "Quotation and order workflows",
+      "name": "test_tscheck_quotation_order_workflows.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Quotation create with correct subtotal/grand_total + PDF 200; PO create + monitoring + status PATCH -> Processing"
+    },
+    {
+      "criterion": "Quotation and order workflows",
+      "name": "quotation-po-order-workflows",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: quotation created, PDF download triggered, PO created and status updated to Processing on its own row"
+    },
+    {
+      "criterion": "Administration and auditability",
+      "name": "test_tscheck_admin_auditability.py",
+      "lane": "backend",
+      "status": "passed",
+      "evidence": "Products create/delete, user create, sales-team KPI rows, audit-logs all 200 with expected data"
+    },
+    {
+      "criterion": "Administration and auditability",
+      "name": "admin-products-users-audit-settings",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: product created then deleted, user created and visible, audit log and settings RBAC matrix render"
+    },
+    {
+      "criterion": "Responsive reference-compatible navigation",
+      "name": "responsive-nav-desktop-and-mobile",
+      "lane": "browser",
+      "status": "passed",
+      "evidence": "Re-ran persisted check: all 11 sidebar-link-* visible at desktop viewport; mobile drawer opens/closes correctly at 390x844"
+    }
+  ],
+  "bugs": [],
+  "action_items": [],
+  "retest_needed": false
+}

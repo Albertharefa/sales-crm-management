@@ -1,0 +1,340 @@
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=8)
+
+
+class UserPublic(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    email: EmailStr
+    role: str
+    manager_id: Optional[str] = None
+    phone: Optional[str] = None
+    status: str = "Active"
+    last_login: Optional[datetime] = None
+
+
+class UserCreate(BaseModel):
+    name: str = Field(min_length=2)
+    email: EmailStr
+    role: str
+    manager_id: Optional[str] = None
+    phone: Optional[str] = None
+    status: str = "Active"
+    password: str = Field(min_length=8)
+
+
+class Customer(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    customer_id: str
+    name: str
+    company: Optional[str] = None
+    industry: str = "Manufacturing"
+    city: str = "Jakarta"
+    province: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    pic_name: Optional[str] = None
+    pic_position: Optional[str] = None
+    source: Optional[str] = None
+    status: str = "Active"
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class CustomerCreate(BaseModel):
+    name: str = Field(min_length=2)
+    industry: str = "Manufacturing"
+    source: Optional[str] = None
+    city: str = "Jakarta"
+    province: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    pic_name: Optional[str] = None
+    pic_position: Optional[str] = None
+    status: str = "Active"
+    sales_id: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def empty_email_is_none(cls, value):
+        return None if value == "" else value
+
+
+class Contact(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    contact_id: str
+    customer_id: str
+    customer_name: str
+    first_name: str
+    last_name: Optional[str] = None
+    position: Optional[str] = None
+    department: Optional[str] = None
+    email: Optional[EmailStr] = None
+    mobile: Optional[str] = None
+    contact_type: str = "User"
+    is_decision_maker: bool = False
+    status: str = "Active"
+    notes: Optional[str] = None
+    created_at: datetime
+
+
+class Opportunity(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    opportunity_id: str
+    name: str
+    customer_id: str
+    customer_name: str
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+    value: float = 0
+    probability: float = Field(default=50, ge=0, le=100)
+    stage: str = "Lead"
+    target_close: Optional[date] = None
+    brand: Optional[str] = None
+    product: Optional[str] = None
+    next_action: Optional[str] = None
+    description: Optional[str] = None
+    loss_reason: Optional[str] = None
+    created_at: datetime
+
+
+class OpportunityCreate(BaseModel):
+    name: str = Field(min_length=2)
+    customer_id: str
+    value: float = Field(ge=0)
+    probability: float = Field(default=50, ge=0, le=100)
+    stage: str = "Lead"
+    target_close: Optional[date] = None
+    brand: Optional[str] = None
+    product: Optional[str] = None
+    next_action: Optional[str] = None
+    description: Optional[str] = None
+    loss_reason: Optional[str] = None
+
+
+class Activity(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    activity_id: str
+    subject: str
+    activity_type: str = "Call"
+    date: date
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+    next_follow_up: Optional[date] = None
+    status: str = "Open"
+    description: Optional[str] = None
+    created_at: datetime
+
+
+class ActivityCreate(BaseModel):
+    subject: str = Field(min_length=2)
+    activity_type: str = "Call"
+    date: date
+    customer_id: Optional[str] = None
+    next_follow_up: Optional[date] = None
+    status: str = "Open"
+    description: Optional[str] = None
+
+
+class Task(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    title: str
+    due_date: date
+    priority: str = "Medium"
+    status: str = "Pending"
+    customer_name: Optional[str] = None
+    opportunity_name: Optional[str] = None
+    assigned_user: Optional[str] = None
+    created_at: datetime
+
+
+class Product(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    code: str
+    name: str
+    brand: Optional[str] = None
+    category: str = "Automation"
+    unit: str = "pcs"
+    default_price: float = 0
+    supplier: Optional[str] = None
+    status: str = "Active"
+    description: Optional[str] = None
+    created_at: datetime
+
+
+class ProductCreate(BaseModel):
+    code: str = Field(min_length=2)
+    name: str = Field(min_length=2)
+    brand: Optional[str] = None
+    category: str = "Automation"
+    unit: str = "pcs"
+    default_price: float = Field(ge=0)
+    supplier: Optional[str] = None
+    status: str = "Active"
+    description: Optional[str] = None
+
+
+class QuotationItem(BaseModel):
+    product_id: Optional[str] = None
+    description: str
+    quantity: float = Field(gt=0)
+    unit_price: float = Field(ge=0)
+    discount: float = Field(default=0, ge=0)
+    tax: float = Field(default=11, ge=0, le=100)
+
+
+class Quotation(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    number: str
+    date: date
+    customer_id: str
+    customer_name: str
+    sales_name: Optional[str] = None
+    items: List[QuotationItem]
+    payment_term: Optional[str] = None
+    delivery_term: Optional[str] = None
+    subtotal: float
+    discount_total: float
+    tax_total: float
+    grand_total: float
+    status: str = "Draft"
+    notes: Optional[str] = None
+    created_at: datetime
+
+
+class QuotationCreate(BaseModel):
+    customer_id: str
+    date: date
+    valid_until: Optional[date] = None
+    payment_term: Optional[str] = None
+    delivery_term: Optional[str] = None
+    items: List[QuotationItem] = Field(min_length=1)
+    notes: Optional[str] = None
+
+
+class PurchaseOrderItem(BaseModel):
+    product_id: Optional[str] = None
+    description: str
+    quantity: float = Field(gt=0)
+    unit_price: float = Field(ge=0)
+
+
+class PurchaseOrder(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    po_number: str
+    date: date
+    customer_id: str
+    customer_name: str
+    quotation_number: Optional[str] = None
+    sales_name: Optional[str] = None
+    items: List[PurchaseOrderItem]
+    total: float
+    status: str = "Received"
+    eta: Optional[date] = None
+    supplier: Optional[str] = None
+    document_name: Optional[str] = None
+    shipping_address: Optional[str] = None
+    created_at: datetime
+
+
+class PurchaseOrderCreate(BaseModel):
+    po_number: str = Field(min_length=2)
+    customer_id: str
+    date: date
+    status: str = "Received"
+    items: List[PurchaseOrderItem] = Field(min_length=1)
+    eta: Optional[date] = None
+    supplier: Optional[str] = None
+    document_name: Optional[str] = None
+    shipping_address: Optional[str] = None
+
+
+class DashboardMetrics(BaseModel):
+    total_customer: int
+    open_pipeline: float
+    weighted_pipeline: float
+    won_value: float
+    total_quotation: int
+    total_po: int
+    po_value: float
+    activities: int
+    open_orders: int
+    completed_orders: int
+    overdue_orders: int
+    pipeline_by_stage: List[Dict[str, Any]]
+
+
+class AuditLog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    user_name: str
+    action: str
+    module: str
+    record_id: Optional[str] = None
+    changes: Optional[Dict[str, Any]] = None
+    created_at: datetime
+
+
+class Paginated(BaseModel):
+    items: List[Any]
+    page: int
+    page_size: int
+    total: int
+
+
+class UploadResponse(BaseModel):
+    id: str
+    file_name: str
+    content_type: str
+    size: int
+    url: str
+
+
+class OptionItem(BaseModel):
+    id: str
+    name: str
+    role: Optional[str] = None
+    default_price: Optional[float] = None
+
+
+class OptionsResponse(BaseModel):
+    customers: List[OptionItem]
+    products: List[OptionItem]
+    users: List[OptionItem]
+
+
+class SalesTeamMetric(BaseModel):
+    sales: str
+    role: str
+    manager: str
+    open_pipeline: float
+    weighted: float
+    won: float
+    po: int
+    po_value: float
+    activities: int
+    indent: int
+    overdue: int
