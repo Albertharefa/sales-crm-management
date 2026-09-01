@@ -1,53 +1,267 @@
-from contextlib import asynccontextmanager
-from pathlib import Path
-import logging
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 import os
-from fastapi import APIRouter, FastAPI
-from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
-from lib.db import client, db
+import logging
+import importlib
 
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / ".env")
+# ============================================================
+# LOGGING
+# ============================================================
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    yield
-    client.close()
+logger = logging.getLogger("sales-crm")
 
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
 
-app = FastAPI(title="CRM Sales Management Production", lifespan=lifespan)
-api_router = APIRouter(prefix="/api")
+app = FastAPI(
+    title="Sales CRM Management",
+    description="Sales CRM Management API",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
-from routers.auth import router as auth_router
-from routers.customers import router as customers_router
-from routers.pipeline import router as pipeline_router
-from routers.activities import router as activities_router
-from routers.products import router as products_router
-from routers.quotations import router as quotations_router
-from routers.orders import router as orders_router
-from routers.dashboard import router as dashboard_router
-from routers.admin import router as admin_router
-from routers.uploads import router as uploads_router
-from routers.ai import router as ai_router
+# ============================================================
+# CORS
+# ============================================================
 
-api_router.include_router(auth_router)
-api_router.include_router(customers_router)
-api_router.include_router(pipeline_router)
-api_router.include_router(activities_router)
-api_router.include_router(products_router)
-api_router.include_router(quotations_router)
-api_router.include_router(orders_router)
-api_router.include_router(dashboard_router)
-api_router.include_router(admin_router)
-api_router.include_router(uploads_router)
-api_router.include_router(ai_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@api_router.get("/")
+# ============================================================
+# ROOT
+# ============================================================
+
+@app.get("/")
 async def root():
-    return {"message": "CRM Sales Management API", "status": "ready"}
+    return {
+        "status": "online",
+        "application": "Sales CRM Management",
+        "version": "1.0.0",
+        "message": "Sales CRM API is running successfully",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-app.add_middleware(CORSMiddleware, allow_credentials=True, allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","), allow_methods=["*"], allow_headers=["*"])
-app.include_router(api_router)
+
+# ============================================================
+# HEALTH CHECK
+# ============================================================
+
+@app.get("/health")
+async def health():
+    return {
+        "status": "healthy",
+        "service": "sales-crm-management",
+    }
+
+
+# ============================================================
+# API STATUS
+# ============================================================
+
+@app.get("/api")
+async def api_status():
+    return {
+        "status": "online",
+        "message": "Sales CRM API is running",
+    }
+
+
+# ============================================================
+# LOAD EXISTING ROUTERS SAFELY
+# ============================================================
+
+def load_router(module_name: str, router_name: str = "router"):
+    """
+    Load an existing FastAPI router without crashing the
+    entire application if the module is missing or broken.
+    """
+
+    try:
+        module = importlib.import_module(module_name)
+        router = getattr(module, router_name, None)
+
+        if router is None:
+            logger.warning(
+                "Router ditemukan tetapi attribute '%s' tidak ada: %s",
+                router_name,
+                module_name,
+            )
+            return False
+
+        app.include_router(router)
+
+        logger.info(
+            "Router berhasil dimuat: %s.%s",
+            module_name,
+            router_name,
+        )
+
+        return True
+
+    except ModuleNotFoundError as e:
+        logger.warning(
+            "Router tidak ditemukan: %s | %s",
+            module_name,
+            e,
+        )
+        return False
+
+    except Exception as e:
+        logger.exception(
+            "Router gagal dimuat: %s | %s",
+            module_name,
+            e,
+        )
+        return False
+
+
+# ============================================================
+# EXISTING CRM ROUTERS
+# ============================================================
+
+ROUTERS = [
+    # Customers
+    ("routers.customers", "router"),
+
+    # Customer
+    ("routers.customer", "router"),
+
+    # Leads
+    ("routers.leads", "router"),
+
+    # Sales
+    ("routers.sales", "router"),
+
+    # Opportunities
+    ("routers.opportunities", "router"),
+
+    # Activities
+    ("routers.activities", "router"),
+
+    # Dashboard
+    ("routers.dashboard", "router"),
+
+    # Authentication
+    ("routers.auth", "router"),
+
+    # Users
+    ("routers.users", "router"),
+
+    # Products
+    ("routers.products", "router"),
+
+    # Quotations
+    ("routers.quotations", "router"),
+
+    # Reports
+    ("routers.reports", "router"),
+
+    # AI
+    ("routers.ai", "router"),
+]
+
+
+loaded_routers = []
+
+for module_name, router_name in ROUTERS:
+    if load_router(module_name, router_name):
+        loaded_routers.append(module_name)
+
+
+# ============================================================
+# ROUTER STATUS
+# ============================================================
+
+@app.get("/api/status")
+async def api_detailed_status():
+    return {
+        "status": "online",
+        "application": "Sales CRM Management",
+        "loaded_routers": loaded_routers,
+        "router_count": len(loaded_routers),
+    }
+
+
+# ============================================================
+# GLOBAL ERROR HANDLER
+# ============================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    logger.exception(
+        "Unhandled application error: %s",
+        exc,
+    )
+
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "Application encountered an unexpected error.",
+        },
+    )
+
+
+# ============================================================
+# STARTUP
+# ============================================================
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("=" * 60)
+    logger.info("SALES CRM MANAGEMENT STARTING")
+    logger.info("=" * 60)
+
+    logger.info(
+        "Environment: %s",
+        os.getenv("RAILWAY_ENVIRONMENT", "unknown"),
+    )
+
+    logger.info(
+        "Port: %s",
+        os.getenv("PORT", "8080"),
+    )
+
+    logger.info(
+        "Loaded routers: %s",
+        len(loaded_routers),
+    )
+
+    for router in loaded_routers:
+        logger.info("  ✓ %s", router)
+
+    logger.info("=" * 60)
+    logger.info("CRM API READY")
+    logger.info("=" * 60)
+
+
+# ============================================================
+# LOCAL DEVELOPMENT
+# ============================================================
+
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.getenv("PORT", "8080"))
+
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=port,
+        reload=False,
+    )
