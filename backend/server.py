@@ -1,267 +1,59 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import os
-import logging
-import importlib
+import secrets
+from datetime import datetime, timezone
 
-# ============================================================
-# LOGGING
-# ============================================================
+from passlib.context import CryptContext
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
+from lib.db import db
 
-logger = logging.getLogger("sales-crm")
-
-# ============================================================
-# FASTAPI APPLICATION
-# ============================================================
-
-app = FastAPI(
-    title="Sales CRM Management",
-    description="Sales CRM Management API",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
-
-# ============================================================
-# CORS
-# ============================================================
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ============================================================
-# ROOT
-# ============================================================
-
-@app.get("/")
-async def root():
-    return {
-        "status": "online",
-        "application": "Sales CRM Management",
-        "version": "1.0.0",
-        "message": "Sales CRM API is running successfully",
-        "docs": "/docs",
-        "health": "/health",
-    }
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# ============================================================
-# HEALTH CHECK
-# ============================================================
-
-@app.get("/health")
-async def health():
-    return {
-        "status": "healthy",
-        "service": "sales-crm-management",
-    }
-
-
-# ============================================================
-# API STATUS
-# ============================================================
-
-@app.get("/api")
-async def api_status():
-    return {
-        "status": "online",
-        "message": "Sales CRM API is running",
-    }
-
-
-# ============================================================
-# LOAD EXISTING ROUTERS SAFELY
-# ============================================================
-
-def load_router(module_name: str, router_name: str = "router"):
+async def ensure_admin_user():
     """
-    Load an existing FastAPI router without crashing the
-    entire application if the module is missing or broken.
+    Create the first CRM admin user automatically if it does not exist.
+    Credentials are taken from Railway environment variables:
+      ADMIN_EMAIL
+      ADMIN_PASSWORD
     """
 
-    try:
-        module = importlib.import_module(module_name)
-        router = getattr(module, router_name, None)
+    admin_email = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    admin_password = os.getenv("ADMIN_PASSWORD", "")
 
-        if router is None:
-            logger.warning(
-                "Router ditemukan tetapi attribute '%s' tidak ada: %s",
-                router_name,
-                module_name,
-            )
-            return False
+    if not admin_email or not admin_password:
+        print("INFO: ADMIN_EMAIL / ADMIN_PASSWORD not configured. Skipping admin bootstrap.")
+        return
 
-        app.include_router(router)
+    if len(admin_password) < 8:
+        print("WARNING: ADMIN_PASSWORD must be at least 8 characters.")
+        return
 
-        logger.info(
-            "Router berhasil dimuat: %s.%s",
-            module_name,
-            router_name,
-        )
+    existing = await db.users.find_one({"email": admin_email})
 
-        return True
+    if existing:
+        print(f"INFO: Admin user already exists: {admin_email}")
+        return
 
-    except ModuleNotFoundError as e:
-        logger.warning(
-            "Router tidak ditemukan: %s | %s",
-            module_name,
-            e,
-        )
-        return False
+    now = datetime.now(timezone.utc)
 
-    except Exception as e:
-        logger.exception(
-            "Router gagal dimuat: %s | %s",
-            module_name,
-            e,
-        )
-        return False
-
-
-# ============================================================
-# EXISTING CRM ROUTERS
-# ============================================================
-
-ROUTERS = [
-    # Customers
-    ("routers.customers", "router"),
-
-    # Customer
-    ("routers.customer", "router"),
-
-    # Leads
-    ("routers.leads", "router"),
-
-    # Sales
-    ("routers.sales", "router"),
-
-    # Opportunities
-    ("routers.opportunities", "router"),
-
-    # Activities
-    ("routers.activities", "router"),
-
-    # Dashboard
-    ("routers.dashboard", "router"),
-
-    # Authentication
-    ("routers.auth", "router"),
-
-    # Users
-    ("routers.users", "router"),
-
-    # Products
-    ("routers.products", "router"),
-
-    # Quotations
-    ("routers.quotations", "router"),
-
-    # Reports
-    ("routers.reports", "router"),
-
-    # AI
-    ("routers.ai", "router"),
-]
-
-
-loaded_routers = []
-
-for module_name, router_name in ROUTERS:
-    if load_router(module_name, router_name):
-        loaded_routers.append(module_name)
-
-
-# ============================================================
-# ROUTER STATUS
-# ============================================================
-
-@app.get("/api/status")
-async def api_detailed_status():
-    return {
-        "status": "online",
-        "application": "Sales CRM Management",
-        "loaded_routers": loaded_routers,
-        "router_count": len(loaded_routers),
+    admin_user = {
+        "id": secrets.token_hex(16),
+        "user_id": "USR-0001",
+        "name": "Albert Wellkomputindo",
+        "email": admin_email,
+        "password_hash": pwd_context.hash(admin_password),
+        "role": "SUPER_ADMIN",
+        "manager_id": None,
+        "phone": None,
+        "status": "Active",
+        "created_at": now,
+        "last_login": None,
     }
 
+    await db.users.insert_one(admin_user)
 
-# ============================================================
-# GLOBAL ERROR HANDLER
-# ============================================================
-
-@app.exception_handler(Exception)
-async def global_exception_handler(request, exc):
-    logger.exception(
-        "Unhandled application error: %s",
-        exc,
-    )
-
-    from fastapi.responses import JSONResponse
-
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": "Internal Server Error",
-            "message": "Application encountered an unexpected error.",
-        },
-    )
-
-
-# ============================================================
-# STARTUP
-# ============================================================
-
-@app.on_event("startup")
-async def startup_event():
-    logger.info("=" * 60)
-    logger.info("SALES CRM MANAGEMENT STARTING")
-    logger.info("=" * 60)
-
-    logger.info(
-        "Environment: %s",
-        os.getenv("RAILWAY_ENVIRONMENT", "unknown"),
-    )
-
-    logger.info(
-        "Port: %s",
-        os.getenv("PORT", "8080"),
-    )
-
-    logger.info(
-        "Loaded routers: %s",
-        len(loaded_routers),
-    )
-
-    for router in loaded_routers:
-        logger.info("  ✓ %s", router)
-
-    logger.info("=" * 60)
-    logger.info("CRM API READY")
-    logger.info("=" * 60)
-
-
-# ============================================================
-# LOCAL DEVELOPMENT
-# ============================================================
-
-if __name__ == "__main__":
-    import uvicorn
-
-    port = int(os.getenv("PORT", "8080"))
-
-    uvicorn.run(
-        "server:app",
-        host="0.0.0.0",
-        port=port,
-        reload=False,
-    )
+    print("=" * 60)
+    print("CRM ADMIN USER CREATED")
+    print(f"Email : {admin_email}")
+    print("Role  : SUPER_ADMIN")
+    print("=" * 60)
