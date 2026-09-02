@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+# ============================================================
+# SALES CRM MANAGEMENT
+# backend/routers/customers.py
+# ============================================================
+
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 from lib.db import db
-from models.crm import (
-    Customer,
-    CustomerCreate,
-    Paginated,
-    Contact,
-    ContactCreate,
-)
-from routers.common import audit, new_id, now
-from routers.deps import current_user
 
 
 # ============================================================
@@ -23,52 +23,216 @@ router = APIRouter(
 
 
 # ============================================================
+# HELPERS
+# ============================================================
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def serialize_document(document: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """
+    Convert MongoDB document into JSON-safe dictionary.
+    """
+
+    if document is None:
+        return None
+
+    result = dict(document)
+
+    if "_id" in result:
+        result.pop("_id", None)
+
+    return result
+
+
+def serialize_documents(
+    documents: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    return [
+        serialize_document(document)
+        for document in documents
+    ]
+
+
+# ============================================================
+# CUSTOMER MODELS
+# ============================================================
+
+class CustomerCreate(BaseModel):
+    customer_id: Optional[str] = None
+    company_name: str
+    customer_type: Optional[str] = None
+    industry: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+    country: Optional[str] = "Indonesia"
+
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+
+    status: Optional[str] = "Active"
+    notes: Optional[str] = None
+
+
+class CustomerUpdate(BaseModel):
+    company_name: Optional[str] = None
+    customer_type: Optional[str] = None
+    industry: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+    country: Optional[str] = None
+
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class Customer(CustomerCreate):
+    id: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# CONTACT MODELS
+# ============================================================
+
+class ContactCreate(BaseModel):
+    first_name: str
+    last_name: Optional[str] = None
+
+    position: Optional[str] = None
+    department: Optional[str] = None
+
+    email: Optional[str] = None
+    mobile: Optional[str] = None
+    contact_type: Optional[str] = "User"
+
+    is_decision_maker: bool = False
+    status: Optional[str] = "Active"
+    notes: Optional[str] = None
+
+
+class Contact(ContactCreate):
+    id: str
+    customer_id: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# CUSTOMER ID GENERATOR
+# ============================================================
+
+async def generate_customer_id() -> str:
+    """
+    Generate customer ID:
+    CUS-2026-00001
+    """
+
+    year = utc_now().year
+    prefix = f"CUS-{year}-"
+
+    last_customer = await db.customers.find_one(
+        {
+            "id": {
+                "$regex": f"^{prefix}"
+            }
+        },
+        sort=[
+            ("id", -1)
+        ],
+    )
+
+    if not last_customer:
+        return f"{prefix}00001"
+
+    last_id = last_customer.get("id", "")
+
+    try:
+        last_number = int(last_id.split("-")[-1])
+        next_number = last_number + 1
+
+    except (ValueError, IndexError):
+        next_number = 1
+
+    return f"{prefix}{next_number:05d}"
+
+
+# ============================================================
+# CONTACT ID GENERATOR
+# ============================================================
+
+async def generate_contact_id() -> str:
+    """
+    Generate contact ID:
+    CON-2026-00001
+    """
+
+    year = utc_now().year
+    prefix = f"CON-{year}-"
+
+    last_contact = await db.contacts.find_one(
+        {
+            "id": {
+                "$regex": f"^{prefix}"
+            }
+        },
+        sort=[
+            ("id", -1)
+        ],
+    )
+
+    if not last_contact:
+        return f"{prefix}00001"
+
+    last_id = last_contact.get("id", "")
+
+    try:
+        last_number = int(last_id.split("-")[-1])
+        next_number = last_number + 1
+
+    except (ValueError, IndexError):
+        next_number = 1
+
+    return f"{prefix}{next_number:05d}"
+
+
+# ============================================================
 # GET /customers
 # LIST CUSTOMERS
 # ============================================================
 
 @router.get(
     "",
-    response_model=Paginated,
+    response_model=List[Customer],
     summary="List Customers",
 )
-async def list_customers(
-    page: int = Query(
-        default=1,
-        ge=1,
-    ),
-    page_size: int = Query(
-        default=25,
-        ge=1,
-        le=100,
-    ),
-    search: str = "",
-    status: str | None = None,
-    industry: str | None = None,
-    user: dict = Depends(current_user),
-):
-    """
-    Get paginated customer list.
-    """
+async def list_customers():
+    try:
+        documents = await db.customers.find(
+            {}
+        ).sort(
+            "created_at",
+            -1,
+        ).to_list(
+            length=1000
+        )
 
-    from routers.common import page_collection
+        return serialize_documents(documents)
 
-    query = {
-        key: value
-        for key, value in {
-            "status": status,
-            "industry": industry,
-        }.items()
-        if value
-    }
-
-    return await page_collection(
-        "customers",
-        page,
-        page_size,
-        search,
-        query,
-    )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list customers: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -83,78 +247,64 @@ async def list_customers(
 )
 async def create_customer(
     payload: CustomerCreate,
-    user: dict = Depends(current_user),
 ):
-    """
-    Create a new customer.
-    """
+    try:
+        now = utc_now()
 
-    # --------------------------------------------------------
-    # CHECK DUPLICATE CUSTOMER
-    # --------------------------------------------------------
+        customer_id = payload.customer_id
 
-    duplicate = await db.customers.find_one(
-        {
-            "name": {
-                "$regex": f"^{payload.name}$",
-                "$options": "i",
+        if not customer_id:
+            customer_id = await generate_customer_id()
+
+        existing = await db.customers.find_one(
+            {
+                "id": customer_id
             }
-        }
-    )
-
-    if duplicate:
-        raise HTTPException(
-            status_code=409,
-            detail="Customer dengan nama tersebut sudah ada",
         )
 
-    # --------------------------------------------------------
-    # GENERATE CUSTOMER NUMBER
-    # --------------------------------------------------------
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Customer {customer_id} already exists.",
+            )
 
-    count = await db.customers.count_documents({}) + 1
+        customer = {
+            "id": customer_id,
+            "company_name": payload.company_name,
+            "customer_type": payload.customer_type,
+            "industry": payload.industry,
+            "address": payload.address,
+            "city": payload.city,
+            "province": payload.province,
+            "country": payload.country,
 
-    customer_id = (
-        f"CUS-{now().year}-{count:05d}"
-    )
+            "phone": payload.phone,
+            "email": payload.email,
+            "website": payload.website,
 
-    # --------------------------------------------------------
-    # BUILD DOCUMENT
-    # --------------------------------------------------------
+            "status": payload.status or "Active",
+            "notes": payload.notes,
 
-    timestamp = now()
+            "created_at": now,
+            "updated_at": now,
+        }
 
-    doc = {
-        "id": new_id(),
-        "customer_id": customer_id,
-        **payload.model_dump(mode="json"),
-        "sales_name": user.get("name"),
-        "created_at": timestamp,
-        "updated_at": timestamp,
-    }
+        await db.customers.insert_one(
+            customer
+        )
 
-    # --------------------------------------------------------
-    # INSERT
-    # --------------------------------------------------------
+        return serialize_document(
+            customer
+        )
 
-    await db.customers.insert_one(doc)
+    except HTTPException:
+        raise
 
-    # --------------------------------------------------------
-    # AUDIT
-    # --------------------------------------------------------
-
-    await audit(
-        user,
-        "Create",
-        "Customers",
-        doc["id"],
-        {
-            "name": doc["name"],
-            "customer_id": doc["customer_id"],
-        },
-    )
-
-    return Customer(**doc)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create customer: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -169,28 +319,32 @@ async def create_customer(
 )
 async def get_customer(
     customer_id: str,
-    user: dict = Depends(current_user),
 ):
-    """
-    Get one customer by customer_id or internal id.
-    """
-
-    doc = await db.customers.find_one(
-        {
-            "$or": [
-                {"id": customer_id},
-                {"customer_id": customer_id},
-            ]
-        }
-    )
-
-    if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan",
+    try:
+        customer = await db.customers.find_one(
+            {
+                "id": customer_id
+            }
         )
 
-    return Customer(**doc)
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer {customer_id} not found.",
+            )
+
+        return serialize_document(
+            customer
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get customer: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -205,90 +359,54 @@ async def get_customer(
 )
 async def update_customer(
     customer_id: str,
-    payload: CustomerCreate,
-    user: dict = Depends(current_user),
+    payload: CustomerUpdate,
 ):
-    """
-    Update an existing customer.
-    """
-
-    # --------------------------------------------------------
-    # FIND CUSTOMER
-    # --------------------------------------------------------
-
-    doc = await db.customers.find_one(
-        {
-            "$or": [
-                {"id": customer_id},
-                {"customer_id": customer_id},
-            ]
-        }
-    )
-
-    if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan",
+    try:
+        existing = await db.customers.find_one(
+            {
+                "id": customer_id
+            }
         )
 
-    # --------------------------------------------------------
-    # CHECK DUPLICATE NAME
-    # --------------------------------------------------------
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer {customer_id} not found.",
+            )
 
-    duplicate = await db.customers.find_one(
-        {
-            "name": {
-                "$regex": f"^{payload.name}$",
-                "$options": "i",
-            },
-            "id": {
-                "$ne": doc["id"],
-            },
-        }
-    )
-
-    if duplicate:
-        raise HTTPException(
-            status_code=409,
-            detail="Customer dengan nama tersebut sudah ada",
+        update_data = payload.model_dump(
+            exclude_unset=True
         )
 
-    # --------------------------------------------------------
-    # UPDATE
-    # --------------------------------------------------------
+        update_data["updated_at"] = utc_now()
 
-    update = {
-        **payload.model_dump(mode="json"),
-        "updated_at": now(),
-    }
+        await db.customers.update_one(
+            {
+                "id": customer_id
+            },
+            {
+                "$set": update_data
+            },
+        )
 
-    await db.customers.update_one(
-        {"id": doc["id"]},
-        {"$set": update},
-    )
+        updated_customer = await db.customers.find_one(
+            {
+                "id": customer_id
+            }
+        )
 
-    # --------------------------------------------------------
-    # AUDIT
-    # --------------------------------------------------------
+        return serialize_document(
+            updated_customer
+        )
 
-    await audit(
-        user,
-        "Update",
-        "Customers",
-        doc["id"],
-        update,
-    )
+    except HTTPException:
+        raise
 
-    # --------------------------------------------------------
-    # RETURN UPDATED DOCUMENT
-    # --------------------------------------------------------
-
-    updated_doc = {
-        **doc,
-        **update,
-    }
-
-    return Customer(**updated_doc)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update customer: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -298,135 +416,108 @@ async def update_customer(
 
 @router.delete(
     "/{customer_id}",
-    status_code=204,
     summary="Delete Customer",
 )
 async def delete_customer(
     customer_id: str,
-    user: dict = Depends(current_user),
 ):
-    """
-    Delete a customer.
-    """
+    try:
+        existing = await db.customers.find_one(
+            {
+                "id": customer_id
+            }
+        )
 
-    # --------------------------------------------------------
-    # FIND CUSTOMER
-    # --------------------------------------------------------
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer {customer_id} not found.",
+            )
 
-    doc = await db.customers.find_one(
-        {
-            "$or": [
-                {"id": customer_id},
-                {"customer_id": customer_id},
-            ]
+        result = await db.customers.delete_one(
+            {
+                "id": customer_id
+            }
+        )
+
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer {customer_id} not found.",
+            )
+
+        # Delete related contacts as well
+        await db.contacts.delete_many(
+            {
+                "customer_id": customer_id
+            }
+        )
+
+        return {
+            "status": "success",
+            "message": f"Customer {customer_id} deleted successfully.",
+            "customer_id": customer_id,
         }
-    )
 
-    if not doc:
+    except HTTPException:
+        raise
+
+    except Exception as exc:
         raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan",
+            status_code=500,
+            detail=f"Failed to delete customer: {str(exc)}",
         )
-
-    # --------------------------------------------------------
-    # DELETE
-    # --------------------------------------------------------
-
-    result = await db.customers.delete_one(
-        {"id": doc["id"]}
-    )
-
-    if not result.deleted_count:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan",
-        )
-
-    # --------------------------------------------------------
-    # AUDIT
-    # --------------------------------------------------------
-
-    await audit(
-        user,
-        "Delete",
-        "Customers",
-        doc["id"],
-        {
-            "name": doc.get("name"),
-            "customer_id": doc.get("customer_id"),
-        },
-    )
-
-    return None
 
 
 # ============================================================
 # GET /customers/{customer_id}/contacts
-# LIST CUSTOMER CONTACTS
+# CUSTOMER CONTACTS
 # ============================================================
 
 @router.get(
     "/{customer_id}/contacts",
-    response_model=list[Contact],
-    summary="Get Customer Contacts",
+    response_model=List[Contact],
+    summary="Customer Contacts",
 )
-async def customer_contacts(
+async def get_customer_contacts(
     customer_id: str,
-    user: dict = Depends(current_user),
 ):
-    """
-    Get all contacts belonging to a customer.
-    """
-
-    # --------------------------------------------------------
-    # CHECK CUSTOMER
-    # --------------------------------------------------------
-
-    customer = await db.customers.find_one(
-        {
-            "$or": [
-                {"id": customer_id},
-                {"customer_id": customer_id},
-            ]
-        }
-    )
-
-    if not customer:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan",
+    try:
+        customer = await db.customers.find_one(
+            {
+                "id": customer_id
+            }
         )
 
-    # --------------------------------------------------------
-    # USE CUSTOMER_ID STORED ON CONTACT
-    # --------------------------------------------------------
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer {customer_id} not found.",
+            )
 
-    lookup_customer_id = customer.get(
-        "customer_id",
-        customer_id,
-    )
-
-    docs = await (
-        db.contacts
-        .find(
+        contacts = await db.contacts.find(
             {
-                "customer_id": lookup_customer_id,
-            },
-            {
-                "_id": 0,
-            },
-        )
-        .sort(
+                "customer_id": customer_id
+            }
+        ).sort(
             "created_at",
             -1,
+        ).to_list(
+            length=1000
         )
-        .to_list(1000)
-    )
 
-    return [
-        Contact(**doc)
-        for doc in docs
-    ]
+        return serialize_documents(
+            contacts
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get customer contacts: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -442,72 +533,66 @@ async def customer_contacts(
 async def create_customer_contact(
     customer_id: str,
     payload: ContactCreate,
-    user: dict = Depends(current_user),
 ):
-    """
-    Create a new contact for an existing customer.
-    """
-
-    # --------------------------------------------------------
-    # CHECK CUSTOMER
-    # --------------------------------------------------------
-
-    customer = await db.customers.find_one(
-        {
-            "$or": [
-                {"id": customer_id},
-                {"customer_id": customer_id},
-            ]
-        }
-    )
-
-    if not customer:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan",
-        )
-
-    # --------------------------------------------------------
-    # USE CUSTOMER_ID FROM CUSTOMER RECORD
-    # --------------------------------------------------------
-
-    real_customer_id = customer.get(
-        "customer_id",
-        customer_id,
-    )
-
-    # --------------------------------------------------------
-    # CREATE CONTACT THROUGH SERVICE
-    # --------------------------------------------------------
-
     try:
-        from services.contacts import (
-            create_customer_contact as service_create
-        )
-
-        result = await service_create(
-            customer_id=real_customer_id,
-            payload=payload,
-        )
-
         # ----------------------------------------------------
-        # AUDIT
+        # Check customer
         # ----------------------------------------------------
 
-        await audit(
-            user,
-            "Create",
-            "Contacts",
-            result.get("id"),
+        customer = await db.customers.find_one(
             {
-                "customer_id": real_customer_id,
-                "contact_id": result.get("contact_id"),
-                "first_name": result.get("first_name"),
-                "last_name": result.get("last_name"),
-            },
+                "id": customer_id
+            }
         )
 
-        return Contact(**result)
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Customer {customer_id} not found.",
+            )
+
+        # ----------------------------------------------------
+        # Generate contact ID
+        # ----------------------------------------------------
+
+        contact_id = await generate_contact_id()
+
+        now = utc_now()
+
+        # ----------------------------------------------------
+        # Create contact
+        # ----------------------------------------------------
+
+        contact = {
+            "id": contact_id,
+            "customer_id": customer_id,
+
+            "first_name": payload.first_name,
+            "last_name": payload.last_name,
+
+            "position": payload.position,
+            "department": payload.department,
+
+            "email": payload.email,
+            "mobile": payload.mobile,
+
+            "contact_type": payload.contact_type or "User",
+            "is_decision_maker": payload.is_decision_maker,
+
+            "status": payload.status or "Active",
+            "notes": payload.notes,
+
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        await db.contacts.insert_one(
+            contact
+        )
+
+        return serialize_document(
+            contact
+        )
 
     except HTTPException:
         raise
@@ -515,8 +600,12 @@ async def create_customer_contact(
     except Exception as exc:
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to create customer contact: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to create customer contact: {str(exc)}",
         )
+
+
+# ============================================================
+# ROUTER READY
+# ============================================================
+
+print("INFO: ✓ routers.customers loaded")
