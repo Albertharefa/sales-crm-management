@@ -32,6 +32,7 @@ class UserCreate(BaseModel):
 
 class Customer(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     customer_id: str
     name: str
@@ -76,6 +77,7 @@ class CustomerCreate(BaseModel):
 
 class Contact(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     contact_id: str
     customer_id: str
@@ -93,8 +95,27 @@ class Contact(BaseModel):
     created_at: datetime
 
 
+class ContactCreate(BaseModel):
+    first_name: str = Field(min_length=2)
+    last_name: Optional[str] = None
+    position: Optional[str] = None
+    department: Optional[str] = None
+    email: Optional[EmailStr] = None
+    mobile: Optional[str] = None
+    contact_type: str = "User"
+    is_decision_maker: bool = False
+    status: str = "Active"
+    notes: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def empty_email_is_none(cls, value):
+        return None if value == "" else value
+
+
 class Opportunity(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     opportunity_id: str
     name: str
@@ -130,6 +151,7 @@ class OpportunityCreate(BaseModel):
 
 class Activity(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     activity_id: str
     subject: str
@@ -157,6 +179,7 @@ class ActivityCreate(BaseModel):
 
 class Task(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     title: str
     due_date: date
@@ -170,6 +193,7 @@ class Task(BaseModel):
 
 class Product(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     code: str
     name: str
@@ -206,6 +230,7 @@ class QuotationItem(BaseModel):
 
 class Quotation(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     number: str
     date: date
@@ -243,6 +268,7 @@ class PurchaseOrderItem(BaseModel):
 
 class PurchaseOrder(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     po_number: str
     date: date
@@ -339,6 +365,7 @@ class DashboardMetrics(BaseModel):
 
 class AuditLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
+
     id: str
     user_name: str
     action: str
