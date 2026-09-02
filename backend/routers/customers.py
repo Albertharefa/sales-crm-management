@@ -1,13 +1,14 @@
 # ============================================================
+# backend/routes/customers.py
 # SALES CRM MANAGEMENT
-# backend/routers/customers.py
+# CUSTOMER ROUTES
 # ============================================================
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from lib.db import db
 
@@ -30,31 +31,58 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def serialize_document(
-    document: Optional[Dict[str, Any]]
-) -> Optional[Dict[str, Any]]:
+def normalize_customer(data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Convert MongoDB document into JSON-safe dictionary.
+    Normalize old/new customer database structures.
+
+    Existing database may use:
+        company
+
+    API may expect:
+        company_name
+
+    We return BOTH so existing data remains compatible.
     """
 
-    if document is None:
-        return None
+    item = dict(data)
 
-    result = dict(document)
+    # --------------------------------------------------------
+    # COMPANY / COMPANY_NAME COMPATIBILITY
+    # --------------------------------------------------------
 
-    # Remove MongoDB internal ID
-    result.pop("_id", None)
+    company_name = (
+        item.get("company_name")
+        or item.get("company")
+        or ""
+    )
 
-    return result
+    item["company_name"] = company_name
 
+    # Keep legacy field too
+    if not item.get("company"):
+        item["company"] = company_name
 
-def serialize_documents(
-    documents: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
-    return [
-        serialize_document(document)
-        for document in documents
-    ]
+    # --------------------------------------------------------
+    # BASIC DEFAULTS
+    # --------------------------------------------------------
+
+    item.setdefault("id", "")
+    item.setdefault("customer_id", "")
+    item.setdefault("name", "")
+    item.setdefault("industry", "")
+    item.setdefault("city", "")
+    item.setdefault("province", "")
+    item.setdefault("phone", "")
+    item.setdefault("email", "")
+    item.setdefault("pic_name", "")
+    item.setdefault("pic_position", "")
+    item.setdefault("status", "Active")
+    item.setdefault("sales_id", None)
+    item.setdefault("address", "")
+    item.setdefault("notes", "")
+    item.setdefault("sales_name", "")
+
+    return item
 
 
 # ============================================================
@@ -62,44 +90,29 @@ def serialize_documents(
 # ============================================================
 
 class Customer(BaseModel):
-    """
-    Customer response model.
-
-    Compatible with current CRM MongoDB structure:
-    id
-    customer_id
-    name
-    company
-    industry
-    source
-    city
-    province
-    phone
-    email
-    pic_name
-    pic_position
-    status
-    sales_id
-    sales_name
-    address
-    notes
-    created_at
-    updated_at
-    """
+    model_config = ConfigDict(
+        extra="ignore"
+    )
 
     id: str
-    customer_id: Optional[str] = None
+    customer_id: str
 
-    name: str
+    name: str = ""
+    
+    # --------------------------------------------------------
+    # IMPORTANT:
+    # company_name is optional to prevent old database records
+    # from causing FastAPI ResponseValidationError.
+    # --------------------------------------------------------
 
-    # Company is optional because existing data may not have it
+    company_name: str = ""
+
+    # Legacy / existing database field
     company: Optional[str] = None
 
     industry: str = "Manufacturing"
-    source: Optional[str] = None
-
     city: str = "Jakarta"
-    province: Optional[str] = None
+    province: str = ""
 
     phone: Optional[str] = None
     email: Optional[str] = None
@@ -115,109 +128,90 @@ class Customer(BaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
 
-    created_at: datetime
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
 # ============================================================
-# CUSTOMER CREATE MODEL
+# CUSTOMER CREATE
 # ============================================================
 
 class CustomerCreate(BaseModel):
 
-    customer_id: Optional[str] = None
+    name: str = ""
 
-    name: str = Field(
-        min_length=2,
-        description="Customer name",
-    )
-
+    company_name: Optional[str] = None
     company: Optional[str] = None
 
     industry: str = "Manufacturing"
-
-    source: Optional[str] = None
-
     city: str = "Jakarta"
-
-    province: Optional[str] = None
+    province: str = ""
 
     phone: Optional[str] = None
-
     email: Optional[str] = None
 
     pic_name: Optional[str] = None
-
     pic_position: Optional[str] = None
 
     status: str = "Active"
 
     sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
 
     address: Optional[str] = None
-
     notes: Optional[str] = None
 
 
 # ============================================================
-# CUSTOMER UPDATE MODEL
+# CUSTOMER UPDATE
 # ============================================================
 
 class CustomerUpdate(BaseModel):
 
     name: Optional[str] = None
 
+    company_name: Optional[str] = None
     company: Optional[str] = None
 
     industry: Optional[str] = None
-
-    source: Optional[str] = None
-
     city: Optional[str] = None
-
     province: Optional[str] = None
 
     phone: Optional[str] = None
-
     email: Optional[str] = None
 
     pic_name: Optional[str] = None
-
     pic_position: Optional[str] = None
 
     status: Optional[str] = None
 
     sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
 
     address: Optional[str] = None
-
     notes: Optional[str] = None
 
 
 # ============================================================
-# CONTACT RESPONSE MODEL
+# CONTACT MODELS
 # ============================================================
 
 class Contact(BaseModel):
 
+    model_config = ConfigDict(
+        extra="ignore"
+    )
+
     id: str
-
-    contact_id: Optional[str] = None
-
     customer_id: str
 
-    customer_name: Optional[str] = None
-
-    first_name: str
-
-    last_name: Optional[str] = None
+    first_name: str = ""
+    last_name: str = ""
 
     position: Optional[str] = None
-
     department: Optional[str] = None
 
     email: Optional[str] = None
-
     mobile: Optional[str] = None
 
     contact_type: str = "User"
@@ -228,29 +222,19 @@ class Contact(BaseModel):
 
     notes: Optional[str] = None
 
-    created_at: datetime
-
+    created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
 
-# ============================================================
-# CONTACT CREATE MODEL
-# ============================================================
-
 class ContactCreate(BaseModel):
 
-    first_name: str = Field(
-        min_length=1
-    )
-
-    last_name: Optional[str] = None
+    first_name: str = ""
+    last_name: str = ""
 
     position: Optional[str] = None
-
     department: Optional[str] = None
 
     email: Optional[str] = None
-
     mobile: Optional[str] = None
 
     contact_type: str = "User"
@@ -263,198 +247,35 @@ class ContactCreate(BaseModel):
 
 
 # ============================================================
-# CUSTOMER NORMALIZER
-# ============================================================
-
-def normalize_customer(
-    document: Dict[str, Any]
-) -> Dict[str, Any]:
-
-    data = dict(document)
-
-    # Remove MongoDB ObjectId
-    data.pop("_id", None)
-
-    # --------------------------------------------------------
-    # CUSTOMER ID
-    # --------------------------------------------------------
-
-    if not data.get("customer_id"):
-        data["customer_id"] = data.get("id")
-
-    # --------------------------------------------------------
-    # NAME
-    # --------------------------------------------------------
-
-    # Current database uses "name".
-    # Older data may use "company_name".
-    if not data.get("name"):
-        data["name"] = (
-            data.get("company_name")
-            or data.get("company")
-            or "Unknown Customer"
-        )
-
-    # --------------------------------------------------------
-    # COMPANY
-    # --------------------------------------------------------
-
-    if "company" not in data:
-        data["company"] = data.get("company_name")
-
-    # --------------------------------------------------------
-    # DEFAULT VALUES
-    # --------------------------------------------------------
-
-    if not data.get("industry"):
-        data["industry"] = "Manufacturing"
-
-    if not data.get("city"):
-        data["city"] = "Jakarta"
-
-    if not data.get("status"):
-        data["status"] = "Active"
-
-    return data
-
-
-# ============================================================
-# CONTACT NORMALIZER
-# ============================================================
-
-def normalize_contact(
-    document: Dict[str, Any],
-    customer_name: Optional[str] = None,
-) -> Dict[str, Any]:
-
-    data = dict(document)
-
-    data.pop("_id", None)
-
-    if not data.get("contact_id"):
-        data["contact_id"] = data.get("id")
-
-    if not data.get("customer_name"):
-        data["customer_name"] = customer_name
-
-    if not data.get("contact_type"):
-        data["contact_type"] = "User"
-
-    if not data.get("status"):
-        data["status"] = "Active"
-
-    if "is_decision_maker" not in data:
-        data["is_decision_maker"] = False
-
-    return data
-
-
-# ============================================================
-# CUSTOMER ID GENERATOR
+# GENERATE CUSTOMER ID
 # ============================================================
 
 async def generate_customer_id() -> str:
-    """
-    Generate customer ID:
-
-    CUS-2026-00001
-    CUS-2026-00002
-    ...
-    """
 
     year = utc_now().year
-
     prefix = f"CUS-{year}-"
 
     last_customer = await db.customers.find_one(
         {
-            "$or": [
-                {
-                    "id": {
-                        "$regex": f"^{prefix}"
-                    }
-                },
-                {
-                    "customer_id": {
-                        "$regex": f"^{prefix}"
-                    }
-                },
-            ]
+            "customer_id": {
+                "$regex": f"^{prefix}"
+            }
         },
         sort=[
-            ("id", -1)
+            ("customer_id", -1)
         ],
     )
 
     if not last_customer:
         return f"{prefix}00001"
 
-    last_id = (
-        last_customer.get("id")
-        or last_customer.get("customer_id")
-        or ""
-    )
+    last_id = last_customer.get("customer_id", "")
 
     try:
-        last_number = int(
-            last_id.split("-")[-1]
-        )
-
+        last_number = int(last_id.split("-")[-1])
         next_number = last_number + 1
 
-    except (ValueError, IndexError):
-
-        next_number = 1
-
-    return f"{prefix}{next_number:05d}"
-
-
-# ============================================================
-# CONTACT ID GENERATOR
-# ============================================================
-
-async def generate_contact_id() -> str:
-    """
-    Generate contact ID:
-
-    CON-2026-00001
-    CON-2026-00002
-    ...
-    """
-
-    year = utc_now().year
-
-    prefix = f"CON-{year}-"
-
-    last_contact = await db.contacts.find_one(
-        {
-            "id": {
-                "$regex": f"^{prefix}"
-            }
-        },
-        sort=[
-            ("id", -1)
-        ],
-    )
-
-    if not last_contact:
-        return f"{prefix}00001"
-
-    last_id = last_contact.get(
-        "id",
-        ""
-    )
-
-    try:
-
-        last_number = int(
-            last_id.split("-")[-1]
-        )
-
-        next_number = last_number + 1
-
-    except (ValueError, IndexError):
-
+    except Exception:
         next_number = 1
 
     return f"{prefix}{next_number:05d}"
@@ -467,16 +288,16 @@ async def generate_contact_id() -> str:
 
 @router.get(
     "",
-    response_model=dict,
+    response_model=List[Customer],
     summary="List Customers",
 )
 async def list_customers(
     page: int = Query(
-        default=1,
+        1,
         ge=1,
     ),
     page_size: int = Query(
-        default=25,
+        25,
         ge=1,
         le=100,
     ),
@@ -484,202 +305,49 @@ async def list_customers(
 
     try:
 
-        # ----------------------------------------------------
-        # TOTAL DATA
-        # ----------------------------------------------------
+        skip = (page - 1) * page_size
 
-        total = await db.customers.count_documents({})
+        cursor = (
+            db.customers
+            .find({})
+            .sort(
+                [
+                    ("created_at", -1)
+                ]
+            )
+            .skip(skip)
+            .limit(page_size)
+        )
 
-        # ----------------------------------------------------
-        # PAGINATION
-        # ----------------------------------------------------
-
-        skip = (
-            page - 1
-        ) * page_size
-
-        # ----------------------------------------------------
-        # GET DATA
-        # ----------------------------------------------------
-
-        documents = await db.customers.find(
-            {}
-        ).sort(
-            "created_at",
-            -1,
-        ).skip(
-            skip
-        ).limit(
-            page_size
-        ).to_list(
+        customers = await cursor.to_list(
             length=page_size
         )
 
-        # ----------------------------------------------------
-        # NORMALIZE
-        # ----------------------------------------------------
+        result = []
 
-        items = [
-            normalize_customer(document)
-            for document in documents
-        ]
+        for customer in customers:
 
-        # ----------------------------------------------------
-        # RESPONSE
-        # ----------------------------------------------------
+            normalized = normalize_customer(
+                customer
+            )
 
-        return {
-            "items": items,
-            "page": page,
-            "page_size": page_size,
-            "total": total,
-            "total_pages": (
-                (total + page_size - 1)
-                // page_size
-            ),
-        }
+            result.append(
+                Customer.model_validate(
+                    normalized
+                )
+            )
+
+        return result
 
     except Exception as exc:
 
-        raise HTTPException(
-            status_code=500,
-            detail=(
-                "Failed to list customers: "
-                f"{str(exc)}"
-            ),
+        print(
+            f"ERROR: GET /customers failed: {exc}"
         )
-
-
-# ============================================================
-# POST /customers
-# CREATE CUSTOMER
-# ============================================================
-
-@router.post(
-    "",
-    response_model=Customer,
-    summary="Create Customer",
-)
-async def create_customer(
-    payload: CustomerCreate,
-):
-
-    try:
-
-        now = utc_now()
-
-        # ----------------------------------------------------
-        # CUSTOMER ID
-        # ----------------------------------------------------
-
-        customer_id = payload.customer_id
-
-        if not customer_id:
-
-            customer_id = (
-                await generate_customer_id()
-            )
-
-        # ----------------------------------------------------
-        # CHECK DUPLICATE
-        # ----------------------------------------------------
-
-        existing = await db.customers.find_one(
-            {
-                "$or": [
-                    {
-                        "id": customer_id
-                    },
-                    {
-                        "customer_id": customer_id
-                    },
-                ]
-            }
-        )
-
-        if existing:
-
-            raise HTTPException(
-                status_code=409,
-                detail=(
-                    f"Customer {customer_id} "
-                    "already exists."
-                ),
-            )
-
-        # ----------------------------------------------------
-        # CUSTOMER DOCUMENT
-        # ----------------------------------------------------
-
-        customer = {
-
-            "id": customer_id,
-
-            "customer_id": customer_id,
-
-            "name": payload.name,
-
-            "company": payload.company,
-
-            "industry": payload.industry,
-
-            "source": payload.source,
-
-            "city": payload.city,
-
-            "province": payload.province,
-
-            "phone": payload.phone,
-
-            "email": payload.email,
-
-            "pic_name": payload.pic_name,
-
-            "pic_position": payload.pic_position,
-
-            "status": payload.status,
-
-            "sales_id": payload.sales_id,
-
-            "sales_name": None,
-
-            "address": payload.address,
-
-            "notes": payload.notes,
-
-            "created_at": now,
-
-            "updated_at": now,
-        }
-
-        # ----------------------------------------------------
-        # INSERT
-        # ----------------------------------------------------
-
-        await db.customers.insert_one(
-            customer
-        )
-
-        # ----------------------------------------------------
-        # RESPONSE
-        # ----------------------------------------------------
-
-        return normalize_customer(
-            customer
-        )
-
-    except HTTPException:
-
-        raise
-
-    except Exception as exc:
 
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to create customer: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to list customers: {str(exc)}",
         )
 
 
@@ -703,10 +371,10 @@ async def get_customer(
             {
                 "$or": [
                     {
-                        "id": customer_id
+                        "customer_id": customer_id
                     },
                     {
-                        "customer_id": customer_id
+                        "id": customer_id
                     },
                 ]
             }
@@ -716,28 +384,114 @@ async def get_customer(
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    f"Customer {customer_id} "
-                    "not found."
-                ),
+                detail=f"Customer {customer_id} not found.",
             )
 
-        return normalize_customer(
+        normalized = normalize_customer(
             customer
         )
 
-    except HTTPException:
+        return Customer.model_validate(
+            normalized
+        )
 
+    except HTTPException:
         raise
 
     except Exception as exc:
 
+        print(
+            f"ERROR: GET /customers/{customer_id} failed: {exc}"
+        )
+
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to get customer: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to get customer: {str(exc)}",
+        )
+
+
+# ============================================================
+# POST /customers
+# CREATE CUSTOMER
+# ============================================================
+
+@router.post(
+    "",
+    response_model=Customer,
+    summary="Create Customer",
+)
+async def create_customer(
+    payload: CustomerCreate,
+):
+
+    try:
+
+        now = utc_now()
+
+        customer_id = await generate_customer_id()
+
+        # ----------------------------------------------------
+        # COMPANY COMPATIBILITY
+        # ----------------------------------------------------
+
+        company_name = (
+            payload.company_name
+            or payload.company
+            or ""
+        )
+
+        customer = {
+            "id": customer_id,
+            "customer_id": customer_id,
+
+            "name": payload.name,
+
+            "company_name": company_name,
+            "company": company_name,
+
+            "industry": payload.industry,
+            "city": payload.city,
+            "province": payload.province,
+
+            "phone": payload.phone,
+            "email": payload.email,
+
+            "pic_name": payload.pic_name,
+            "pic_position": payload.pic_position,
+
+            "status": payload.status,
+
+            "sales_id": payload.sales_id,
+            "sales_name": payload.sales_name,
+
+            "address": payload.address,
+            "notes": payload.notes,
+
+            "created_at": now,
+            "updated_at": now,
+        }
+
+        await db.customers.insert_one(
+            customer
+        )
+
+        normalized = normalize_customer(
+            customer
+        )
+
+        return Customer.model_validate(
+            normalized
+        )
+
+    except Exception as exc:
+
+        print(
+            f"ERROR: POST /customers failed: {exc}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create customer: {str(exc)}",
         )
 
 
@@ -758,18 +512,14 @@ async def update_customer(
 
     try:
 
-        # ----------------------------------------------------
-        # CHECK CUSTOMER
-        # ----------------------------------------------------
-
         existing = await db.customers.find_one(
             {
                 "$or": [
                     {
-                        "id": customer_id
+                        "customer_id": customer_id
                     },
                     {
-                        "customer_id": customer_id
+                        "id": customer_id
                     },
                 ]
             }
@@ -779,75 +529,72 @@ async def update_customer(
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    f"Customer {customer_id} "
-                    "not found."
-                ),
+                detail=f"Customer {customer_id} not found.",
             )
-
-        # ----------------------------------------------------
-        # UPDATE DATA
-        # ----------------------------------------------------
 
         update_data = payload.model_dump(
             exclude_unset=True
         )
 
-        update_data["updated_at"] = utc_now()
+        # ----------------------------------------------------
+        # COMPANY / COMPANY_NAME COMPATIBILITY
+        # ----------------------------------------------------
 
-        # ----------------------------------------------------
-        # UPDATE
-        # ----------------------------------------------------
+        if (
+            "company_name" in update_data
+            and update_data["company_name"] is not None
+        ):
+
+            update_data["company"] = (
+                update_data["company_name"]
+            )
+
+        elif (
+            "company" in update_data
+            and update_data["company"] is not None
+        ):
+
+            update_data["company_name"] = (
+                update_data["company"]
+            )
+
+        update_data["updated_at"] = utc_now()
 
         await db.customers.update_one(
             {
-                "$or": [
-                    {
-                        "id": customer_id
-                    },
-                    {
-                        "customer_id": customer_id
-                    },
-                ]
+                "_id": existing["_id"]
             },
             {
                 "$set": update_data
-            },
-        )
-
-        # ----------------------------------------------------
-        # GET UPDATED DATA
-        # ----------------------------------------------------
-
-        updated_customer = await db.customers.find_one(
-            {
-                "$or": [
-                    {
-                        "id": customer_id
-                    },
-                    {
-                        "customer_id": customer_id
-                    },
-                ]
             }
         )
 
-        return normalize_customer(
-            updated_customer
+        updated = await db.customers.find_one(
+            {
+                "_id": existing["_id"]
+            }
+        )
+
+        normalized = normalize_customer(
+            updated
+        )
+
+        return Customer.model_validate(
+            normalized
         )
 
     except HTTPException:
-
         raise
 
     except Exception as exc:
 
+        print(
+            f"ERROR: PUT /customers/{customer_id} failed: {exc}"
+        )
+
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to update customer: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to update customer: {str(exc)}",
         )
 
 
@@ -866,95 +613,77 @@ async def delete_customer(
 
     try:
 
-        # ----------------------------------------------------
-        # DELETE CUSTOMER
-        # ----------------------------------------------------
-
-        result = await db.customers.delete_one(
+        existing = await db.customers.find_one(
             {
                 "$or": [
                     {
-                        "id": customer_id
+                        "customer_id": customer_id
                     },
                     {
-                        "customer_id": customer_id
+                        "id": customer_id
                     },
                 ]
             }
         )
 
-        if result.deleted_count == 0:
+        if not existing:
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    f"Customer {customer_id} "
-                    "not found."
-                ),
+                detail=f"Customer {customer_id} not found.",
             )
 
-        # ----------------------------------------------------
-        # DELETE RELATED CONTACTS
-        # ----------------------------------------------------
-
-        await db.contacts.delete_many(
+        await db.customers.delete_one(
             {
-                "customer_id": customer_id
+                "_id": existing["_id"]
             }
         )
 
         return {
             "status": "success",
-            "message": (
-                f"Customer {customer_id} "
-                "deleted successfully."
-            ),
+            "message": "Customer deleted successfully",
             "customer_id": customer_id,
         }
 
     except HTTPException:
-
         raise
 
     except Exception as exc:
 
+        print(
+            f"ERROR: DELETE /customers/{customer_id} failed: {exc}"
+        )
+
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to delete customer: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to delete customer: {str(exc)}",
         )
 
 
 # ============================================================
 # GET /customers/{customer_id}/contacts
-# CUSTOMER CONTACTS
+# LIST CUSTOMER CONTACTS
 # ============================================================
 
 @router.get(
     "/{customer_id}/contacts",
     response_model=List[Contact],
-    summary="Customer Contacts",
+    summary="List Customer Contacts",
 )
-async def get_customer_contacts(
+async def list_customer_contacts(
     customer_id: str,
 ):
 
     try:
 
-        # ----------------------------------------------------
-        # CHECK CUSTOMER
-        # ----------------------------------------------------
-
         customer = await db.customers.find_one(
             {
                 "$or": [
                     {
-                        "id": customer_id
+                        "customer_id": customer_id
                     },
                     {
-                        "customer_id": customer_id
+                        "id": customer_id
                     },
                 ]
             }
@@ -964,57 +693,45 @@ async def get_customer_contacts(
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    f"Customer {customer_id} "
-                    "not found."
-                ),
+                detail=f"Customer {customer_id} not found.",
             )
-
-        customer_name = (
-            customer.get("name")
-            or customer.get("company_name")
-            or customer.get("company")
-        )
-
-        # ----------------------------------------------------
-        # GET CONTACTS
-        # ----------------------------------------------------
 
         contacts = await db.contacts.find(
             {
                 "customer_id": customer_id
             }
         ).sort(
-            "created_at",
-            -1,
+            [
+                ("created_at", -1)
+            ]
         ).to_list(
             length=1000
         )
 
-        # ----------------------------------------------------
-        # NORMALIZE CONTACTS
-        # ----------------------------------------------------
+        result = []
 
-        return [
-            normalize_contact(
-                contact,
-                customer_name,
+        for contact in contacts:
+
+            result.append(
+                Contact.model_validate(
+                    contact
+                )
             )
-            for contact in contacts
-        ]
+
+        return result
 
     except HTTPException:
-
         raise
 
     except Exception as exc:
 
+        print(
+            f"ERROR: GET customer contacts failed: {exc}"
+        )
+
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to get customer contacts: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to list customer contacts: {str(exc)}",
         )
 
 
@@ -1043,10 +760,10 @@ async def create_customer_contact(
             {
                 "$or": [
                     {
-                        "id": customer_id
+                        "customer_id": customer_id
                     },
                     {
-                        "customer_id": customer_id
+                        "id": customer_id
                     },
                 ]
             }
@@ -1056,104 +773,193 @@ async def create_customer_contact(
 
             raise HTTPException(
                 status_code=404,
-                detail=(
-                    f"Customer {customer_id} "
-                    "not found."
-                ),
+                detail=f"Customer {customer_id} not found.",
             )
 
-        customer_name = (
-            customer.get("name")
-            or customer.get("company_name")
-            or customer.get("company")
-        )
-
         # ----------------------------------------------------
-        # GENERATE CONTACT ID
+        # CREATE CONTACT ID
         # ----------------------------------------------------
-
-        contact_id = (
-            await generate_contact_id()
-        )
 
         now = utc_now()
 
-        # ----------------------------------------------------
-        # CONTACT DOCUMENT
-        # ----------------------------------------------------
+        contact_id = (
+            f"CON-{now.strftime('%Y%m%d%H%M%S')}"
+            f"-{__import__('secrets').token_hex(3).upper()}"
+        )
 
         contact = {
-
             "id": contact_id,
 
-            "contact_id": contact_id,
-
-            "customer_id": customer_id,
-
-            "customer_name": customer_name,
+            "customer_id": (
+                customer.get("customer_id")
+                or customer_id
+            ),
 
             "first_name": payload.first_name,
-
             "last_name": payload.last_name,
 
             "position": payload.position,
-
             "department": payload.department,
 
             "email": payload.email,
-
             "mobile": payload.mobile,
 
-            "contact_type": (
-                payload.contact_type
-                or "User"
-            ),
+            "contact_type": payload.contact_type,
 
             "is_decision_maker": (
                 payload.is_decision_maker
             ),
 
-            "status": (
-                payload.status
-                or "Active"
-            ),
+            "status": payload.status,
 
             "notes": payload.notes,
 
             "created_at": now,
-
             "updated_at": now,
         }
-
-        # ----------------------------------------------------
-        # INSERT
-        # ----------------------------------------------------
 
         await db.contacts.insert_one(
             contact
         )
 
-        # ----------------------------------------------------
-        # RESPONSE
-        # ----------------------------------------------------
-
-        return normalize_contact(
-            contact,
-            customer_name,
+        return Contact.model_validate(
+            contact
         )
 
     except HTTPException:
-
         raise
 
     except Exception as exc:
 
+        print(
+            f"ERROR: POST customer contact failed: {exc}"
+        )
+
         raise HTTPException(
             status_code=500,
-            detail=(
-                "Failed to create customer contact: "
-                f"{str(exc)}"
-            ),
+            detail=f"Failed to create customer contact: {str(exc)}",
+        )
+
+
+# ============================================================
+# PUT /customers/{customer_id}/contacts/{contact_id}
+# UPDATE CUSTOMER CONTACT
+# ============================================================
+
+@router.put(
+    "/{customer_id}/contacts/{contact_id}",
+    response_model=Contact,
+    summary="Update Customer Contact",
+)
+async def update_customer_contact(
+    customer_id: str,
+    contact_id: str,
+    payload: ContactCreate,
+):
+
+    try:
+
+        contact = await db.contacts.find_one(
+            {
+                "id": contact_id,
+                "customer_id": customer_id,
+            }
+        )
+
+        if not contact:
+
+            raise HTTPException(
+                status_code=404,
+                detail=f"Contact {contact_id} not found.",
+            )
+
+        update_data = payload.model_dump()
+
+        update_data["updated_at"] = utc_now()
+
+        await db.contacts.update_one(
+            {
+                "_id": contact["_id"]
+            },
+            {
+                "$set": update_data
+            }
+        )
+
+        updated = await db.contacts.find_one(
+            {
+                "_id": contact["_id"]
+            }
+        )
+
+        return Contact.model_validate(
+            updated
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+
+        print(
+            f"ERROR: PUT contact failed: {exc}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update contact: {str(exc)}",
+        )
+
+
+# ============================================================
+# DELETE /customers/{customer_id}/contacts/{contact_id}
+# DELETE CUSTOMER CONTACT
+# ============================================================
+
+@router.delete(
+    "/{customer_id}/contacts/{contact_id}",
+    summary="Delete Customer Contact",
+)
+async def delete_customer_contact(
+    customer_id: str,
+    contact_id: str,
+):
+
+    try:
+
+        result = await db.contacts.delete_one(
+            {
+                "id": contact_id,
+                "customer_id": customer_id,
+            }
+        )
+
+        if result.deleted_count == 0:
+
+            raise HTTPException(
+                status_code=404,
+                detail=f"Contact {contact_id} not found.",
+            )
+
+        return {
+            "status": "success",
+            "message": "Contact deleted successfully",
+            "contact_id": contact_id,
+            "customer_id": customer_id,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+
+        print(
+            f"ERROR: DELETE contact failed: {exc}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete contact: {str(exc)}",
         )
 
 
@@ -1161,6 +967,4 @@ async def create_customer_contact(
 # ROUTER READY
 # ============================================================
 
-print(
-    "INFO: ✓ routers.customers loaded"
-)
+print("INFO: ✓ routers.customers")
