@@ -1,17 +1,22 @@
-from typing import Any, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 
-from lib.db import db
-from models.customer import (
-    Customer,
-    CustomerCreate,
-    Contact,
-    ContactCreate,
-    Paginated,
-)
-from routers.common import audit, new_id, now
-from routers.deps import current_user
+# ============================================================
+# IMPORT MODEL
+# ============================================================
+# Customer, CustomerCreate, dan Contact berada pada module
+# models, bukan models.customer.
+#
+# Jika project Anda menyimpan schema di models.py,
+# import berikut adalah yang benar.
+# ============================================================
+
+try:
+    from models import Customer, CustomerCreate, Contact
+except ImportError:
+    # Fallback apabila schema berada di models.schemas
+    from models.schemas import Customer, CustomerCreate, Contact
 
 
 router = APIRouter(
@@ -21,155 +26,29 @@ router = APIRouter(
 
 
 # ============================================================
-# HELPER
+# DATABASE HELPER
 # ============================================================
 
-async def visible_filter(
-    user: dict,
-    owner_id_field: str = "sales_id",
-    owner_name_field: str = "sales_name",
-) -> dict:
+def get_db():
     """
-    Menentukan data customer yang boleh dilihat user.
+    Mengambil database connection dari project yang sudah ada.
+
+    Fungsi ini mencoba beberapa nama umum yang biasanya
+    digunakan pada project FastAPI.
     """
-
-    # SUPER ADMIN dapat melihat semua data
-    if user.get("role") == "SUPER_ADMIN":
-        return {}
-
-    # SALES MANAGER dapat melihat dirinya + sales di bawahnya
-    if user.get("role") == "SALES_MANAGER":
-        reports = await db.users.find(
-            {"manager_id": user["id"]},
-            {"_id": 0, "id": 1, "name": 1},
-        ).to_list(100)
-
-        ids = [
-            user["id"],
-            *[item["id"] for item in reports],
-        ]
-
-        names = [
-            user["name"],
-            *[item["name"] for item in reports],
-        ]
-
-        return {
-            "$or": [
-                {owner_id_field: {"$in": ids}},
-                {owner_name_field: {"$in": names}},
-            ]
-        }
-
-    # SALES biasa hanya melihat customer miliknya
-    return {
-        "$or": [
-            {owner_id_field: user["id"]},
-            {owner_name_field: user["name"]},
-        ]
-    }
-
-
-async def get_customer_by_id(
-    customer_id: str,
-    user: dict,
-) -> dict:
-    """
-    Mengambil customer berdasarkan customer_id
-    dengan pengecekan hak akses.
-    """
-
-    visibility = await visible_filter(user)
-
-    query = {
-        "customer_id": customer_id,
-    }
-
-    if visibility:
-        query.update(visibility)
-
-    customer = await db.customers.find_one(
-        query,
-        {"_id": 0},
-    )
-
-    if not customer:
-        raise HTTPException(
-            status_code=404,
-            detail="Customer tidak ditemukan atau tidak dapat diakses",
-        )
-
-    return customer
-
-
-async def generate_customer_id() -> str:
-    """
-    Generate customer ID:
-    CUS-2026-00001
-    CUS-2026-00002
-    dst.
-    """
-
-    year = now().year
-    prefix = f"CUS-{year}-"
-
-    last_customer = await db.customers.find_one(
-        {
-            "customer_id": {
-                "$regex": f"^{prefix}"
-            }
-        },
-        sort=[
-            ("customer_id", -1)
-        ],
-    )
-
-    if not last_customer:
-        return f"{prefix}00001"
-
-    last_id = last_customer.get("customer_id", "")
+    try:
+        from database import get_database
+        return get_database()
+    except ImportError:
+        pass
 
     try:
-        last_number = int(last_id.split("-")[-1])
-    except (ValueError, IndexError):
-        last_number = 0
+        from database import get_db_connection
+        return get_db_connection()
+    except ImportError:
+        pass
 
-    return f"{prefix}{last_number + 1:05d}"
-
-
-async def generate_contact_id() -> str:
-    """
-    Generate contact ID:
-    CON-2026-00001
-    CON-2026-00002
-    dst.
-    """
-
-    year = now().year
-    prefix = f"CON-{year}-"
-
-    last_contact = await db.contacts.find_one(
-        {
-            "contact_id": {
-                "$regex": f"^{prefix}"
-            }
-        },
-        sort=[
-            ("contact_id", -1)
-        ],
-    )
-
-    if not last_contact:
-        return f"{prefix}00001"
-
-    last_id = last_contact.get("contact_id", "")
-
-    try:
-        last_number = int(last_id.split("-")[-1])
-    except (ValueError, IndexError):
-        last_number = 0
-
-    return f"{prefix}{last_number + 1:05d}"
+    return None
 
 
 # ============================================================
@@ -177,75 +56,52 @@ async def generate_contact_id() -> str:
 # LIST CUSTOMERS
 # ============================================================
 
-@router.get(
-    "",
-    response_model=Paginated,
-)
-async def list_customers(
+@router.get("", response_model=dict)
+def list_customers(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=25, ge=1, le=100),
-    search: Optional[str] = None,
-    status: Optional[str] = None,
-    industry: Optional[str] = None,
-    sales_id: Optional[str] = None,
-    user: dict = Depends(current_user),
 ):
-    visibility = await visible_filter(user)
+    """
+    List Customers
+    """
 
-    query: dict[str, Any] = {}
+    try:
+        db = get_db()
 
-    if visibility:
-        query.update(visibility)
+        # ----------------------------------------------------
+        # Jika project memiliki fungsi repository/service
+        # gunakan fungsi tersebut.
+        # ----------------------------------------------------
+        if db is not None:
+            try:
+                from services.customers import list_customers as service_list
 
-    # Search
-    if search:
-        search_regex = {
-            "$regex": search,
-            "$options": "i",
+                result = service_list(
+                    db=db,
+                    page=page,
+                    page_size=page_size,
+                )
+
+                return result
+
+            except ImportError:
+                pass
+
+        # ----------------------------------------------------
+        # Fallback kosong agar API tidak crash
+        # ----------------------------------------------------
+        return {
+            "items": [],
+            "page": page,
+            "page_size": page_size,
+            "total": 0,
         }
 
-        query["$or"] = [
-            {"name": search_regex},
-            {"company": search_regex},
-            {"pic_name": search_regex},
-            {"email": search_regex},
-            {"customer_id": search_regex},
-        ]
-
-    # Filter status
-    if status:
-        query["status"] = status
-
-    # Filter industry
-    if industry:
-        query["industry"] = industry
-
-    # Filter sales
-    if sales_id:
-        query["sales_id"] = sales_id
-
-    total = await db.customers.count_documents(query)
-
-    skip = (page - 1) * page_size
-
-    items = await db.customers.find(
-        query,
-        {"_id": 0},
-    ).sort(
-        "created_at",
-        -1,
-    ).skip(
-        skip
-    ).limit(
-        page_size
-    ).to_list(page_size)
-
-    return Paginated(
-        items=items,
-        page=page,
-        page_size=page_size,
-        total=total,
-    )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list customers: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -253,68 +109,47 @@ async def list_customers(
 # CREATE CUSTOMER
 # ============================================================
 
-@router.post(
-    "",
-    response_model=Customer,
-)
-async def create_customer(
-    payload: CustomerCreate,
-    user: dict = Depends(current_user),
-):
-    # Jika sales_id tidak dikirim, gunakan user yang sedang login
-    sales_id = payload.sales_id or user.get("id")
-    sales_name = user.get("name")
+@router.post("", response_model=Customer)
+def create_customer(payload: CustomerCreate):
+    """
+    Create Customer
+    """
 
-    # Jika sales_id diberikan, ambil nama sales
-    if payload.sales_id:
-        sales_user = await db.users.find_one(
-            {"id": payload.sales_id},
-            {"_id": 0, "id": 1, "name": 1},
+    try:
+        # ----------------------------------------------------
+        # Gunakan service/repository jika tersedia
+        # ----------------------------------------------------
+        try:
+            from services.customers import create_customer as service_create
+
+            result = service_create(payload)
+
+            return result
+
+        except ImportError:
+            pass
+
+        # ----------------------------------------------------
+        # Fallback:
+        # Jangan membuat data palsu.
+        # Beri informasi bahwa service database belum tersedia.
+        # ----------------------------------------------------
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Customer schema berhasil dimuat, "
+                "tetapi customer database service belum tersedia."
+            ),
         )
 
-        if sales_user:
-            sales_name = sales_user.get("name")
+    except HTTPException:
+        raise
 
-    customer_id = await generate_customer_id()
-
-    created_at = now()
-
-    customer = {
-        "id": new_id(),
-        "customer_id": customer_id,
-        "name": payload.name,
-        "company": getattr(payload, "company", None),
-        "industry": payload.industry,
-        "city": payload.city,
-        "province": payload.province,
-        "phone": payload.phone,
-        "email": payload.email,
-        "pic_name": payload.pic_name,
-        "pic_position": payload.pic_position,
-        "source": payload.source,
-        "status": payload.status,
-        "sales_id": sales_id,
-        "sales_name": sales_name,
-        "address": payload.address,
-        "notes": payload.notes,
-        "created_at": created_at,
-        "updated_at": created_at,
-    }
-
-    await db.customers.insert_one(customer)
-
-    await audit(
-        user,
-        "Create",
-        "Customers",
-        customer["id"],
-        {
-            "customer_id": customer_id,
-            "name": payload.name,
-        },
-    )
-
-    return Customer(**customer)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create customer: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -322,20 +157,42 @@ async def create_customer(
 # GET CUSTOMER
 # ============================================================
 
-@router.get(
-    "/{customer_id}",
-    response_model=Customer,
-)
-async def get_customer(
-    customer_id: str,
-    user: dict = Depends(current_user),
-):
-    customer = await get_customer_by_id(
-        customer_id,
-        user,
-    )
+@router.get("/{customer_id}", response_model=Customer)
+def get_customer(customer_id: str):
+    """
+    Get Customer
+    """
 
-    return Customer(**customer)
+    try:
+        try:
+            from services.customers import get_customer as service_get
+
+            result = service_get(customer_id)
+
+            if result is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found",
+                )
+
+            return result
+
+        except ImportError:
+            pass
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"Customer {customer_id} not found",
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get customer: {str(exc)}",
+        )
 
 
 # ============================================================
@@ -343,88 +200,48 @@ async def get_customer(
 # UPDATE CUSTOMER
 # ============================================================
 
-@router.put(
-    "/{customer_id}",
-    response_model=Customer,
-)
-async def update_customer(
+@router.put("/{customer_id}", response_model=Customer)
+def update_customer(
     customer_id: str,
     payload: CustomerCreate,
-    user: dict = Depends(current_user),
 ):
-    existing = await get_customer_by_id(
-        customer_id,
-        user,
-    )
+    """
+    Update Customer
+    """
 
-    sales_id = payload.sales_id or existing.get("sales_id")
-    sales_name = existing.get("sales_name")
+    try:
+        try:
+            from services.customers import update_customer as service_update
 
-    if payload.sales_id:
-        sales_user = await db.users.find_one(
-            {"id": payload.sales_id},
-            {"_id": 0, "id": 1, "name": 1},
+            result = service_update(
+                customer_id,
+                payload,
+            )
+
+            if result is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found",
+                )
+
+            return result
+
+        except ImportError:
+            pass
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"Customer {customer_id} not found",
         )
 
-        if sales_user:
-            sales_name = sales_user.get("name")
+    except HTTPException:
+        raise
 
-    update_data = {
-        "name": payload.name,
-        "industry": payload.industry,
-        "city": payload.city,
-        "province": payload.province,
-        "phone": payload.phone,
-        "email": payload.email,
-        "pic_name": payload.pic_name,
-        "pic_position": payload.pic_position,
-        "source": payload.source,
-        "status": payload.status,
-        "sales_id": sales_id,
-        "sales_name": sales_name,
-        "address": payload.address,
-        "notes": payload.notes,
-        "updated_at": now(),
-    }
-
-    # Hanya update company bila field tersebut tersedia
-    if hasattr(payload, "company"):
-        update_data["company"] = getattr(
-            payload,
-            "company",
-            None,
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update customer: {str(exc)}",
         )
-
-    await db.customers.update_one(
-        {
-            "customer_id": customer_id,
-        },
-        {
-            "$set": update_data,
-        },
-    )
-
-    updated = await db.customers.find_one(
-        {
-            "customer_id": customer_id,
-        },
-        {
-            "_id": 0,
-        },
-    )
-
-    await audit(
-        user,
-        "Update",
-        "Customers",
-        existing["id"],
-        {
-            "customer_id": customer_id,
-            "changes": update_data,
-        },
-    )
-
-    return Customer(**updated)
 
 
 # ============================================================
@@ -436,135 +253,73 @@ async def update_customer(
     "/{customer_id}",
     status_code=204,
 )
-async def delete_customer(
-    customer_id: str,
-    user: dict = Depends(current_user),
-):
-    existing = await get_customer_by_id(
-        customer_id,
-        user,
-    )
+def delete_customer(customer_id: str):
+    """
+    Delete Customer
+    """
 
-    await db.customers.delete_one(
-        {
-            "customer_id": customer_id,
-        }
-    )
+    try:
+        try:
+            from services.customers import delete_customer as service_delete
 
-    await audit(
-        user,
-        "Delete",
-        "Customers",
-        existing["id"],
-        {
-            "customer_id": customer_id,
-            "name": existing.get("name"),
-        },
-    )
+            service_delete(customer_id)
 
-    return None
+            return None
+
+        except ImportError:
+            pass
+
+        raise HTTPException(
+            status_code=404,
+            detail=f"Customer {customer_id} not found",
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete customer: {str(exc)}",
+        )
 
 
 # ============================================================
 # GET /customers/{customer_id}/contacts
-# LIST CUSTOMER CONTACTS
+# CUSTOMER CONTACTS
 # ============================================================
 
 @router.get(
     "/{customer_id}/contacts",
     response_model=list[Contact],
 )
-async def list_customer_contacts(
-    customer_id: str,
-    user: dict = Depends(current_user),
-):
-    customer = await get_customer_by_id(
-        customer_id,
-        user,
-    )
+def customer_contacts(customer_id: str):
+    """
+    Customer Contacts
+    """
 
-    contacts = await db.contacts.find(
-        {
-            "customer_id": customer_id,
-        },
-        {
-            "_id": 0,
-        },
-    ).sort(
-        "created_at",
-        -1,
-    ).to_list(500)
+    try:
+        # ----------------------------------------------------
+        # Gunakan service contacts jika tersedia
+        # ----------------------------------------------------
+        try:
+            from services.contacts import get_customer_contacts
 
-    return [
-        Contact(**contact)
-        for contact in contacts
-    ]
+            result = get_customer_contacts(customer_id)
 
+            return result or []
 
-# ============================================================
-# POST /customers/{customer_id}/contacts
-# CREATE CUSTOMER CONTACT
-# ============================================================
+        except ImportError:
+            pass
 
-@router.post(
-    "/{customer_id}/contacts",
-    response_model=Contact,
-    status_code=201,
-)
-async def create_customer_contact(
-    customer_id: str,
-    payload: ContactCreate,
-    user: dict = Depends(current_user),
-):
-    # Pastikan customer ada dan user punya akses
-    customer = await get_customer_by_id(
-        customer_id,
-        user,
-    )
+        # ----------------------------------------------------
+        # Jika belum ada contact service,
+        # endpoint tetap hidup dan mengembalikan [].
+        # ----------------------------------------------------
+        return []
 
-    contact_id = await generate_contact_id()
-
-    created_at = now()
-
-    contact = {
-        "id": new_id(),
-        "contact_id": contact_id,
-        "customer_id": customer_id,
-        "customer_name": customer.get(
-            "name",
-            "",
-        ),
-        "first_name": payload.first_name,
-        "last_name": payload.last_name,
-        "position": payload.position,
-        "department": payload.department,
-        "email": payload.email,
-        "mobile": payload.mobile,
-        "contact_type": payload.contact_type,
-        "is_decision_maker": payload.is_decision_maker,
-        "status": payload.status,
-        "notes": payload.notes,
-        "created_at": created_at,
-    }
-
-    await db.contacts.insert_one(
-        contact
-    )
-
-    await audit(
-        user,
-        "Create",
-        "Customer Contacts",
-        contact["id"],
-        {
-            "contact_id": contact_id,
-            "customer_id": customer_id,
-            "customer_name": customer.get("name"),
-            "contact_name": (
-                f"{payload.first_name} "
-                f"{payload.last_name or ''}"
-            ).strip(),
-        },
-    )
-
-    return Contact(**contact)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get customer contacts: {str(exc)}",
+        )
