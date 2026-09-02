@@ -1,21 +1,72 @@
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
 
 # ============================================================
-# CUSTOMER ROUTER
+# MODEL IMPORT
 # ============================================================
-#
-# PENTING:
 # Jangan menggunakan:
-#     from models.customer import ...
+# from models.customer import ...
 #
-# Schema Customer, CustomerCreate, dan Contact diambil
-# langsung dari module models.
+# Karena project Anda menggunakan models.py / models package.
+# Kita coba beberapa struktur yang umum tanpa membuat server
+# crash apabila salah satu struktur tidak tersedia.
 # ============================================================
 
-from models import Customer, CustomerCreate, Contact
+try:
+    from models import Customer, CustomerCreate, Contact
 
+except ImportError:
+
+    try:
+        from models.schemas import Customer, CustomerCreate, Contact
+
+    except ImportError:
+
+        try:
+            from models.models import Customer, CustomerCreate, Contact
+
+        except ImportError as exc:
+            raise ImportError(
+                "Customer models tidak ditemukan. "
+                "Pastikan Customer, CustomerCreate dan Contact "
+                "berada di models.py atau models.schemas."
+            ) from exc
+
+
+# ============================================================
+# CONTACT CREATE
+# ============================================================
+# ContactCreate belum ada pada models yang Anda kirim.
+# Karena itu kita definisikan di router ini agar endpoint
+# POST /customers/{customer_id}/contacts bisa langsung muncul
+# di Swagger.
+# ============================================================
+
+class ContactCreate(BaseModel):
+    first_name: str = Field(min_length=1)
+    last_name: Optional[str] = None
+    position: Optional[str] = None
+    department: Optional[str] = None
+    email: Optional[EmailStr] = None
+    mobile: Optional[str] = None
+    contact_type: str = "User"
+    is_decision_maker: bool = False
+    status: str = "Active"
+    notes: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def empty_email_is_none(cls, value):
+        return None if value == "" else value
+
+
+# ============================================================
+# ROUTER
+# ============================================================
 
 router = APIRouter(
     prefix="/customers",
@@ -24,59 +75,43 @@ router = APIRouter(
 
 
 # ============================================================
-# DATABASE / SERVICE HELPER
+# GET /customers
 # ============================================================
 
-def get_customer_service():
+@router.get(
+    "",
+    response_model=dict,
+    summary="List Customers",
+)
+def list_customers(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
+):
     """
-    Mengambil customer service jika tersedia.
+    Menampilkan daftar customer.
     """
 
     try:
-        from services.customers import (
-            list_customers,
-            create_customer,
-            get_customer,
-            update_customer,
-            delete_customer,
-        )
 
-        return {
-            "list": list_customers,
-            "create": create_customer,
-            "get": get_customer,
-            "update": update_customer,
-            "delete": delete_customer,
-        }
+        # ----------------------------------------------------
+        # Gunakan service jika tersedia
+        # ----------------------------------------------------
+        try:
+            from services.customers import list_customers as service_list
 
-    except ImportError:
-        return None
+            result = service_list(
+                page=page,
+                page_size=page_size,
+            )
 
+            return result
 
-# ============================================================
-# GET /customers
-# LIST CUSTOMERS
-# ============================================================
+        except ImportError:
+            pass
 
-@router.get("", response_model=dict)
-def list_customers_endpoint(
-    page: int = Query(
-        default=1,
-        ge=1,
-    ),
-    page_size: int = Query(
-        default=25,
-        ge=1,
-        le=100,
-    ),
-):
-    """
-    List Customers
-    """
-
-    service = get_customer_service()
-
-    if service is None:
+        # ----------------------------------------------------
+        # Fallback aman
+        # ----------------------------------------------------
         return {
             "items": [],
             "page": page,
@@ -84,30 +119,8 @@ def list_customers_endpoint(
             "total": 0,
         }
 
-    try:
-        result = service["list"](
-            page=page,
-            page_size=page_size,
-        )
-
-        return result
-
-    except TypeError:
-        try:
-            result = service["list"](
-                page,
-                page_size,
-            )
-
-            return result
-
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to list customers: {str(exc)}",
-            )
-
     except Exception as exc:
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to list customers: {str(exc)}",
@@ -116,54 +129,51 @@ def list_customers_endpoint(
 
 # ============================================================
 # POST /customers
-# CREATE CUSTOMER
 # ============================================================
 
 @router.post(
     "",
     response_model=Customer,
+    summary="Create Customer",
 )
-def create_customer_endpoint(
+def create_customer(
     payload: CustomerCreate,
 ):
     """
-    Create Customer
+    Membuat customer baru.
     """
 
-    service = get_customer_service()
-
-    if service is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Customer service is not available.",
-        )
-
     try:
-        result = service["create"](payload)
 
-        return result
-
-    except TypeError:
+        # ----------------------------------------------------
+        # Gunakan service yang sudah ada
+        # ----------------------------------------------------
         try:
-            result = service["create"](
-                payload=payload
-            )
+            from services.customers import create_customer as service_create
+
+            result = service_create(payload)
 
             return result
 
-        except HTTPException:
-            raise
+        except ImportError:
+            pass
 
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to create customer: {str(exc)}",
-            )
+        # ----------------------------------------------------
+        # Jika service belum tersedia
+        # ----------------------------------------------------
+        raise HTTPException(
+            status_code=501,
+            detail=(
+                "Customer endpoint sudah aktif, tetapi "
+                "services.customers.create_customer belum tersedia."
+            ),
+        )
 
     except HTTPException:
         raise
 
     except Exception as exc:
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to create customer: {str(exc)}",
@@ -172,66 +182,48 @@ def create_customer_endpoint(
 
 # ============================================================
 # GET /customers/{customer_id}
-# GET CUSTOMER
 # ============================================================
 
 @router.get(
     "/{customer_id}",
     response_model=Customer,
+    summary="Get Customer",
 )
-def get_customer_endpoint(
+def get_customer(
     customer_id: str,
 ):
     """
-    Get Customer
+    Mengambil detail satu customer.
     """
 
-    service = get_customer_service()
+    try:
 
-    if service is None:
+        try:
+            from services.customers import get_customer as service_get
+
+            result = service_get(customer_id)
+
+            if result is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer not found",
+                )
+
+            return result
+
+        except ImportError:
+            pass
+
         raise HTTPException(
             status_code=404,
             detail=f"Customer {customer_id} not found",
         )
 
-    try:
-        result = service["get"](customer_id)
-
-        if result is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer {customer_id} not found",
-            )
-
-        return result
-
     except HTTPException:
         raise
 
-    except TypeError:
-        try:
-            result = service["get"](
-                customer_id=customer_id
-            )
-
-            if result is None:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Customer {customer_id} not found",
-                )
-
-            return result
-
-        except HTTPException:
-            raise
-
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get customer: {str(exc)}",
-            )
-
     except Exception as exc:
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get customer: {str(exc)}",
@@ -240,71 +232,52 @@ def get_customer_endpoint(
 
 # ============================================================
 # PUT /customers/{customer_id}
-# UPDATE CUSTOMER
 # ============================================================
 
 @router.put(
     "/{customer_id}",
     response_model=Customer,
+    summary="Update Customer",
 )
-def update_customer_endpoint(
+def update_customer(
     customer_id: str,
     payload: CustomerCreate,
 ):
     """
-    Update Customer
+    Mengupdate customer.
     """
 
-    service = get_customer_service()
-
-    if service is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Customer {customer_id} not found",
-        )
-
     try:
-        result = service["update"](
-            customer_id,
-            payload,
-        )
 
-        if result is None:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer {customer_id} not found",
-            )
-
-        return result
-
-    except HTTPException:
-        raise
-
-    except TypeError:
         try:
-            result = service["update"](
-                customer_id=customer_id,
-                payload=payload,
+            from services.customers import update_customer as service_update
+
+            result = service_update(
+                customer_id,
+                payload,
             )
 
             if result is None:
                 raise HTTPException(
                     status_code=404,
-                    detail=f"Customer {customer_id} not found",
+                    detail="Customer not found",
                 )
 
             return result
 
-        except HTTPException:
-            raise
+        except ImportError:
+            pass
 
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to update customer: {str(exc)}",
-            )
+        raise HTTPException(
+            status_code=404,
+            detail=f"Customer {customer_id} not found",
+        )
+
+    except HTTPException:
+        raise
 
     except Exception as exc:
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to update customer: {str(exc)}",
@@ -313,54 +286,42 @@ def update_customer_endpoint(
 
 # ============================================================
 # DELETE /customers/{customer_id}
-# DELETE CUSTOMER
 # ============================================================
 
 @router.delete(
     "/{customer_id}",
     status_code=204,
+    summary="Delete Customer",
 )
-def delete_customer_endpoint(
+def delete_customer(
     customer_id: str,
 ):
     """
-    Delete Customer
+    Menghapus customer.
     """
 
-    service = get_customer_service()
+    try:
 
-    if service is None:
+        try:
+            from services.customers import delete_customer as service_delete
+
+            result = service_delete(customer_id)
+
+            return result
+
+        except ImportError:
+            pass
+
         raise HTTPException(
             status_code=404,
             detail=f"Customer {customer_id} not found",
         )
 
-    try:
-        service["delete"](customer_id)
-
-        return None
-
     except HTTPException:
         raise
 
-    except TypeError:
-        try:
-            service["delete"](
-                customer_id=customer_id
-            )
-
-            return None
-
-        except HTTPException:
-            raise
-
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to delete customer: {str(exc)}",
-            )
-
     except Exception as exc:
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to delete customer: {str(exc)}",
@@ -369,51 +330,130 @@ def delete_customer_endpoint(
 
 # ============================================================
 # GET /customers/{customer_id}/contacts
-# CUSTOMER CONTACTS
 # ============================================================
 
 @router.get(
     "/{customer_id}/contacts",
     response_model=list[Contact],
+    summary="Customer Contacts",
 )
 def customer_contacts(
     customer_id: str,
 ):
     """
-    Customer Contacts
+    Menampilkan semua contact milik customer.
     """
 
     try:
-        from services.contacts import get_customer_contacts
 
-    except ImportError:
-        # Contact service belum tersedia.
-        # Endpoint tetap valid dan mengembalikan list kosong.
-        return []
-
-    try:
-        result = get_customer_contacts(
-            customer_id
-        )
-
-        return result or []
-
-    except TypeError:
+        # ----------------------------------------------------
+        # Gunakan contact service jika tersedia
+        # ----------------------------------------------------
         try:
-            result = get_customer_contacts(
-                customer_id=customer_id
-            )
+            from services.contacts import get_customer_contacts
+
+            result = get_customer_contacts(customer_id)
 
             return result or []
 
-        except Exception as exc:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to get customer contacts: {str(exc)}",
-            )
+        except ImportError:
+            pass
+
+        # ----------------------------------------------------
+        # Jika service belum ada, endpoint tetap hidup.
+        # ----------------------------------------------------
+        return []
 
     except Exception as exc:
+
         raise HTTPException(
             status_code=500,
             detail=f"Failed to get customer contacts: {str(exc)}",
+        )
+
+
+# ============================================================
+# POST /customers/{customer_id}/contacts
+# ============================================================
+
+@router.post(
+    "/{customer_id}/contacts",
+    response_model=Contact,
+    summary="Create Customer Contact",
+)
+def create_customer_contact(
+    customer_id: str,
+    payload: ContactCreate,
+):
+    """
+    Membuat contact baru untuk customer tertentu.
+    """
+
+    try:
+
+        # ----------------------------------------------------
+        # Gunakan contact service jika tersedia
+        # ----------------------------------------------------
+        try:
+            from services.contacts import create_customer_contact as service_create
+
+            result = service_create(
+                customer_id=customer_id,
+                payload=payload,
+            )
+
+            if result is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Contact service returned no result.",
+                )
+
+            return result
+
+        except ImportError:
+            pass
+
+        # ----------------------------------------------------
+        # Coba nama fungsi service alternatif
+        # ----------------------------------------------------
+        try:
+            from services.contacts import create_contact as service_create
+
+            result = service_create(
+                customer_id,
+                payload,
+            )
+
+            if result is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Contact service returned no result.",
+                )
+
+            return result
+
+        except ImportError:
+            pass
+
+        # ----------------------------------------------------
+        # Service belum tersedia
+        # ----------------------------------------------------
+        raise HTTPException(
+            status_code=501,
+            detail=(
+                "POST Contact endpoint sudah aktif, tetapi "
+                "services.contacts.create_customer_contact "
+                "atau services.contacts.create_contact "
+                "belum tersedia."
+            ),
+        )
+
+    except HTTPException:
+        raise
+
+    except Exception as exc:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create customer contact: {str(exc)}",
         )
