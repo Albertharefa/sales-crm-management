@@ -1,7 +1,18 @@
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    field_validator,
+)
+
+
+# ============================================================
+# AUTH
+# ============================================================
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -29,6 +40,10 @@ class UserCreate(BaseModel):
     status: str = "Active"
     password: str = Field(min_length=8)
 
+
+# ============================================================
+# CUSTOMER
+# ============================================================
 
 class Customer(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -75,6 +90,10 @@ class CustomerCreate(BaseModel):
         return None if value == "" else value
 
 
+# ============================================================
+# CONTACT
+# ============================================================
+
 class Contact(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -95,6 +114,10 @@ class Contact(BaseModel):
     created_at: datetime
 
 
+# ============================================================
+# CONTACT CREATE
+# ============================================================
+
 class ContactCreate(BaseModel):
     first_name: str = Field(min_length=2)
     last_name: Optional[str] = None
@@ -112,6 +135,10 @@ class ContactCreate(BaseModel):
     def empty_email_is_none(cls, value):
         return None if value == "" else value
 
+
+# ============================================================
+# OPPORTUNITY
+# ============================================================
 
 class Opportunity(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -149,6 +176,10 @@ class OpportunityCreate(BaseModel):
     loss_reason: Optional[str] = None
 
 
+# ============================================================
+# ACTIVITY
+# ============================================================
+
 class Activity(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -177,6 +208,10 @@ class ActivityCreate(BaseModel):
     description: Optional[str] = None
 
 
+# ============================================================
+# TASK
+# ============================================================
+
 class Task(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -190,6 +225,10 @@ class Task(BaseModel):
     assigned_user: Optional[str] = None
     created_at: datetime
 
+
+# ============================================================
+# PRODUCT
+# ============================================================
 
 class Product(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -218,6 +257,10 @@ class ProductCreate(BaseModel):
     status: str = "Active"
     description: Optional[str] = None
 
+
+# ============================================================
+# QUOTATION
+# ============================================================
 
 class QuotationItem(BaseModel):
     product_id: Optional[str] = None
@@ -259,6 +302,10 @@ class QuotationCreate(BaseModel):
     notes: Optional[str] = None
 
 
+# ============================================================
+# PURCHASE ORDER
+# ============================================================
+
 class PurchaseOrderItem(BaseModel):
     product_id: Optional[str] = None
     description: str
@@ -297,6 +344,10 @@ class PurchaseOrderCreate(BaseModel):
     document_name: Optional[str] = None
     shipping_address: Optional[str] = None
 
+
+# ============================================================
+# DASHBOARD
+# ============================================================
 
 class DashboardGroupMetric(BaseModel):
     name: str
@@ -363,6 +414,10 @@ class DashboardMetrics(BaseModel):
     generated_at: datetime
 
 
+# ============================================================
+# AUDIT LOG
+# ============================================================
+
 class AuditLog(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
@@ -375,12 +430,20 @@ class AuditLog(BaseModel):
     created_at: datetime
 
 
+# ============================================================
+# PAGINATION
+# ============================================================
+
 class Paginated(BaseModel):
     items: List[Any]
     page: int
     page_size: int
     total: int
 
+
+# ============================================================
+# UPLOAD
+# ============================================================
 
 class UploadResponse(BaseModel):
     id: str
@@ -389,6 +452,10 @@ class UploadResponse(BaseModel):
     size: int
     url: str
 
+
+# ============================================================
+# OPTIONS
+# ============================================================
 
 class OptionItem(BaseModel):
     id: str
@@ -402,6 +469,10 @@ class OptionsResponse(BaseModel):
     products: List[OptionItem]
     users: List[OptionItem]
 
+
+# ============================================================
+# SALES TEAM
+# ============================================================
 
 class SalesTeamMetric(BaseModel):
     sales: str
