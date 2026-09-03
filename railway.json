@@ -1,26 +1,11 @@
-# ============================================================
-# SALES CRM MANAGEMENT
-# Railway Production Configuration
-# ============================================================
-
-[build]
-
-builder = "DOCKERFILE"
-
-dockerfilePath = "Dockerfile"
-
-
-[deploy]
-
-restartPolicyType = "ON_FAILURE"
-
-restartPolicyMaxRetries = 10
-
-healthcheckTimeout = 300
-
-
-[deploy.envs]
-
-PYTHONUNBUFFERED = "1"
-
-PYTHONDONTWRITEBYTECODE = "1"
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
