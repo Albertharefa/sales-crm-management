@@ -199,6 +199,38 @@ Order = OrderInDB
 
 
 # ==========================================
+# PURCHASE ORDER MODELS
+# ==========================================
+
+class PurchaseOrderBase(CRMBaseModel):
+    supplier_name: Optional[str] = None
+    items: List[QuotationItem]
+    total_amount: float
+    notes: Optional[str] = None
+
+
+class PurchaseOrderCreate(PurchaseOrderBase):
+    pass
+
+
+class PurchaseOrderUpdate(CRMBaseModel):
+    status: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PurchaseOrderInDB(PurchaseOrderBase):
+    id: str = Field(alias="_id")
+    po_number: str
+    status: str = "pending"
+    created_by: str
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+
+PurchaseOrder = PurchaseOrderInDB
+
+
+# ==========================================
 # ACTIVITY & TASK MODELS
 # ==========================================
 
