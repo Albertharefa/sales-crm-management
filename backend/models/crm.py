@@ -1,488 +1,496 @@
-from datetime import date, datetime
-from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    field_validator,
+from lib.db import db
+from models.crm import Activity, ActivityCreate, Paginated, Task
+from routers.common import audit, new_id, now, page_collection
+from routers.deps import current_user
+
+
+router = APIRouter(
+    prefix="/activities",
+    tags=["activities"],
 )
 
 
 # ============================================================
-# AUTH
+# HELPERS
 # ============================================================
 
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8)
+async def find_customer(customer_id: str):
+    """
+    Find customer using either:
+    - customer_id
+    - id
+
+    This keeps Activities compatible with the existing
+    Customers module.
+    """
+
+    if not customer_id:
+        return None
+
+    customer_id = str(customer_id).strip()
+
+    customer = await db.customers.find_one(
+        {"customer_id": customer_id},
+        {"_id": 0},
+    )
+
+    if customer:
+        return customer
+
+    customer = await db.customers.find_one(
+        {"id": customer_id},
+        {"_id": 0},
+    )
+
+    if customer:
+        return customer
+
+    return await db.customers.find_one(
+        {
+            "customer_id": {
+                "$regex": f"^{customer_id}$",
+                "$options": "i",
+            }
+        },
+        {"_id": 0},
+    )
 
 
-class UserPublic(BaseModel):
-    id: str
-    user_id: str
-    name: str
-    email: EmailStr
-    role: str
-    manager_id: Optional[str] = None
-    phone: Optional[str] = None
-    status: str = "Active"
-    last_login: Optional[datetime] = None
+def customer_name(customer: dict | None):
+    """
+    Safely get customer display name.
+    """
 
+    if not customer:
+        return None
 
-class UserCreate(BaseModel):
-    name: str = Field(min_length=2)
-    email: EmailStr
-    role: str
-    manager_id: Optional[str] = None
-    phone: Optional[str] = None
-    status: str = "Active"
-    password: str = Field(min_length=8)
-
-
-# ============================================================
-# CUSTOMER
-# ============================================================
-
-class Customer(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    id: str
-    customer_id: str
-    name: str
-    company: Optional[str] = None
-    industry: str = "Manufacturing"
-    city: str = "Jakarta"
-    province: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-    pic_name: Optional[str] = None
-    pic_position: Optional[str] = None
-    source: Optional[str] = None
-    status: str = "Active"
-    sales_id: Optional[str] = None
-    sales_name: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
-
-
-class CustomerCreate(BaseModel):
-    name: str = Field(min_length=2)
-    industry: str = "Manufacturing"
-    source: Optional[str] = None
-    city: str = "Jakarta"
-    province: Optional[str] = None
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-    pic_name: Optional[str] = None
-    pic_position: Optional[str] = None
-    status: str = "Active"
-    sales_id: Optional[str] = None
-    address: Optional[str] = None
-    notes: Optional[str] = None
-
-    @field_validator("email", mode="before")
-    @classmethod
-    def empty_email_is_none(cls, value):
-        return None if value == "" else value
+    return (
+        customer.get("name")
+        or customer.get("company_name")
+        or customer.get("customer_name")
+        or ""
+    )
 
 
 # ============================================================
-# CONTACT
+# LIST ACTIVITIES
 # ============================================================
 
-class Contact(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+@router.get(
+    "",
+    response_model=Paginated,
+    summary="List Activities",
+)
+async def list_activities(
+    page: int = Query(
+        1,
+        ge=1,
+        description="Page number",
+    ),
+    page_size: int = Query(
+        25,
+        ge=1,
+        le=100,
+        description="Number of records per page",
+    ),
+    search: str = Query(
+        "",
+        description="Search activities",
+    ),
+    status: str | None = Query(
+        None,
+        description="Filter by activity status",
+    ),
+    activity_type: str | None = Query(
+        None,
+        description="Filter by activity type",
+    ),
+    user: dict = Depends(current_user),
+):
+    """
+    Get paginated CRM activities.
 
-    id: str
-    contact_id: str
-    customer_id: str
-    customer_name: str
-    first_name: str
-    last_name: Optional[str] = None
-    position: Optional[str] = None
-    department: Optional[str] = None
-    email: Optional[EmailStr] = None
-    mobile: Optional[str] = None
-    contact_type: str = "User"
-    is_decision_maker: bool = False
-    status: str = "Active"
-    notes: Optional[str] = None
-    created_at: datetime
+    Supports:
+    - search
+    - status
+    - activity_type
+    - pagination
+    """
 
+    filters = {}
 
-# ============================================================
-# CONTACT CREATE
-# ============================================================
+    if status:
+        filters["status"] = status
 
-class ContactCreate(BaseModel):
-    first_name: str = Field(min_length=2)
-    last_name: Optional[str] = None
-    position: Optional[str] = None
-    department: Optional[str] = None
-    email: Optional[EmailStr] = None
-    mobile: Optional[str] = None
-    contact_type: str = "User"
-    is_decision_maker: bool = False
-    status: str = "Active"
-    notes: Optional[str] = None
+    if activity_type:
+        filters["activity_type"] = activity_type
 
-    @field_validator("email", mode="before")
-    @classmethod
-    def empty_email_is_none(cls, value):
-        return None if value == "" else value
-
-
-# ============================================================
-# OPPORTUNITY
-# ============================================================
-
-class Opportunity(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    id: str
-    opportunity_id: str
-    name: str
-    customer_id: str
-    customer_name: str
-    sales_id: Optional[str] = None
-    sales_name: Optional[str] = None
-    value: float = 0
-    probability: float = Field(default=50, ge=0, le=100)
-    stage: str = "Lead"
-    target_close: Optional[date] = None
-    brand: Optional[str] = None
-    product: Optional[str] = None
-    next_action: Optional[str] = None
-    description: Optional[str] = None
-    loss_reason: Optional[str] = None
-    created_at: datetime
-
-
-class OpportunityCreate(BaseModel):
-    name: str = Field(min_length=2)
-    customer_id: str
-    value: float = Field(ge=0)
-    probability: float = Field(default=50, ge=0, le=100)
-    stage: str = "Lead"
-    target_close: Optional[date] = None
-    brand: Optional[str] = None
-    product: Optional[str] = None
-    next_action: Optional[str] = None
-    description: Optional[str] = None
-    loss_reason: Optional[str] = None
+    return await page_collection(
+        "activities",
+        page,
+        page_size,
+        search,
+        filters,
+    )
 
 
 # ============================================================
-# ACTIVITY
+# CREATE ACTIVITY
 # ============================================================
 
-class Activity(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+@router.post(
+    "",
+    response_model=Activity,
+    summary="Create Activity",
+)
+async def create_activity(
+    payload: ActivityCreate,
+    user: dict = Depends(current_user),
+):
+    """
+    Create a CRM activity.
 
-    id: str
-    activity_id: str
-    subject: str
-    activity_type: str = "Call"
-    date: date
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-    sales_id: Optional[str] = None
-    sales_name: Optional[str] = None
-    next_follow_up: Optional[date] = None
-    status: str = "Open"
-    description: Optional[str] = None
-    created_at: datetime
+    The activity is automatically linked to:
+    - customer
+    - current sales user
+    - sales name
+    - timestamps
+    - activity ID
+    """
 
+    # --------------------------------------------------------
+    # CUSTOMER
+    # --------------------------------------------------------
 
-class ActivityCreate(BaseModel):
-    subject: str = Field(min_length=2)
-    activity_type: str = "Call"
-    date: date
-    customer_id: Optional[str] = None
-    next_follow_up: Optional[date] = None
-    status: str = "Open"
-    description: Optional[str] = None
+    customer = None
 
+    if payload.customer_id:
+        customer = await find_customer(
+            payload.customer_id
+        )
 
-# ============================================================
-# TASK
-# ============================================================
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                detail=(
+                    f"Customer "
+                    f"{payload.customer_id} "
+                    f"not found"
+                ),
+            )
 
-class Task(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    # --------------------------------------------------------
+    # CUSTOMER ID
+    # --------------------------------------------------------
 
-    id: str
-    title: str
-    due_date: date
-    priority: str = "Medium"
-    status: str = "Pending"
-    customer_name: Optional[str] = None
-    opportunity_name: Optional[str] = None
-    assigned_user: Optional[str] = None
-    created_at: datetime
+    actual_customer_id = None
 
+    if customer:
+        actual_customer_id = (
+            customer.get("customer_id")
+            or customer.get("id")
+            or payload.customer_id
+        )
 
-# ============================================================
-# PRODUCT
-# ============================================================
+    # --------------------------------------------------------
+    # ACTIVITY ID
+    # --------------------------------------------------------
 
-class Product(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    activity_id = (
+        "ACT-"
+        + now().strftime("%Y%m%d")
+        + "-"
+        + new_id()[:6].upper()
+    )
 
-    id: str
-    code: str
-    name: str
-    brand: Optional[str] = None
-    category: str = "Automation"
-    unit: str = "pcs"
-    default_price: float = 0
-    supplier: Optional[str] = None
-    status: str = "Active"
-    description: Optional[str] = None
-    created_at: datetime
+    # --------------------------------------------------------
+    # TIMESTAMP
+    # --------------------------------------------------------
 
+    created_at = now()
 
-class ProductCreate(BaseModel):
-    code: str = Field(min_length=2)
-    name: str = Field(min_length=2)
-    brand: Optional[str] = None
-    category: str = "Automation"
-    unit: str = "pcs"
-    default_price: float = Field(ge=0)
-    supplier: Optional[str] = None
-    status: str = "Active"
-    description: Optional[str] = None
+    # --------------------------------------------------------
+    # PAYLOAD
+    # --------------------------------------------------------
 
+    payload_data = payload.model_dump(
+        mode="json"
+    )
 
-# ============================================================
-# QUOTATION
-# ============================================================
+    # --------------------------------------------------------
+    # DOCUMENT
+    # --------------------------------------------------------
 
-class QuotationItem(BaseModel):
-    product_id: Optional[str] = None
-    description: str
-    quantity: float = Field(gt=0)
-    unit_price: float = Field(ge=0)
-    discount: float = Field(default=0, ge=0)
-    tax: float = Field(default=11, ge=0, le=100)
+    doc = {
+        "id": new_id(),
 
+        "activity_id": activity_id,
 
-class Quotation(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+        "customer_id": actual_customer_id,
 
-    id: str
-    number: str
-    date: date
-    customer_id: str
-    customer_name: str
-    sales_name: Optional[str] = None
-    items: List[QuotationItem]
-    payment_term: Optional[str] = None
-    delivery_term: Optional[str] = None
-    subtotal: float
-    discount_total: float
-    tax_total: float
-    grand_total: float
-    status: str = "Draft"
-    notes: Optional[str] = None
-    created_at: datetime
+        "customer_name": customer_name(
+            customer
+        ),
 
+        "sales_id": user.get("id"),
 
-class QuotationCreate(BaseModel):
-    customer_id: str
-    date: date
-    valid_until: Optional[date] = None
-    payment_term: Optional[str] = None
-    delivery_term: Optional[str] = None
-    items: List[QuotationItem] = Field(min_length=1)
-    notes: Optional[str] = None
+        "sales_name": user.get("name"),
 
+        **payload_data,
 
-# ============================================================
-# PURCHASE ORDER
-# ============================================================
+        "created_at": created_at,
 
-class PurchaseOrderItem(BaseModel):
-    product_id: Optional[str] = None
-    description: str
-    quantity: float = Field(gt=0)
-    unit_price: float = Field(ge=0)
+        "updated_at": created_at,
+    }
 
+    # --------------------------------------------------------
+    # SAVE
+    # --------------------------------------------------------
 
-class PurchaseOrder(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    await db.activities.insert_one(doc)
 
-    id: str
-    po_number: str
-    date: date
-    customer_id: str
-    customer_name: str
-    quotation_number: Optional[str] = None
-    sales_name: Optional[str] = None
-    items: List[PurchaseOrderItem]
-    total: float
-    status: str = "Received"
-    eta: Optional[date] = None
-    supplier: Optional[str] = None
-    document_name: Optional[str] = None
-    shipping_address: Optional[str] = None
-    created_at: datetime
+    # --------------------------------------------------------
+    # AUDIT
+    # --------------------------------------------------------
 
+    await audit(
+        user,
+        "Create",
+        "Aktivitas",
+        doc["id"],
+        {
+            "activity_id": doc["activity_id"],
+            "subject": doc.get("subject"),
+            "customer_id": doc.get(
+                "customer_id"
+            ),
+        },
+    )
 
-class PurchaseOrderCreate(BaseModel):
-    po_number: str = Field(min_length=2)
-    customer_id: str
-    date: date
-    status: str = "Received"
-    items: List[PurchaseOrderItem] = Field(min_length=1)
-    eta: Optional[date] = None
-    supplier: Optional[str] = None
-    document_name: Optional[str] = None
-    shipping_address: Optional[str] = None
+    # --------------------------------------------------------
+    # RESPONSE
+    # --------------------------------------------------------
+
+    doc.pop("_id", None)
+
+    return Activity(**doc)
 
 
 # ============================================================
-# DASHBOARD
+# CUSTOMER ACTIVITIES
 # ============================================================
 
-class DashboardGroupMetric(BaseModel):
-    name: str
-    count: int
-    value: float
+@router.get(
+    "/customer/{customer_id}",
+    response_model=Paginated,
+    summary="List Customer Activities",
+)
+async def list_customer_activities(
+    customer_id: str,
+    page: int = Query(
+        1,
+        ge=1,
+    ),
+    page_size: int = Query(
+        25,
+        ge=1,
+        le=100,
+    ),
+    user: dict = Depends(current_user),
+):
+    """
+    Get all activities belonging to one customer.
+    """
 
+    customer = await find_customer(
+        customer_id
+    )
 
-class DashboardMonthlyMetric(BaseModel):
-    month: str
-    label: str
-    actual: float
-    target: float
+    if not customer:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Customer "
+                f"{customer_id} "
+                f"not found"
+            ),
+        )
 
+    actual_customer_id = (
+        customer.get("customer_id")
+        or customer.get("id")
+        or customer_id
+    )
 
-class DashboardRecentActivity(BaseModel):
-    id: str
-    subject: str
-    activity_type: str
-    customer_name: Optional[str] = None
-    sales_name: Optional[str] = None
-    date: Optional[str] = None
-    status: str
+    total = await db.activities.count_documents(
+        {
+            "customer_id": actual_customer_id
+        }
+    )
 
+    skip = (
+        (page - 1)
+        * page_size
+    )
 
-class DashboardDealRisk(BaseModel):
-    id: str
-    opportunity_id: str
-    name: str
-    customer_name: str
-    sales_name: Optional[str] = None
-    value: float
-    stage: str
-    expected_close: Optional[str] = None
-    reason: str
+    items = await db.activities.find(
+        {
+            "customer_id": actual_customer_id
+        },
+        {
+            "_id": 0
+        },
+    ).sort(
+        "created_at",
+        -1,
+    ).skip(
+        skip
+    ).limit(
+        page_size
+    ).to_list(
+        page_size
+    )
 
-
-class DashboardMetrics(BaseModel):
-    total_customer: int
-    total_contacts: int
-    total_leads: int
-    total_opportunities: int
-    open_pipeline: float
-    weighted_pipeline: float
-    won_value: float
-    lost_value: float
-    win_rate: float
-    total_quotation: int
-    active_quotations: int
-    quotation_value: float
-    total_po: int
-    po_value: float
-    open_orders: int
-    completed_orders: int
-    overdue_orders: int
-    activities: int
-    overdue_activities: int
-    sales_target: float
-    target_achievement: float
-    pipeline_by_stage: List[DashboardGroupMetric]
-    pipeline_by_salesperson: List[DashboardGroupMetric]
-    monthly_sales_performance: List[DashboardMonthlyMetric]
-    recent_activities: List[DashboardRecentActivity]
-    deal_risks: List[DashboardDealRisk]
-    generated_at: datetime
-
-
-# ============================================================
-# AUDIT LOG
-# ============================================================
-
-class AuditLog(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    id: str
-    user_name: str
-    action: str
-    module: str
-    record_id: Optional[str] = None
-    changes: Optional[Dict[str, Any]] = None
-    created_at: datetime
+    return {
+        "items": items,
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+    }
 
 
 # ============================================================
-# PAGINATION
+# TASK LIST
 # ============================================================
 
-class Paginated(BaseModel):
-    items: List[Any]
-    page: int
-    page_size: int
-    total: int
+@router.get(
+    "/tasks",
+    response_model=Paginated,
+    summary="List Tasks",
+)
+async def list_tasks(
+    page: int = Query(
+        1,
+        ge=1,
+    ),
+    page_size: int = Query(
+        25,
+        ge=1,
+        le=100,
+    ),
+    search: str = Query(
+        "",
+        description="Search tasks",
+    ),
+    status: str | None = Query(
+        None,
+        description="Filter by task status",
+    ),
+    user: dict = Depends(current_user),
+):
+    """
+    Get CRM tasks with pagination.
+    """
+
+    filters = {}
+
+    if status:
+        filters["status"] = status
+
+    return await page_collection(
+        "tasks",
+        page,
+        page_size,
+        search,
+        filters,
+    )
 
 
 # ============================================================
-# UPLOAD
+# UPDATE TASK
 # ============================================================
 
-class UploadResponse(BaseModel):
-    id: str
-    file_name: str
-    content_type: str
-    size: int
-    url: str
+@router.patch(
+    "/tasks/{task_id}",
+    response_model=Task,
+    summary="Update Task",
+)
+async def update_task(
+    task_id: str,
+    status: str = Query(
+        ...,
+        description=(
+            "Task status, "
+            "for example Open, "
+            "In Progress, Completed"
+        ),
+    ),
+    user: dict = Depends(current_user),
+):
+    """
+    Update task status.
+    """
 
+    task = await db.tasks.find_one(
+        {
+            "$or": [
+                {"id": task_id},
+                {"task_id": task_id},
+            ]
+        },
+        {
+            "_id": 0
+        },
+    )
 
-# ============================================================
-# OPTIONS
-# ============================================================
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task tidak ditemukan",
+        )
 
-class OptionItem(BaseModel):
-    id: str
-    name: str
-    role: Optional[str] = None
-    default_price: Optional[float] = None
+    updated_at = now()
 
+    await db.tasks.update_one(
+        {
+            "$or": [
+                {"id": task_id},
+                {"task_id": task_id},
+            ]
+        },
+        {
+            "$set": {
+                "status": status,
+                "updated_at": updated_at,
+            }
+        },
+    )
 
-class OptionsResponse(BaseModel):
-    customers: List[OptionItem]
-    products: List[OptionItem]
-    users: List[OptionItem]
+    # --------------------------------------------------------
+    # AUDIT
+    # --------------------------------------------------------
 
+    await audit(
+        user,
+        "Update",
+        "Task",
+        task.get("id", task_id),
+        {
+            "task_id": task.get(
+                "task_id",
+                task_id,
+            ),
+            "status": status,
+        },
+    )
 
-# ============================================================
-# SALES TEAM
-# ============================================================
+    # --------------------------------------------------------
+    # RESPONSE
+    # --------------------------------------------------------
 
-class SalesTeamMetric(BaseModel):
-    sales: str
-    role: str
-    manager: str
-    open_pipeline: float
-    weighted: float
-    won: float
-    po: int
-    po_value: float
-    activities: int
-    indent: int
-    overdue: int
+    task["status"] = status
+    task["updated_at"] = updated_at
+
+    return Task(**task)
