@@ -312,3 +312,18 @@ class LoginRequest(CRMBaseModel):
 class UserPublic(UserBase):
     id: str = Field(alias="_id")
     created_at: datetime
+
+
+# ==========================================
+# ADMIN & METRICS MODELS
+# ==========================================
+
+class OptionsResponse(CRMBaseModel):
+    options: Optional[List[Any]] = None
+
+
+class SalesTeamMetric(CRMBaseModel):
+    user_id: Optional[str] = None
+    name: Optional[str] = None
+    deals_won: Optional[int] = 0
+    total_value: Optional[float] = 0.0
