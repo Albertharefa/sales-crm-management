@@ -2,11 +2,12 @@
 CRM Models
 Sales CRM Management System
 
+Centralized Pydantic models for the CRM API.
+
 IMPORTANT:
-- This file must NOT import from routers.*
-- This file must NOT import models.crm itself
-- Keep all CRM/Pydantic schemas centralized here
-- Designed to avoid circular-import problems
+- This file must NOT import anything from routers.*
+- Routers may import models from this file.
+- Keep schemas centralized here to prevent circular imports.
 """
 
 from __future__ import annotations
@@ -18,16 +19,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================
-# BASE CONFIG
+# BASE MODEL
 # ============================================================
 
 class CRMBaseModel(BaseModel):
     """
-    Common base model for all CRM schemas.
+    Common base model.
 
-    extra='allow' is intentional so existing API payloads
-    can continue working even when additional MongoDB fields
-    are present.
+    extra='allow' is intentional so existing MongoDB/API fields
+    do not break validation when additional fields are present.
     """
 
     model_config = ConfigDict(
@@ -140,7 +140,6 @@ class ContactBase(CRMBaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     mobile: Optional[str] = None
-
     whatsapp: Optional[str] = None
 
     notes: Optional[str] = None
@@ -194,8 +193,11 @@ class ActivityCreate(ActivityBase):
 class ActivityUpdate(CRMBaseModel):
     subject: Optional[str] = None
     activity_type: Optional[str] = None
+
     date: Optional[date] = None
+
     description: Optional[str] = None
+
     status: Optional[str] = None
 
     customer_id: Optional[str] = None
@@ -221,12 +223,11 @@ class Activity(ActivityBase):
 
 class TaskBase(CRMBaseModel):
     title: str = ""
-    subject: Optional[str] = None
 
+    subject: Optional[str] = None
     description: Optional[str] = None
 
     status: str = "Open"
-
     priority: str = "Medium"
 
     due_date: Optional[date] = None
@@ -349,7 +350,158 @@ class Product(ProductBase):
 
 
 # ============================================================
-# USER / AUTH
+# QUOTATION
+# ============================================================
+
+class QuotationItem(CRMBaseModel):
+    """
+    Individual quotation line item.
+
+    Flexible fields are included so existing quotation payloads
+    can be accepted without breaking the API.
+    """
+
+    product_id: Optional[str] = None
+    product_code: Optional[str] = None
+    product_name: Optional[str] = None
+
+    description: Optional[str] = None
+    part_number: Optional[str] = None
+
+    brand: Optional[str] = None
+
+    quantity: float = 1
+    unit: Optional[str] = None
+
+    unit_price: float = 0
+    price: Optional[float] = None
+
+    discount: float = 0
+    discount_percent: float = 0
+
+    subtotal: float = 0
+
+    currency: Optional[str] = "IDR"
+
+    notes: Optional[str] = None
+
+
+class QuotationBase(CRMBaseModel):
+    """
+    Common quotation fields.
+    """
+
+    quotation_number: Optional[str] = None
+    quotation_no: Optional[str] = None
+    number: Optional[str] = None
+
+    quotation_date: Optional[date] = None
+    date: Optional[date] = None
+
+    valid_until: Optional[date] = None
+
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+
+    contact_id: Optional[str] = None
+    contact_name: Optional[str] = None
+
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+
+    subject: Optional[str] = None
+    title: Optional[str] = None
+
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+    status: str = "Draft"
+
+    currency: str = "IDR"
+
+    items: List[QuotationItem] = Field(default_factory=list)
+
+    subtotal: float = 0
+    discount: float = 0
+    discount_percent: float = 0
+
+    tax: float = 0
+    tax_percent: float = 0
+
+    shipping_cost: float = 0
+    other_cost: float = 0
+
+    total: float = 0
+
+    probability: Optional[float] = None
+
+    project_name: Optional[str] = None
+    project_id: Optional[str] = None
+
+
+class QuotationCreate(QuotationBase):
+    pass
+
+
+class QuotationUpdate(CRMBaseModel):
+    quotation_number: Optional[str] = None
+    quotation_no: Optional[str] = None
+    number: Optional[str] = None
+
+    quotation_date: Optional[date] = None
+    date: Optional[date] = None
+
+    valid_until: Optional[date] = None
+
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+
+    contact_id: Optional[str] = None
+    contact_name: Optional[str] = None
+
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+
+    subject: Optional[str] = None
+    title: Optional[str] = None
+
+    description: Optional[str] = None
+    notes: Optional[str] = None
+
+    status: Optional[str] = None
+
+    currency: Optional[str] = None
+
+    items: Optional[List[QuotationItem]] = None
+
+    subtotal: Optional[float] = None
+    discount: Optional[float] = None
+    discount_percent: Optional[float] = None
+
+    tax: Optional[float] = None
+    tax_percent: Optional[float] = None
+
+    shipping_cost: Optional[float] = None
+    other_cost: Optional[float] = None
+
+    total: Optional[float] = None
+
+    probability: Optional[float] = None
+
+    project_name: Optional[str] = None
+    project_id: Optional[str] = None
+
+
+class Quotation(QuotationBase):
+    id: Optional[str] = None
+    quotation_id: Optional[str] = None
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# AUTHENTICATION
 # ============================================================
 
 class LoginRequest(CRMBaseModel):
@@ -359,6 +511,7 @@ class LoginRequest(CRMBaseModel):
 
 class LoginResponse(CRMBaseModel):
     success: bool = True
+
     message: Optional[str] = None
 
     token: Optional[str] = None
@@ -372,6 +525,7 @@ class UserPublic(CRMBaseModel):
     user_id: Optional[str] = None
 
     email: Optional[str] = None
+
     name: Optional[str] = None
     full_name: Optional[str] = None
 
@@ -455,6 +609,7 @@ class DashboardMetrics(CRMBaseModel):
     total_activities: int = 0
     total_tasks: int = 0
     total_products: int = 0
+    total_quotations: int = 0
 
     open_tasks: int = 0
     completed_tasks: int = 0
@@ -463,15 +618,22 @@ class DashboardMetrics(CRMBaseModel):
     open_activities: int = 0
     completed_activities: int = 0
 
+    draft_quotations: int = 0
+    sent_quotations: int = 0
+    won_quotations: int = 0
+    lost_quotations: int = 0
+
     total_sales: int = 0
 
     total_pipeline: float = 0
     total_revenue: float = 0
+    total_quotation_value: float = 0
 
     customers_growth: float = 0
     activities_growth: float = 0
     tasks_growth: float = 0
     sales_growth: float = 0
+    quotations_growth: float = 0
 
 
 # ============================================================
@@ -480,7 +642,9 @@ class DashboardMetrics(CRMBaseModel):
 
 class APIResponse(CRMBaseModel):
     success: bool = True
+
     message: Optional[str] = None
+
     data: Optional[Any] = None
 
 
@@ -521,6 +685,13 @@ __all__ = [
     "ProductBase",
     "ProductCreate",
     "ProductUpdate",
+
+    # Quotation
+    "Quotation",
+    "QuotationBase",
+    "QuotationCreate",
+    "QuotationUpdate",
+    "QuotationItem",
 
     # Authentication
     "LoginRequest",
