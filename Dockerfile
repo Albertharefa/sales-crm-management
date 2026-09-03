@@ -1,36 +1,39 @@
 # ============================================================
-# Sales CRM Management - Production Image
-# FastAPI + React/Vite + MongoDB (external Railway MongoDB)
+# Sales CRM Management - Production image for Railway
+# Multi-stage build: Vite/React frontend + FastAPI backend
 # ============================================================
 
-# ---------- Frontend build ----------
-FROM node:22-bookworm-slim AS frontend-builder
+FROM node:22-alpine AS frontend-builder
+
 WORKDIR /build/frontend
 
 COPY frontend/package.json ./
-RUN npm install --no-audit --no-fund --legacy-peer-deps
+RUN npm install --no-audit --no-fund --prefer-offline
 
 COPY frontend/ ./
-ENV VITE_API_URL=/api
 RUN npm run build
 
 
-# ---------- Backend runtime ----------
-FROM python:3.13-slim AS runtime
+FROM python:3.12-slim AS runtime
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
 WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     PYTHONPATH=/app/backend     APP_ENV=production     PORT=8080
-
-# Keep the runtime image minimal.
-# No apt-get step is required; Railway provides the HTTP networking layer.
-
+# Install Python dependencies first for better Docker layer caching.
 COPY backend/requirements.txt /app/backend/requirements.txt
-RUN pip install --no-cache-dir -r /app/backend/requirements.txt
+RUN python -m pip install --upgrade pip \
+    && python -m pip install -r /app/backend/requirements.txt
 
-COPY backend /app/backend
+# Backend source
+COPY backend/ /app/backend/
+
+# Compiled React application
 COPY --from=frontend-builder /build/frontend/dist /app/frontend/dist
 
-EXPOSE 8080
+WORKDIR /app/backend
 
-# Railway provides PORT; uvicorn binds to all interfaces.
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8080} --proxy-headers --forwarded-allow-ips='*'"]
+# Railway provides PORT at runtime.
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]

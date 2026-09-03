@@ -38,3 +38,14 @@ CRM SALES MANAGEMENT API STARTING
 MongoDB connection OK
 CRM API READY
 Application startup complete.
+
+
+FINAL PRODUCTION PACKAGING (2026-09-03)
+---------------------------------------
+- Added root Dockerfile with Node frontend build + Python FastAPI runtime.
+- Added railway.json with Dockerfile builder and /health healthcheck.
+- Added .dockerignore and .env.example.
+- FastAPI now serves frontend/dist at / and React SPA routes via a final catch-all.
+- All CRM routers are available under /api/... for the frontend.
+- Legacy unprefixed routes remain available for compatibility.
+- Swagger remains /docs and health remains /health.

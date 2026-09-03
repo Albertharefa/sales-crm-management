@@ -193,3 +193,56 @@ local-run instructions above.
   Vite HMR for the frontend); no rebuild step needed for normal iteration. A
   restart is still needed after changing `.env`, `requirements.txt`, or
   `vite.config.ts`.
+
+## Railway Production Deployment
+
+This repository is packaged as a **single production service**:
+
+- React/Vite is compiled into `frontend/dist`.
+- FastAPI serves the compiled CRM UI at `/`.
+- React API calls use `/api/...`.
+- Swagger is available at `/docs`.
+- Health check is available at `/health`.
+- Railway builds with the included `Dockerfile`; this avoids the previous Nixpacks
+  `apt-get ... curl` build failure.
+- The backend also keeps the legacy unprefixed API routes for compatibility.
+
+### Required Railway Variables
+
+Set these in **Railway → Variables**:
+
+```text
+MONGO_URL=<your MongoDB connection string>
+DB_NAME=<your database name>
+ADMIN_EMAIL=<your admin email>
+ADMIN_PASSWORD=<strong password, minimum 8 characters>
+```
+
+Optional:
+
+```text
+CORS_ORIGINS=*
+```
+
+Do not put real passwords or MongoDB credentials into GitHub.
+
+### Deploy
+
+1. Extract this ZIP so `Dockerfile`, `railway.json`, `backend/`, and `frontend/`
+   are at the repository root.
+2. Push the extracted folder contents to the GitHub repository connected to Railway.
+3. Railway should detect the root `Dockerfile` automatically.
+4. Add the Variables above.
+5. Deploy.
+6. Verify:
+   - `/health` → `healthy` when MongoDB is reachable.
+   - `/docs` → Swagger UI.
+   - `/` → CRM login screen.
+   - `/api/auth/me` → `401` before login is expected.
+7. Log in with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` configured in Railway.
+
+### Important
+
+The previous deployment error came from a generated build step trying to execute
+`apt-get update && apt-get install ... curl`. This production package deliberately
+uses the supplied Dockerfile instead, so Railway does not need that failing build step.
