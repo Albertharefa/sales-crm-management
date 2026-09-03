@@ -1,39 +1,96 @@
 # ============================================================
-# Sales CRM Management - Production image for Railway
-# Multi-stage build: Vite/React frontend + FastAPI backend
+# SALES CRM MANAGEMENT
+# Production Dockerfile
+# React/Vite Frontend + Python/FastAPI Backend
+# ============================================================
+
+
+# ============================================================
+# STAGE 1 — BUILD FRONTEND
 # ============================================================
 
 FROM node:22-alpine AS frontend-builder
 
 WORKDIR /build/frontend
 
+# Copy package definition first for better Docker caching
 COPY frontend/package.json ./
-RUN npm install --no-audit --no-fund --prefer-offline
 
+# Clean npm cache and install dependencies
+# package-lock is intentionally not required
+RUN npm cache clean --force \
+    && npm install \
+        --no-audit \
+        --no-fund \
+        --package-lock=false \
+        --legacy-peer-deps
+
+# Copy complete frontend source
 COPY frontend/ ./
+
+# Build React/Vite application
 RUN npm run build
 
 
-FROM python:3.12-slim AS runtime
+# ============================================================
+# STAGE 2 — PYTHON BACKEND
+# ============================================================
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install Python dependencies first for better Docker layer caching.
-COPY backend/requirements.txt /app/backend/requirements.txt
-RUN python -m pip install --upgrade pip \
-    && python -m pip install -r /app/backend/requirements.txt
+# Python production settings
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Backend source
+# Railway provides PORT dynamically
+ENV PORT=8000
+
+
+# ============================================================
+# BACKEND DEPENDENCIES
+# ============================================================
+
+COPY backend/requirements.txt /app/backend/requirements.txt
+
+RUN python -m pip install --no-cache-dir --upgrade pip \
+    && python -m pip install --no-cache-dir \
+       -r /app/backend/requirements.txt
+
+
+# ============================================================
+# BACKEND SOURCE
+# ============================================================
+
 COPY backend/ /app/backend/
 
-# Compiled React application
-COPY --from=frontend-builder /build/frontend/dist /app/frontend/dist
+
+# ============================================================
+# FRONTEND PRODUCTION BUILD
+# ============================================================
+
+COPY --from=frontend-builder \
+    /build/frontend/dist \
+    /app/frontend/dist
+
+
+# ============================================================
+# APPLICATION DIRECTORY
+# ============================================================
 
 WORKDIR /app/backend
 
-# Railway provides PORT at runtime.
+
+# ============================================================
+# NETWORK
+# ============================================================
+
+EXPOSE 8000
+
+
+# ============================================================
+# START APPLICATION
+# ============================================================
+
 CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
