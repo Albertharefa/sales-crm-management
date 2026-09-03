@@ -7,14 +7,15 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================
-# BASE
+# BASE MODEL
 # ============================================================
 
 class CRMBase(BaseModel):
     """
-    Base model untuk seluruh CRM.
-    Extra fields diizinkan agar kompatibel dengan data MongoDB
-    yang mungkin sudah memiliki field tambahan.
+    Base model untuk CRM.
+
+    extra="allow" sengaja digunakan agar model tetap kompatibel
+    dengan field tambahan yang mungkin sudah tersimpan di MongoDB.
     """
 
     model_config = ConfigDict(
@@ -22,6 +23,10 @@ class CRMBase(BaseModel):
         populate_by_name=True,
     )
 
+
+# ============================================================
+# PAGINATION
+# ============================================================
 
 class Paginated(CRMBase):
     items: list[Any] = Field(default_factory=list)
@@ -31,7 +36,7 @@ class Paginated(CRMBase):
 
 
 # ============================================================
-# AUTH / USER
+# AUTHENTICATION / USERS
 # ============================================================
 
 class LoginRequest(CRMBase):
@@ -48,9 +53,11 @@ class UserPublic(CRMBase):
     id: str
     name: str
     email: str
+
     role: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
+
     is_active: bool = True
 
 
@@ -58,6 +65,7 @@ class UserCreate(CRMBase):
     name: str
     email: str
     password: str
+
     role: str = "sales"
     department: Optional[str] = None
     position: Optional[str] = None
@@ -67,9 +75,11 @@ class UserUpdate(CRMBase):
     name: Optional[str] = None
     email: Optional[str] = None
     password: Optional[str] = None
+
     role: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
+
     is_active: Optional[bool] = None
 
 
@@ -80,9 +90,10 @@ class UserUpdate(CRMBase):
 class Customer(CRMBase):
     id: str
     customer_id: Optional[str] = None
-    name: str
 
+    name: str
     company_name: Optional[str] = None
+
     customer_type: Optional[str] = None
     industry: Optional[str] = None
     segment: Optional[str] = None
@@ -113,6 +124,7 @@ class CustomerCreate(CRMBase):
     name: str
 
     company_name: Optional[str] = None
+
     customer_type: Optional[str] = None
     industry: Optional[str] = None
     segment: Optional[str] = None
@@ -139,6 +151,7 @@ class CustomerCreate(CRMBase):
 class CustomerUpdate(CRMBase):
     name: Optional[str] = None
     company_name: Optional[str] = None
+
     customer_type: Optional[str] = None
     industry: Optional[str] = None
     segment: Optional[str] = None
@@ -169,8 +182,8 @@ class CustomerUpdate(CRMBase):
 class Contact(CRMBase):
     id: str
     contact_id: Optional[str] = None
-    customer_id: str
 
+    customer_id: str
     customer_name: Optional[str] = None
 
     first_name: str
@@ -184,10 +197,12 @@ class Contact(CRMBase):
     phone: Optional[str] = None
 
     contact_type: Optional[str] = None
+
     is_decision_maker: bool = False
     is_primary: bool = False
 
     status: str = "active"
+
     notes: Optional[str] = None
 
     created_at: Optional[datetime] = None
@@ -206,10 +221,12 @@ class ContactCreate(CRMBase):
     phone: Optional[str] = None
 
     contact_type: Optional[str] = None
+
     is_decision_maker: bool = False
     is_primary: bool = False
 
     status: str = "active"
+
     notes: Optional[str] = None
 
 
@@ -225,15 +242,17 @@ class ContactUpdate(CRMBase):
     phone: Optional[str] = None
 
     contact_type: Optional[str] = None
+
     is_decision_maker: Optional[bool] = None
     is_primary: Optional[bool] = None
 
     status: Optional[str] = None
+
     notes: Optional[str] = None
 
 
 # ============================================================
-# ACTIVITY
+# ACTIVITIES
 # ============================================================
 
 class Activity(CRMBase):
@@ -257,6 +276,7 @@ class Activity(CRMBase):
     next_follow_up: Optional[date] = None
 
     status: str = "open"
+
     description: Optional[str] = None
     notes: Optional[str] = None
 
@@ -276,11 +296,12 @@ class ActivityCreate(CRMBase):
 
     description: Optional[str] = None
     status: str = "open"
+
     notes: Optional[str] = None
 
 
 # ============================================================
-# TASK
+# TASKS
 # ============================================================
 
 class Task(CRMBase):
@@ -300,8 +321,8 @@ class Task(CRMBase):
     assigned_name: Optional[str] = None
 
     due_date: Optional[date] = None
-    priority: str = "medium"
 
+    priority: str = "medium"
     status: str = "open"
 
     created_at: Optional[datetime] = None
@@ -310,6 +331,7 @@ class Task(CRMBase):
 
 class TaskCreate(CRMBase):
     title: str
+
     description: Optional[str] = None
 
     customer_id: Optional[str] = None
@@ -319,6 +341,7 @@ class TaskCreate(CRMBase):
     assigned_name: Optional[str] = None
 
     due_date: Optional[date] = None
+
     priority: str = "medium"
     status: str = "open"
 
@@ -334,6 +357,7 @@ class TaskUpdate(CRMBase):
     assigned_name: Optional[str] = None
 
     due_date: Optional[date] = None
+
     priority: Optional[str] = None
     status: Optional[str] = None
 
@@ -347,6 +371,7 @@ class Pipeline(CRMBase):
     pipeline_id: Optional[str] = None
 
     name: str
+
     customer_id: Optional[str] = None
     customer_name: Optional[str] = None
 
@@ -411,6 +436,7 @@ class Product(CRMBase):
     product_id: Optional[str] = None
 
     name: str
+
     brand: Optional[str] = None
     category: Optional[str] = None
     model: Optional[str] = None
@@ -418,8 +444,8 @@ class Product(CRMBase):
     description: Optional[str] = None
 
     unit: Optional[str] = None
-    price: float = 0
 
+    price: float = 0
     currency: str = "IDR"
 
     status: str = "active"
@@ -438,6 +464,7 @@ class ProductCreate(CRMBase):
     description: Optional[str] = None
 
     unit: Optional[str] = None
+
     price: float = 0
     currency: str = "IDR"
 
@@ -446,6 +473,7 @@ class ProductCreate(CRMBase):
 
 class ProductUpdate(CRMBase):
     name: Optional[str] = None
+
     brand: Optional[str] = None
     category: Optional[str] = None
     model: Optional[str] = None
@@ -453,6 +481,7 @@ class ProductUpdate(CRMBase):
     description: Optional[str] = None
 
     unit: Optional[str] = None
+
     price: Optional[float] = None
     currency: Optional[str] = None
 
@@ -471,7 +500,6 @@ class Quotation(CRMBase):
     customer_name: Optional[str] = None
 
     quotation_number: Optional[str] = None
-
     subject: Optional[str] = None
 
     amount: float = 0
@@ -582,11 +610,12 @@ class OrderUpdate(CRMBase):
 
 
 # ============================================================
-# UPLOADS / DOCUMENTS
+# UPLOADS
 # ============================================================
 
 class Upload(CRMBase):
     id: str
+
     file_id: Optional[str] = None
 
     filename: str
@@ -620,12 +649,63 @@ class UploadCreate(CRMBase):
 
 
 # ============================================================
-# DASHBOARD / ANALYTICS
+# DASHBOARD METRICS
+# ============================================================
+
+class DashboardMetrics(CRMBase):
+    """
+    Dashboard response model.
+
+    Dibuat fleksibel supaya kompatibel dengan dashboard.py
+    dan memungkinkan penambahan KPI tanpa merusak API.
+    """
+
+    customers: int = 0
+    contacts: int = 0
+
+    activities: int = 0
+    tasks: int = 0
+
+    pipeline_value: float = 0
+    quotation_value: float = 0
+    order_value: float = 0
+
+    open_tasks: int = 0
+    overdue_tasks: int = 0
+
+    won_deals: int = 0
+    lost_deals: int = 0
+
+    total_customers: int = 0
+    total_contacts: int = 0
+    total_activities: int = 0
+    total_tasks: int = 0
+
+    total_pipeline: float = 0
+    total_quotations: float = 0
+    total_orders: float = 0
+
+    revenue: float = 0
+    sales_target: float = 0
+    sales_achievement: float = 0
+
+    conversion_rate: float = 0
+    win_rate: float = 0
+
+    active_customers: int = 0
+    active_opportunities: int = 0
+
+    raw: Optional[dict[str, Any]] = None
+
+
+# ============================================================
+# DASHBOARD STATS
 # ============================================================
 
 class DashboardStats(CRMBase):
     customers: int = 0
     contacts: int = 0
+
     activities: int = 0
     tasks: int = 0
 
