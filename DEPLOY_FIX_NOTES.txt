@@ -58,3 +58,6 @@ DEPLOYMENT
 Push the project root (including Dockerfile and railway.toml) to the GitHub
 repository connected to Railway. Do not upload node_modules or any .env file.
 Railway builds the frontend and backend into one service.
+
+
+Railway build fix v2: removed the apt-get/curl runtime layer because the build was being killed during [runtime 3/7]. The container only needs Python/uvicorn and does not require curl.

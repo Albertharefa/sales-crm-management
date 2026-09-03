@@ -21,8 +21,8 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     PYTHONPATH=/app/backend     APP_ENV=production     PORT=8080
 
-# Minimal runtime packages.
-RUN apt-get update     && apt-get install -y --no-install-recommends curl     && rm -rf /var/lib/apt/lists/*
+# Keep the runtime image minimal.
+# No apt-get step is required; Railway provides the HTTP networking layer.
 
 COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
