@@ -49,3 +49,12 @@ FINAL PRODUCTION PACKAGING (2026-09-03)
 - All CRM routers are available under /api/... for the frontend.
 - Legacy unprefixed routes remain available for compatibility.
 - Swagger remains /docs and health remains /health.
+
+2026-09-03 Production hardening:
+- FastAPI accepts both canonical routes and frontend /api/* calls through internal prefix compatibility.
+- React/Vite dist is served by FastAPI on the same Railway origin, including SPA deep-link fallback.
+- MongoDB indexes are initialized at startup.
+- Sessions use MongoDB TTL + explicit age validation.
+- Admin password is no longer overwritten on every restart; explicit ADMIN_FORCE_PASSWORD_RESET=true is required.
+- CORS is restricted to FRONTEND_ORIGINS in development/integrations rather than wildcard credentials.
+- COOKIE_SECURE can be disabled for local HTTP development.
