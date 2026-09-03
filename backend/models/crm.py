@@ -264,6 +264,9 @@ class ActivityInDB(ActivityBase):
 
 
 Activity = ActivityInDB
+Task = ActivityInDB
+TaskCreate = ActivityCreate
+TaskUpdate = ActivityUpdate
 
 
 # ==========================================
