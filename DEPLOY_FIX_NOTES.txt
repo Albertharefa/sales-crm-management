@@ -1,0 +1,40 @@
+SALES CRM MANAGEMENT - DEPLOY FIX
+
+Perbaikan utama:
+1. models/crm.py dipusatkan dan dibuat bebas circular import.
+2. Ditambahkan schema yang sebelumnya hilang:
+   OptionsResponse, SalesTeamMetric, Opportunity, OpportunityCreate,
+   PurchaseOrder, PurchaseOrderCreate, serta schema pendukung dashboard/upload.
+3. Field frontend diselaraskan:
+   Customer, Product, Quotation, Purchase Order, Opportunity, Activity/Task.
+4. Customer API sekarang benar-benar server-side pagination + search dan
+   mengembalikan {items,page,page_size,total}.
+5. Validasi create customer/product/opportunity/order/quotation diperbaiki.
+6. Quotation menghitung subtotal, discount, tax, dan grand_total di server.
+7. Purchase Order menghitung total di server.
+8. UploadResponse diselaraskan dengan response upload frontend.
+9. UserPublic tidak lagi membawa password_hash ke response.
+10. Semua router yang sebelumnya gagal import dapat dimuat oleh server.
+
+File utama yang diperbarui:
+- backend/models/crm.py
+- backend/routers/customers.py
+- backend/routers/products.py
+- backend/routers/pipeline.py
+- backend/routers/orders.py
+- backend/routers/quotations.py
+
+Validasi lokal:
+- Semua file Python berhasil compile.
+- Semua import dari models.crm berhasil ditemukan.
+- CustomerCreate sekarang menolak payload {} dengan 422.
+- Field date Pydantic diperbaiki agar tidak menjadi NoneType akibat
+  konflik nama field "date" dengan from __future__ annotations.
+
+Deployment:
+Commit/push isi project ini ke branch yang dipakai Railway.
+Setelah deploy, cek Deploy Logs dan Swagger. Target startup:
+CRM SALES MANAGEMENT API STARTING
+MongoDB connection OK
+CRM API READY
+Application startup complete.
