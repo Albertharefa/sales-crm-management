@@ -8,7 +8,7 @@ FROM node:22-bookworm-slim AS frontend-builder
 WORKDIR /build/frontend
 
 COPY frontend/package.json ./
-RUN npm install --no-audit --no-fund
+RUN npm install --no-audit --no-fund --legacy-peer-deps
 
 COPY frontend/ ./
 ENV VITE_API_URL=/api

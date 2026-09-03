@@ -1,76 +1,52 @@
-# DEPLOY TO RAILWAY — QUICK GUIDE
+# Sales CRM Management — Railway Production Deployment
 
-## 1. GitHub
+## Repository layout
 
-Upload/push the contents of this folder to the repository connected to Railway.
+The GitHub repository root MUST contain:
 
-Do NOT upload:
-- `.env`
-- real passwords
-- `OPENAI_API_KEY`
-- `node_modules`
-- `frontend/dist`
+- `Dockerfile`
+- `railway.toml`
+- `backend/`
+- `frontend/`
 
-## 2. Railway Variables
+Do not put these inside an extra nested `sales-crm-management-production/` directory.
 
-Set:
+## Railway variables
 
-```text
-MONGO_URL=<MongoDB connection string>
-DB_NAME=sales_crm
-ADMIN_EMAIL=<your admin email>
-ADMIN_PASSWORD=<strong password, minimum 8 characters>
-COOKIE_SECURE=true
-CORS_ORIGINS=
-OPENAI_API_KEY=<optional>
-OPENAI_MODEL=gpt-5.4
-```
+Required:
+- `MONGO_URL`
+- `DB_NAME`
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD`
 
-For a separate frontend development server, the Vite proxy already sends `/api`
-to `http://localhost:8001`.
+Recommended:
+- `COOKIE_SECURE=true`
+- `CORS_ORIGINS=`
+- `OPENAI_API_KEY=`
+- `OPENAI_MODEL=gpt-5.4`
 
-## 3. Deploy
+## Deploy
 
-Railway reads `railway.toml`, builds the root `Dockerfile`, and starts one
-service containing both the React application and FastAPI API.
+1. Extract the ZIP.
+2. Upload the **contents** of the extracted folder to the root of the GitHub repository connected to Railway.
+3. Commit and push.
+4. Railway should detect the root `Dockerfile` and build the single-service image.
+5. Open the generated Railway domain.
 
-## 4. Verify
+## Expected URLs
 
-Open:
-
-- `/` → CRM application
-- `/login` → login
-- `/health` → healthy/degraded status
+- `/` → React CRM dashboard
+- `/login` → CRM login
 - `/docs` → Swagger
+- `/redoc` → ReDoc
+- `/health` → health check
+- `/api/*` → frontend-compatible API
+- `/customers`, `/pipeline`, `/activities`, `/quotations`, etc. → public API routes
 
-Expected:
+## If Railway says "Failed to build an image"
 
-```json
-{
-  "status": "healthy",
-  "application": "Sales CRM Management",
-  "database": "connected"
-}
-```
+Open **Build Logs** (not Deploy Logs) and inspect the first red error. The most important check is that `Dockerfile` is in the repository root.
 
-## 5. Admin login
+## Important
 
-The first startup creates the configured `ADMIN_EMAIL` as `SUPER_ADMIN`.
-If the account already exists, the configured `ADMIN_PASSWORD` is synchronized
-on startup.
-
-Change `ADMIN_PASSWORD` in Railway Variables when you intentionally want to
-rotate the bootstrap password.
-
-## Architecture
-
-```text
-Railway HTTPS
-     |
-     +-- /              React CRM SPA
-     +-- /api/*         FastAPI compatibility API
-     +-- /docs          Swagger
-     +-- /health        Health check
-     |
-     +-- MongoDB        External MongoDB
-```
+Never commit real `.env` files or production secrets to GitHub.
