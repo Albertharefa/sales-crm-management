@@ -1,7 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from lib.db import db
-from models.crm import Activity, ActivityCreate, Paginated, Task
+from models.crm import (
+    Activity,
+    ActivityCreate,
+    ActivityUpdate,
+    Paginated,
+    Task,
+    TaskUpdate,
+)
 from routers.common import audit, new_id, now, page_collection
 from routers.deps import current_user
 
@@ -13,70 +20,25 @@ router = APIRouter(
 
 
 # ============================================================
-# HELPERS
-# ============================================================
-
-async def find_customer(customer_id: str):
-    """
-    Find customer using public customer_id.
-    Fallback to internal id for backward compatibility.
-    """
-
-    if not customer_id:
-        return None
-
-    customer_id = str(customer_id).strip()
-
-    # Primary: public customer_id
-    customer = await db.customers.find_one(
-        {
-            "customer_id": customer_id
-        },
-        {
-            "_id": 0
-        },
-    )
-
-    if customer:
-        return customer
-
-    # Fallback: internal id
-    customer = await db.customers.find_one(
-        {
-            "id": customer_id
-        },
-        {
-            "_id": 0
-        },
-    )
-
-    return customer
-
-
-# ============================================================
-# ACTIVITIES
+# ACTIVITIES - LIST
 # ============================================================
 
 @router.get(
     "",
     response_model=Paginated,
+    summary="List Activities",
 )
 async def list_activities(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
     search: str = "",
     status: str | None = None,
+    activity_type: str | None = None,
     customer_id: str | None = None,
     user: dict = Depends(current_user),
 ):
     """
-    List CRM activities.
-
-    Supports:
-    - pagination
-    - search
-    - status filter
-    - customer filter
+    List CRM activities with pagination and filters.
     """
 
     filters = {}
@@ -84,8 +46,11 @@ async def list_activities(
     if status:
         filters["status"] = status
 
+    if activity_type:
+        filters["activity_type"] = activity_type
+
     if customer_id:
-        filters["customer_id"] = customer_id.strip()
+        filters["customer_id"] = customer_id
 
     return await page_collection(
         "activities",
@@ -97,12 +62,13 @@ async def list_activities(
 
 
 # ============================================================
-# CREATE ACTIVITY
+# ACTIVITIES - CREATE
 # ============================================================
 
 @router.post(
     "",
     response_model=Activity,
+    summary="Create Activity",
 )
 async def create_activity(
     payload: ActivityCreate,
@@ -112,59 +78,33 @@ async def create_activity(
     Create a new CRM activity.
     """
 
-    # --------------------------------------------------------
-    # FIND CUSTOMER
-    # --------------------------------------------------------
-
     customer = None
 
     if payload.customer_id:
-        customer = await find_customer(
-            payload.customer_id
+        customer = await db.customers.find_one(
+            {"id": payload.customer_id}
         )
 
-    # --------------------------------------------------------
-    # CUSTOMER INFORMATION
-    # --------------------------------------------------------
+        if not customer:
+            raise HTTPException(
+                status_code=404,
+                detail="Customer tidak ditemukan",
+            )
 
-    customer_name = None
-    actual_customer_id = payload.customer_id
-
-    if customer:
-
-        actual_customer_id = customer.get(
-            "customer_id",
-            payload.customer_id,
-        )
-
-        customer_name = (
-            customer.get("name")
-            or customer.get("company_name")
-        )
-
-    # --------------------------------------------------------
-    # CREATE ACTIVITY ID
-    # --------------------------------------------------------
-
-    activity_id = (
-        "ACT-"
-        + now().strftime("%Y%m%d")
-        + "-"
-        + new_id()[:6].upper()
-    )
-
-    # --------------------------------------------------------
-    # CREATE DOCUMENT
-    # --------------------------------------------------------
+    activity_id = new_id()
 
     doc = {
-        "id": new_id(),
+        "id": activity_id,
 
-        "activity_id": activity_id,
+        "activity_id": new_id()[:8].upper(),
 
-        "customer_id": actual_customer_id,
+        "customer_id": payload.customer_id,
 
-        "customer_name": customer_name,
+        "customer_name": (
+            customer.get("name")
+            if customer
+            else None
+        ),
 
         "sales_id": user["id"],
 
@@ -173,18 +113,9 @@ async def create_activity(
         **payload.model_dump(mode="json"),
 
         "created_at": now(),
-        "updated_at": now(),
     }
 
-    # --------------------------------------------------------
-    # SAVE
-    # --------------------------------------------------------
-
     await db.activities.insert_one(doc)
-
-    # --------------------------------------------------------
-    # AUDIT LOG
-    # --------------------------------------------------------
 
     await audit(
         user,
@@ -192,76 +123,153 @@ async def create_activity(
         "Aktivitas",
         doc["id"],
         {
-            "activity_id": activity_id,
             "subject": doc.get("subject"),
-            "customer_id": actual_customer_id,
+            "customer_id": doc.get("customer_id"),
+            "activity_type": doc.get("activity_type"),
         },
     )
-
-    # --------------------------------------------------------
-    # REMOVE MONGODB INTERNAL ID
-    # --------------------------------------------------------
-
-    doc.pop("_id", None)
 
     return Activity(**doc)
 
 
 # ============================================================
-# CUSTOMER ACTIVITIES
+# ACTIVITIES - UPDATE
+# ============================================================
+
+@router.patch(
+    "/{activity_id}",
+    response_model=Activity,
+    summary="Update Activity",
+)
+async def update_activity(
+    activity_id: str,
+    payload: ActivityUpdate,
+    user: dict = Depends(current_user),
+):
+    """
+    Update an existing activity.
+    """
+
+    existing = await db.activities.find_one(
+        {"id": activity_id}
+    )
+
+    if not existing:
+        raise HTTPException(
+            status_code=404,
+            detail="Aktivitas tidak ditemukan",
+        )
+
+    update_data = payload.model_dump(
+        exclude_unset=True,
+        mode="json",
+    )
+
+    if "customer_id" in update_data:
+
+        customer_id = update_data["customer_id"]
+
+        customer = None
+
+        if customer_id:
+            customer = await db.customers.find_one(
+                {"id": customer_id}
+            )
+
+            if not customer:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Customer tidak ditemukan",
+                )
+
+            update_data["customer_name"] = customer.get(
+                "name"
+            )
+
+        else:
+            update_data["customer_name"] = None
+
+    update_data["updated_at"] = now()
+
+    await db.activities.update_one(
+        {"id": activity_id},
+        {"$set": update_data},
+    )
+
+    updated = {
+        **existing,
+        **update_data,
+    }
+
+    await audit(
+        user,
+        "Update",
+        "Aktivitas",
+        activity_id,
+        {
+            "subject": updated.get("subject"),
+        },
+    )
+
+    return Activity(**updated)
+
+
+# ============================================================
+# ACTIVITIES - CUSTOMER
 # ============================================================
 
 @router.get(
     "/customer/{customer_id}",
     response_model=Paginated,
+    summary="List Customer Activities",
 )
 async def list_customer_activities(
     customer_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
+    search: str = "",
     user: dict = Depends(current_user),
 ):
     """
-    Get activities for a specific customer.
+    Get all activities belonging to one customer.
     """
 
-    customer = await find_customer(customer_id)
+    customer = await db.customers.find_one(
+        {"id": customer_id}
+    )
 
     if not customer:
         raise HTTPException(
             status_code=404,
-            detail=f"Customer {customer_id} not found",
+            detail="Customer tidak ditemukan",
         )
-
-    actual_customer_id = customer.get(
-        "customer_id",
-        customer_id,
-    )
 
     return await page_collection(
         "activities",
         page,
         page_size,
-        "",
+        search,
         {
-            "customer_id": actual_customer_id
+            "customer_id": customer_id,
         },
     )
 
 
 # ============================================================
-# TASKS
+# TASKS - LIST
 # ============================================================
 
 @router.get(
     "/tasks",
     response_model=Paginated,
+    summary="List Tasks",
 )
 async def list_tasks(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
     search: str = "",
     status: str | None = None,
+    priority: str | None = None,
     user: dict = Depends(current_user),
 ):
     """
@@ -273,6 +281,9 @@ async def list_tasks(
     if status:
         filters["status"] = status
 
+    if priority:
+        filters["priority"] = priority
+
     return await page_collection(
         "tasks",
         page,
@@ -283,54 +294,83 @@ async def list_tasks(
 
 
 # ============================================================
-# UPDATE TASK STATUS
+# TASKS - UPDATE STATUS
 # ============================================================
 
 @router.patch(
     "/tasks/{task_id}",
     response_model=Task,
+    summary="Update Task",
 )
 async def update_task(
     task_id: str,
-    status: str,
+    status: str | None = None,
+    payload: TaskUpdate | None = None,
     user: dict = Depends(current_user),
 ):
     """
-    Update task status.
+    Update task status or other task fields.
+
+    Backward compatible:
+    PATCH /activities/tasks/{task_id}?status=Completed
+
+    Also supports JSON body:
+    {
+        "status": "Completed"
+    }
     """
 
-    task = await db.tasks.find_one(
-        {
-            "id": task_id
-        },
-        {
-            "_id": 0
-        },
+    doc = await db.tasks.find_one(
+        {"id": task_id}
     )
 
-    if not task:
+    if not doc:
         raise HTTPException(
             status_code=404,
             detail="Task tidak ditemukan",
         )
 
-    updated_at = now()
+    update_data = {}
+
+    # --------------------------------------------------------
+    # JSON BODY
+    # --------------------------------------------------------
+
+    if payload is not None:
+
+        update_data = payload.model_dump(
+            exclude_unset=True,
+            mode="json",
+        )
+
+    # --------------------------------------------------------
+    # QUERY PARAMETER STATUS
+    # --------------------------------------------------------
+
+    if status is not None:
+        update_data["status"] = status
+
+    # --------------------------------------------------------
+    # NO DATA
+    # --------------------------------------------------------
+
+    if not update_data:
+
+        return Task(**doc)
+
+    update_data["updated_at"] = now()
 
     await db.tasks.update_one(
+        {"id": task_id},
         {
-            "id": task_id
-        },
-        {
-            "$set": {
-                "status": status,
-                "updated_at": updated_at,
-            }
+            "$set": update_data
         },
     )
 
-    # --------------------------------------------------------
-    # AUDIT
-    # --------------------------------------------------------
+    updated = {
+        **doc,
+        **update_data,
+    }
 
     await audit(
         user,
@@ -338,16 +378,9 @@ async def update_task(
         "Task",
         task_id,
         {
-            "old_status": task.get("status"),
-            "new_status": status,
+            "status": updated.get("status"),
+            "title": updated.get("title"),
         },
     )
 
-    # --------------------------------------------------------
-    # RETURN UPDATED TASK
-    # --------------------------------------------------------
-
-    task["status"] = status
-    task["updated_at"] = updated_at
-
-    return Task(**task)
+    return Task(**updated)
