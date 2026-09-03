@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Mengambil URL Backend dari environment (saat live di Vercel/Netlify)
-// Jika tidak ada (saat coding lokal), akan menggunakan path '/api/v1'
+// Mengambil URL dari .env atau fallback ke relative path
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const apiClient = axios.create({
@@ -12,7 +11,7 @@ export const apiClient = axios.create({
   withCredentials: true,
 });
 
-// Menyelipkan Token Rahasia (JWT) pada setiap permintaan
+// Request Interceptor: Menyisipkan Token JWT otomatis
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('crm_access_token');
@@ -24,13 +23,13 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Mencegah aplikasi blank (layar putih) jika token kadaluarsa
+// Response Interceptor: Penanganan Error Sesi Habis (401)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      if (status === 401) { // 401 berarti belum login atau sesi habis
+      if (status === 401) {
         localStorage.removeItem('crm_access_token');
         if (window.location.pathname !== '/login') {
           window.location.href = '/login?expired=true';
