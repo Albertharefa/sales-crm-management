@@ -1,823 +1,541 @@
-# ============================================================
-# SALES CRM MANAGEMENT
-# models/crm.py
-#
-# CENTRAL CRM PYDANTIC MODELS
-# IMPORTANT:
-# - NO router imports
-# - NO database imports
-# - NO circular dependencies
-# - All CRM shared models live here
-# ============================================================
+"""
+CRM Models
+Sales CRM Management System
+
+IMPORTANT:
+- This file must NOT import from routers.*
+- This file must NOT import models.crm itself
+- Keep all CRM/Pydantic schemas centralized here
+- Designed to avoid circular-import problems
+"""
+
+from __future__ import annotations
 
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    EmailStr,
-    Field,
-    field_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ============================================================
-# COMMON BASE
+# BASE CONFIG
 # ============================================================
 
 class CRMBaseModel(BaseModel):
     """
-    Base model used by CRM models.
+    Common base model for all CRM schemas.
 
-    extra="ignore" prevents MongoDB fields that are not part
-    of the API schema from breaking response validation.
+    extra='allow' is intentional so existing API payloads
+    can continue working even when additional MongoDB fields
+    are present.
     """
 
     model_config = ConfigDict(
-        extra="ignore"
+        extra="allow",
+        populate_by_name=True,
+        from_attributes=True,
     )
-
-
-# ============================================================
-# AUTH
-# ============================================================
-
-class LoginRequest(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8)
-
-
-class UserPublic(CRMBaseModel):
-    id: str
-    user_id: str
-    name: str
-    email: EmailStr
-    role: str
-
-    manager_id: Optional[str] = None
-    phone: Optional[str] = None
-
-    status: str = "Active"
-
-    last_login: Optional[datetime] = None
-
-
-class UserCreate(BaseModel):
-    name: str = Field(min_length=2)
-    email: EmailStr
-    role: str
-
-    manager_id: Optional[str] = None
-    phone: Optional[str] = None
-
-    status: str = "Active"
-
-    password: str = Field(min_length=8)
-
-
-class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    role: Optional[str] = None
-
-    manager_id: Optional[str] = None
-    phone: Optional[str] = None
-    status: Optional[str] = None
-
-
-class PasswordChangeRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(min_length=8)
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-# ============================================================
-# CUSTOMER
-# ============================================================
-
-class Customer(CRMBaseModel):
-    id: str
-    customer_id: str
-
-    name: str
-
-    company: Optional[str] = None
-
-    industry: str = "Manufacturing"
-    city: str = "Jakarta"
-    province: Optional[str] = None
-
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-
-    pic_name: Optional[str] = None
-    pic_position: Optional[str] = None
-
-    source: Optional[str] = None
-
-    status: str = "Active"
-
-    sales_id: Optional[str] = None
-    sales_name: Optional[str] = None
-
-    address: Optional[str] = None
-    notes: Optional[str] = None
-
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-class CustomerCreate(BaseModel):
-    name: str = Field(min_length=2)
-
-    industry: str = "Manufacturing"
-    source: Optional[str] = None
-
-    city: str = "Jakarta"
-    province: Optional[str] = None
-
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-
-    pic_name: Optional[str] = None
-    pic_position: Optional[str] = None
-
-    status: str = "Active"
-
-    sales_id: Optional[str] = None
-
-    address: Optional[str] = None
-    notes: Optional[str] = None
-
-    @field_validator("email", mode="before")
-    @classmethod
-    def empty_email_is_none(cls, value):
-        if value == "":
-            return None
-        return value
-
-
-class CustomerUpdate(BaseModel):
-    name: Optional[str] = None
-
-    industry: Optional[str] = None
-    source: Optional[str] = None
-
-    city: Optional[str] = None
-    province: Optional[str] = None
-
-    phone: Optional[str] = None
-    email: Optional[EmailStr] = None
-
-    pic_name: Optional[str] = None
-    pic_position: Optional[str] = None
-
-    status: Optional[str] = None
-
-    sales_id: Optional[str] = None
-
-    address: Optional[str] = None
-    notes: Optional[str] = None
-
-    @field_validator("email", mode="before")
-    @classmethod
-    def empty_email_is_none(cls, value):
-        if value == "":
-            return None
-        return value
-
-
-# ============================================================
-# CONTACT
-# ============================================================
-
-class Contact(CRMBaseModel):
-    id: str
-    contact_id: Optional[str] = None
-
-    customer_id: str
-    customer_name: Optional[str] = None
-
-    first_name: str
-    last_name: Optional[str] = None
-
-    position: Optional[str] = None
-    department: Optional[str] = None
-
-    email: Optional[EmailStr] = None
-    mobile: Optional[str] = None
-
-    contact_type: str = "User"
-
-    is_decision_maker: bool = False
-
-    status: str = "Active"
-
-    notes: Optional[str] = None
-
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-class ContactCreate(BaseModel):
-    first_name: str = Field(min_length=1)
-    last_name: Optional[str] = None
-
-    position: Optional[str] = None
-    department: Optional[str] = None
-
-    email: Optional[EmailStr] = None
-    mobile: Optional[str] = None
-
-    contact_type: str = "User"
-
-    is_decision_maker: bool = False
-
-    status: str = "Active"
-
-    notes: Optional[str] = None
-
-    @field_validator("email", mode="before")
-    @classmethod
-    def empty_email_is_none(cls, value):
-        if value == "":
-            return None
-        return value
-
-
-class ContactUpdate(BaseModel):
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-
-    position: Optional[str] = None
-    department: Optional[str] = None
-
-    email: Optional[EmailStr] = None
-    mobile: Optional[str] = None
-
-    contact_type: Optional[str] = None
-
-    is_decision_maker: Optional[bool] = None
-
-    status: Optional[str] = None
-
-    notes: Optional[str] = None
-
-    @field_validator("email", mode="before")
-    @classmethod
-    def empty_email_is_none(cls, value):
-        if value == "":
-            return None
-        return value
-
-
-# ============================================================
-# OPPORTUNITY
-# ============================================================
-
-class Opportunity(CRMBaseModel):
-    id: str
-
-    opportunity_id: str
-
-    name: str
-
-    customer_id: str
-    customer_name: str
-
-    sales_id: Optional[str] = None
-    sales_name: Optional[str] = None
-
-    value: float = 0
-
-    probability: float = Field(
-        default=50,
-        ge=0,
-        le=100,
-    )
-
-    stage: str = "Lead"
-
-    target_close: Optional[date] = None
-
-    brand: Optional[str] = None
-    product: Optional[str] = None
-
-    next_action: Optional[str] = None
-
-    description: Optional[str] = None
-
-    loss_reason: Optional[str] = None
-
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-class OpportunityCreate(BaseModel):
-    name: str = Field(min_length=2)
-
-    customer_id: str
-
-    value: float = Field(
-        default=0,
-        ge=0,
-    )
-
-    probability: float = Field(
-        default=50,
-        ge=0,
-        le=100,
-    )
-
-    stage: str = "Lead"
-
-    target_close: Optional[date] = None
-
-    brand: Optional[str] = None
-    product: Optional[str] = None
-
-    next_action: Optional[str] = None
-
-    description: Optional[str] = None
-
-    loss_reason: Optional[str] = None
-
-
-class OpportunityUpdate(BaseModel):
-    name: Optional[str] = None
-
-    customer_id: Optional[str] = None
-
-    value: Optional[float] = Field(
-        default=None,
-        ge=0,
-    )
-
-    probability: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=100,
-    )
-
-    stage: Optional[str] = None
-
-    target_close: Optional[date] = None
-
-    brand: Optional[str] = None
-    product: Optional[str] = None
-
-    next_action: Optional[str] = None
-
-    description: Optional[str] = None
-
-    loss_reason: Optional[str] = None
-
-
-# ============================================================
-# ACTIVITY
-# ============================================================
-
-class Activity(CRMBaseModel):
-    id: str
-
-    activity_id: str
-
-    subject: str
-
-    activity_type: str = "Call"
-
-    date: date
-
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-
-    sales_id: Optional[str] = None
-    sales_name: Optional[str] = None
-
-    next_follow_up: Optional[date] = None
-
-    status: str = "Open"
-
-    description: Optional[str] = None
-
-    created_at: datetime
-
-    updated_at: Optional[datetime] = None
-
-
-class ActivityCreate(BaseModel):
-    subject: str = Field(
-        min_length=2
-    )
-
-    activity_type: str = "Call"
-
-    date: date
-
-    customer_id: Optional[str] = None
-
-    next_follow_up: Optional[date] = None
-
-    status: str = "Open"
-
-    description: Optional[str] = None
-
-
-class ActivityUpdate(BaseModel):
-    subject: Optional[str] = None
-
-    activity_type: Optional[str] = None
-
-    date: Optional[date] = None
-
-    customer_id: Optional[str] = None
-
-    next_follow_up: Optional[date] = None
-
-    status: Optional[str] = None
-
-    description: Optional[str] = None
-
-
-# ============================================================
-# TASK
-# ============================================================
-
-class Task(CRMBaseModel):
-    id: str
-
-    task_id: Optional[str] = None
-
-    title: str
-
-    due_date: date
-
-    priority: str = "Medium"
-
-    status: str = "Pending"
-
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-
-    opportunity_id: Optional[str] = None
-    opportunity_name: Optional[str] = None
-
-    assigned_user: Optional[str] = None
-    assigned_user_id: Optional[str] = None
-
-    description: Optional[str] = None
-
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-class TaskCreate(BaseModel):
-    title: str = Field(
-        min_length=2
-    )
-
-    due_date: date
-
-    priority: str = "Medium"
-
-    status: str = "Pending"
-
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-
-    opportunity_id: Optional[str] = None
-    opportunity_name: Optional[str] = None
-
-    assigned_user: Optional[str] = None
-    assigned_user_id: Optional[str] = None
-
-    description: Optional[str] = None
-
-
-class TaskUpdate(BaseModel):
-    title: Optional[str] = None
-
-    due_date: Optional[date] = None
-
-    priority: Optional[str] = None
-
-    status: Optional[str] = None
-
-    customer_id: Optional[str] = None
-    customer_name: Optional[str] = None
-
-    opportunity_id: Optional[str] = None
-    opportunity_name: Optional[str] = None
-
-    assigned_user: Optional[str] = None
-    assigned_user_id: Optional[str] = None
-
-    description: Optional[str] = None
-
-
-# ============================================================
-# PRODUCT
-# ============================================================
-
-class Product(CRMBaseModel):
-    id: str
-
-    code: str
-
-    name: str
-
-    brand: Optional[str] = None
-
-    category: str = "Automation"
-
-    unit: str = "pcs"
-
-    default_price: float = 0
-
-    supplier: Optional[str] = None
-
-    status: str = "Active"
-
-    description: Optional[str] = None
-
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-class ProductCreate(BaseModel):
-    code: str = Field(
-        min_length=1
-    )
-
-    name: str = Field(
-        min_length=2
-    )
-
-    brand: Optional[str] = None
-
-    category: str = "Automation"
-
-    unit: str = "pcs"
-
-    default_price: float = Field(
-        default=0,
-        ge=0,
-    )
-
-    supplier: Optional[str] = None
-
-    status: str = "Active"
-
-    description: Optional[str] = None
-
-
-class ProductUpdate(BaseModel):
-    code: Optional[str] = None
-
-    name: Optional[str] = None
-
-    brand: Optional[str] = None
-
-    category: Optional[str] = None
-
-    unit: Optional[str] = None
-
-    default_price: Optional[float] = Field(
-        default=None,
-        ge=0,
-    )
-
-    supplier: Optional[str] = None
-
-    status: Optional[str] = None
-
-    description: Optional[str] = None
-
-
-# ============================================================
-# DASHBOARD
-# ============================================================
-
-class DashboardGroupMetric(CRMBaseModel):
-    name: str
-    count: int = 0
-    value: float = 0
-
-
-class DashboardMonthlyMetric(CRMBaseModel):
-    month: str
-    target: float = 0
-    actual: float = 0
-    achievement: float = 0
-
-
-class DashboardRecentActivity(CRMBaseModel):
-    id: str
-
-    subject: str
-
-    activity_type: str
-
-    customer_name: Optional[str] = None
-    sales_name: Optional[str] = None
-
-    date: Optional[str] = None
-
-    status: str
-
-
-class DashboardDealRisk(CRMBaseModel):
-    id: str
-
-    opportunity_id: str
-
-    name: str
-
-    customer_name: str
-
-    sales_name: Optional[str] = None
-
-    value: float
-
-    stage: str
-
-    expected_close: Optional[str] = None
-
-    reason: str
-
-
-class DashboardMetrics(CRMBaseModel):
-    total_customer: int = 0
-    total_contacts: int = 0
-
-    total_leads: int = 0
-    total_opportunities: int = 0
-
-    open_pipeline: float = 0
-    weighted_pipeline: float = 0
-
-    won_value: float = 0
-    lost_value: float = 0
-
-    win_rate: float = 0
-
-    total_quotation: int = 0
-    active_quotations: int = 0
-
-    quotation_value: float = 0
-
-    total_po: int = 0
-    po_value: float = 0
-
-    open_orders: int = 0
-    completed_orders: int = 0
-    overdue_orders: int = 0
-
-    activities: int = 0
-    overdue_activities: int = 0
-
-    sales_target: float = 0
-    target_achievement: float = 0
-
-    pipeline_by_stage: List[DashboardGroupMetric] = Field(
-        default_factory=list
-    )
-
-    pipeline_by_salesperson: List[DashboardGroupMetric] = Field(
-        default_factory=list
-    )
-
-    monthly_sales_performance: List[DashboardMonthlyMetric] = Field(
-        default_factory=list
-    )
-
-    recent_activities: List[DashboardRecentActivity] = Field(
-        default_factory=list
-    )
-
-    deal_risks: List[DashboardDealRisk] = Field(
-        default_factory=list
-    )
-
-    generated_at: datetime
-
-
-# ============================================================
-# AUDIT LOG
-# ============================================================
-
-class AuditLog(CRMBaseModel):
-    id: str
-
-    user_name: str
-
-    action: str
-
-    module: str
-
-    record_id: Optional[str] = None
-
-    changes: Optional[Dict[str, Any]] = None
-
-    created_at: datetime
 
 
 # ============================================================
 # PAGINATION
 # ============================================================
 
-class Paginated(BaseModel):
-    items: List[Any]
-
-    page: int
-
-    page_size: int
-
-    total: int
+class Paginated(CRMBaseModel):
+    items: List[Any] = Field(default_factory=list)
+    page: int = 1
+    page_size: int = 25
+    total: int = 0
 
 
 # ============================================================
-# UPLOAD
+# CUSTOMER
 # ============================================================
 
-class UploadResponse(BaseModel):
-    id: str
+class CustomerBase(CRMBaseModel):
+    customer_name: Optional[str] = None
+    name: Optional[str] = None
 
-    file_name: str
+    company_name: Optional[str] = None
+    company: Optional[str] = None
 
-    content_type: str
+    customer_code: Optional[str] = None
+    code: Optional[str] = None
 
-    size: int
+    industry: Optional[str] = None
+    segment: Optional[str] = None
 
-    url: str
+    address: Optional[str] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+    country: Optional[str] = None
+    postal_code: Optional[str] = None
+
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+
+    status: Optional[str] = "Active"
+
+    notes: Optional[str] = None
+    description: Optional[str] = None
+
+
+class CustomerCreate(CustomerBase):
+    pass
+
+
+class CustomerUpdate(CRMBaseModel):
+    customer_name: Optional[str] = None
+    name: Optional[str] = None
+
+    company_name: Optional[str] = None
+    company: Optional[str] = None
+
+    customer_code: Optional[str] = None
+    code: Optional[str] = None
+
+    industry: Optional[str] = None
+    segment: Optional[str] = None
+
+    address: Optional[str] = None
+    city: Optional[str] = None
+    province: Optional[str] = None
+    country: Optional[str] = None
+    postal_code: Optional[str] = None
+
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    website: Optional[str] = None
+
+    status: Optional[str] = None
+
+    notes: Optional[str] = None
+    description: Optional[str] = None
+
+
+class Customer(CustomerBase):
+    id: Optional[str] = None
+    customer_id: Optional[str] = None
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 # ============================================================
-# OPTIONS
+# CONTACT
 # ============================================================
 
-class OptionItem(BaseModel):
-    id: str
+class ContactBase(CRMBaseModel):
+    name: Optional[str] = None
+    full_name: Optional[str] = None
 
-    name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+
+    job_title: Optional[str] = None
+    position: Optional[str] = None
+    department: Optional[str] = None
+
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    mobile: Optional[str] = None
+
+    whatsapp: Optional[str] = None
+
+    notes: Optional[str] = None
+
+    is_primary: bool = False
+
+
+class ContactCreate(ContactBase):
+    pass
+
+
+class ContactUpdate(ContactBase):
+    pass
+
+
+class Contact(ContactBase):
+    id: Optional[str] = None
+    contact_id: Optional[str] = None
+    customer_id: Optional[str] = None
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# ACTIVITY
+# ============================================================
+
+class ActivityBase(CRMBaseModel):
+    subject: str = ""
+    activity_type: str = "Other"
+
+    date: Optional[date] = None
+
+    description: Optional[str] = None
+
+    status: str = "Open"
+
+    customer_id: Optional[str] = None
+
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+
+    next_follow_up: Optional[date] = None
+
+
+class ActivityCreate(ActivityBase):
+    pass
+
+
+class ActivityUpdate(CRMBaseModel):
+    subject: Optional[str] = None
+    activity_type: Optional[str] = None
+    date: Optional[date] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+
+    customer_id: Optional[str] = None
+
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+
+    next_follow_up: Optional[date] = None
+
+
+class Activity(ActivityBase):
+    id: Optional[str] = None
+    activity_id: Optional[str] = None
+
+    customer_name: Optional[str] = None
+
+    created_at: Optional[datetime] = None
+
+
+# ============================================================
+# TASK
+# ============================================================
+
+class TaskBase(CRMBaseModel):
+    title: str = ""
+    subject: Optional[str] = None
+
+    description: Optional[str] = None
+
+    status: str = "Open"
+
+    priority: str = "Medium"
+
+    due_date: Optional[date] = None
+
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+
+    assigned_to: Optional[str] = None
+    assigned_name: Optional[str] = None
+
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+
+
+class TaskCreate(TaskBase):
+    pass
+
+
+class TaskUpdate(CRMBaseModel):
+    title: Optional[str] = None
+    subject: Optional[str] = None
+    description: Optional[str] = None
+
+    status: Optional[str] = None
+    priority: Optional[str] = None
+
+    due_date: Optional[date] = None
+
+    customer_id: Optional[str] = None
+    customer_name: Optional[str] = None
+
+    assigned_to: Optional[str] = None
+    assigned_name: Optional[str] = None
+
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+
+
+class Task(TaskBase):
+    id: Optional[str] = None
+    task_id: Optional[str] = None
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# PRODUCT
+# ============================================================
+
+class ProductBase(CRMBaseModel):
+    product_name: Optional[str] = None
+    name: Optional[str] = None
+
+    product_code: Optional[str] = None
+    code: Optional[str] = None
+    part_number: Optional[str] = None
+
+    brand: Optional[str] = None
+    manufacturer: Optional[str] = None
+
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
+
+    description: Optional[str] = None
+
+    specification: Optional[str] = None
+    specifications: Optional[Dict[str, Any]] = None
+
+    unit: Optional[str] = None
+
+    price: Optional[float] = None
+    cost: Optional[float] = None
+    currency: Optional[str] = "IDR"
+
+    status: Optional[str] = "Active"
+
+    stock: Optional[float] = None
+
+
+class ProductCreate(ProductBase):
+    pass
+
+
+class ProductUpdate(CRMBaseModel):
+    product_name: Optional[str] = None
+    name: Optional[str] = None
+
+    product_code: Optional[str] = None
+    code: Optional[str] = None
+    part_number: Optional[str] = None
+
+    brand: Optional[str] = None
+    manufacturer: Optional[str] = None
+
+    category: Optional[str] = None
+    subcategory: Optional[str] = None
+
+    description: Optional[str] = None
+
+    specification: Optional[str] = None
+    specifications: Optional[Dict[str, Any]] = None
+
+    unit: Optional[str] = None
+
+    price: Optional[float] = None
+    cost: Optional[float] = None
+    currency: Optional[str] = None
+
+    status: Optional[str] = None
+    stock: Optional[float] = None
+
+
+class Product(ProductBase):
+    id: Optional[str] = None
+    product_id: Optional[str] = None
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+
+# ============================================================
+# USER / AUTH
+# ============================================================
+
+class LoginRequest(CRMBaseModel):
+    email: str
+    password: str
+
+
+class LoginResponse(CRMBaseModel):
+    success: bool = True
+    message: Optional[str] = None
+
+    token: Optional[str] = None
+    access_token: Optional[str] = None
+
+    user: Optional[Any] = None
+
+
+class UserPublic(CRMBaseModel):
+    id: Optional[str] = None
+    user_id: Optional[str] = None
+
+    email: Optional[str] = None
+    name: Optional[str] = None
+    full_name: Optional[str] = None
 
     role: Optional[str] = None
 
-    default_price: Optional[float] = None
+    status: Optional[str] = "Active"
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
-class OptionsResponse(BaseModel):
-    customers: List[OptionItem]
+class UserCreate(CRMBaseModel):
+    email: str
+    password: str
 
-    products: List[OptionItem]
+    name: Optional[str] = None
+    full_name: Optional[str] = None
 
-    users: List[OptionItem]
+    role: str = "SALES"
+
+    status: str = "Active"
+
+
+class UserUpdate(CRMBaseModel):
+    email: Optional[str] = None
+    password: Optional[str] = None
+
+    name: Optional[str] = None
+    full_name: Optional[str] = None
+
+    role: Optional[str] = None
+
+    status: Optional[str] = None
+
+
+class User(CRMBaseModel):
+    id: Optional[str] = None
+    user_id: Optional[str] = None
+
+    email: Optional[str] = None
+
+    name: Optional[str] = None
+    full_name: Optional[str] = None
+
+    role: Optional[str] = None
+    status: Optional[str] = "Active"
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 # ============================================================
-# SALES TEAM
+# FILE UPLOAD
 # ============================================================
 
-class SalesTeamMetric(BaseModel):
-    sales: str
+class UploadResponse(CRMBaseModel):
+    success: bool = True
 
-    role: str
+    message: Optional[str] = None
 
-    manager: str
+    filename: Optional[str] = None
+    original_filename: Optional[str] = None
 
-    open_pipeline: float = 0
+    file_url: Optional[str] = None
+    url: Optional[str] = None
 
-    weighted: float = 0
+    path: Optional[str] = None
 
-    won: float = 0
+    content_type: Optional[str] = None
 
-    po: int = 0
-
-    po_value: float = 0
-
-    activities: int = 0
-
-    indent: int = 0
-
-    overdue: int = 0
+    size: Optional[int] = None
 
 
 # ============================================================
-# GENERIC RESPONSE
+# DASHBOARD
 # ============================================================
 
-class MessageResponse(BaseModel):
-    status: str
-    message: str
+class DashboardMetrics(CRMBaseModel):
+    total_customers: int = 0
+    total_contacts: int = 0
+    total_activities: int = 0
+    total_tasks: int = 0
+    total_products: int = 0
+
+    open_tasks: int = 0
+    completed_tasks: int = 0
+    overdue_tasks: int = 0
+
+    open_activities: int = 0
+    completed_activities: int = 0
+
+    total_sales: int = 0
+
+    total_pipeline: float = 0
+    total_revenue: float = 0
+
+    customers_growth: float = 0
+    activities_growth: float = 0
+    tasks_growth: float = 0
+    sales_growth: float = 0
 
 
 # ============================================================
-# MODULE READY
+# GENERIC API RESPONSE
 # ============================================================
 
-print("INFO: ✓ models.crm loaded")
+class APIResponse(CRMBaseModel):
+    success: bool = True
+    message: Optional[str] = None
+    data: Optional[Any] = None
+
+
+# ============================================================
+# EXPORTS
+# ============================================================
+
+__all__ = [
+    # Pagination
+    "Paginated",
+
+    # Customer
+    "Customer",
+    "CustomerBase",
+    "CustomerCreate",
+    "CustomerUpdate",
+
+    # Contact
+    "Contact",
+    "ContactBase",
+    "ContactCreate",
+    "ContactUpdate",
+
+    # Activity
+    "Activity",
+    "ActivityBase",
+    "ActivityCreate",
+    "ActivityUpdate",
+
+    # Task
+    "Task",
+    "TaskBase",
+    "TaskCreate",
+    "TaskUpdate",
+
+    # Product
+    "Product",
+    "ProductBase",
+    "ProductCreate",
+    "ProductUpdate",
+
+    # Authentication
+    "LoginRequest",
+    "LoginResponse",
+    "User",
+    "UserPublic",
+    "UserCreate",
+    "UserUpdate",
+
+    # Upload
+    "UploadResponse",
+
+    # Dashboard
+    "DashboardMetrics",
+
+    # Generic
+    "APIResponse",
+]
