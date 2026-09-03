@@ -248,3 +248,15 @@ class Token(CRMBaseModel):
 class TokenData(CRMBaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
+    # ==========================================
+# AUTHENTICATION & LOGIN MODELS
+# ==========================================
+
+class LoginRequest(CRMBaseModel):
+    email: str
+    password: str
+
+
+class UserPublic(UserBase):
+    id: str = Field(alias="_id")
+    created_at: datetime
