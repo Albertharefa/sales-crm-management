@@ -1,98 +1,42 @@
-// Typed fetch layer over the FastAPI backend. Base is the relative "/api" prefix so the
-// same code works in dev (Vite proxies /api → :8001) and behind a single origin in prod.
-const BASE = "/api";
+import axios from 'axios';
 
-// Fields are declared, not constructor parameter properties: tsconfig sets
-// erasableSyntaxOnly, which rejects `constructor(readonly status: number)`.
-export class ApiError extends Error {
-  status: number;
-  body: unknown;
+// Mengambil URL Backend dari environment (saat live di Vercel/Netlify)
+// Jika tidak ada (saat coding lokal), akan menggunakan path '/api/v1'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
-  constructor(status: number, body: unknown) {
-    super(`request failed with ${status}`);
-    this.name = "ApiError";
-    this.status = status;
-    this.body = body;
-  }
-}
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true,
+});
 
-type JsonBody = unknown;
-
-export interface ApiStreamEvent {
-  type: "meta" | "delta" | "done" | "error";
-  content?: string;
-  message?: string;
-  conversation_id?: string;
-  assistant_message_id?: string;
-  model?: string;
-}
-
-async function request<T>(method: string, path: string, body?: JsonBody): Promise<T> {
-  // Auth rides the httpOnly session cookie automatically — never add auth headers here.
-  const res = await fetch(`${BASE}${path}`, {
-    method,
-    credentials: "same-origin",
-    headers: body === undefined ? undefined : { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  // FastAPI reports request-validation failures as 422 with a {detail: [...]} body.
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errBody);
-  }
-
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
-}
-
-// The response type is yours to declare: nothing infers across the Python boundary, so a
-// TS interface here mirrors the endpoint's Pydantic model by hand — keep the two in sync.
-export const apiGet = <T>(path: string) => request<T>("GET", path);
-export const apiPost = <T>(path: string, body?: JsonBody) => request<T>("POST", path, body ?? null);
-export const apiPut = <T>(path: string, body?: JsonBody) => request<T>("PUT", path, body ?? null);
-export const apiPatch = <T>(path: string, body?: JsonBody) =>
-  request<T>("PATCH", path, body ?? null);
-export const apiDelete = <T>(path: string) => request<T>("DELETE", path);
-
-export async function apiUpload<T>(path: string, file: File): Promise<T> {
-  const body = new FormData();
-  body.append("file", file);
-  const res = await fetch(`${BASE}${path}`, { method: "POST", credentials: "same-origin", body });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errBody);
-  }
-  return (await res.json()) as T;
-}
-
-export async function apiStream(path: string, body: JsonBody, onEvent: (event: ApiStreamEvent) => void): Promise<void> {
-  const res = await fetch(`${BASE}${path}`, {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errBody = await res.json().catch(() => null);
-    throw new ApiError(res.status, errBody);
-  }
-  if (!res.body) throw new ApiError(502, { detail: "Streaming response tidak tersedia" });
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    buffer = buffer.replaceAll("\r\n", "\n");
-    let boundary = buffer.indexOf("\n\n");
-    while (boundary >= 0) {
-      const block = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-      const data = block.split("\n").find(line => line.startsWith("data: "))?.slice(6);
-      if (data) onEvent(JSON.parse(data) as ApiStreamEvent);
-      boundary = buffer.indexOf("\n\n");
+// Menyelipkan Token Rahasia (JWT) pada setiap permintaan
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('crm_access_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Mencegah aplikasi blank (layar putih) jika token kadaluarsa
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 401) { // 401 berarti belum login atau sesi habis
+        localStorage.removeItem('crm_access_token');
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login?expired=true';
+        }
+      }
+    }
+    return Promise.reject(error);
   }
-}
+);
