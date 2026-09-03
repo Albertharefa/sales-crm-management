@@ -21,4 +21,4 @@ COPY backend/ .
 EXPOSE 8000
 
 # Perintah untuk menjalankan server FastAPI dengan uvicorn
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1
