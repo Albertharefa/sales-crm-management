@@ -71,6 +71,9 @@ class CustomerInDB(CustomerBase):
     assigned_to: Optional[str] = None
 
 
+Customer = CustomerInDB
+
+
 # ==========================================
 # OPPORTUNITY / PIPELINE MODELS
 # ==========================================
@@ -107,7 +110,6 @@ class OpportunityInDB(OpportunityBase):
     updated_at: Optional[datetime] = None
 
 
-# Alias agar kompatibel jika router memanggil 'Opportunity'
 Opportunity = OpportunityInDB
 
 
@@ -158,6 +160,9 @@ class QuotationInDB(QuotationBase):
     updated_at: Optional[datetime] = None
 
 
+Quotation = QuotationInDB
+
+
 # ==========================================
 # ORDER MODELS
 # ==========================================
@@ -188,6 +193,9 @@ class OrderInDB(OrderBase):
     created_by: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+
+Order = OrderInDB
 
 
 # ==========================================
@@ -221,6 +229,9 @@ class ActivityInDB(ActivityBase):
     assigned_to: str
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+
+Activity = ActivityInDB
 
 
 # ==========================================
