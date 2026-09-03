@@ -1,17 +1,54 @@
+# Git
 .git
-.git/**
+.gitignore
 .github
+
+# Node
 node_modules
 frontend/node_modules
 frontend/dist
-backend/__pycache__
-backend/**/*.pyc
-**/.pytest_cache
-**/.mypy_cache
-**/.ruff_cache
-tests/test-results
-tests/playwright-report
-.emergent
-*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.venv
+venv
+env
+
+# Tests / development
+coverage
+htmlcov
+.pytest_cache
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local environment
 .env
-backend/.env
+.env.local
+.env.development
+.env.test
+.env.production.local
+
+# Documentation
+*.log
+
+# Temporary
+tmp
+temp
