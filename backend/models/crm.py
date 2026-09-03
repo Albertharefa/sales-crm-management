@@ -107,6 +107,10 @@ class OpportunityInDB(OpportunityBase):
     updated_at: Optional[datetime] = None
 
 
+# Alias agar kompatibel jika router memanggil 'Opportunity'
+Opportunity = OpportunityInDB
+
+
 # ==========================================
 # QUOTATION MODELS
 # ==========================================
@@ -248,7 +252,9 @@ class Token(CRMBaseModel):
 class TokenData(CRMBaseModel):
     email: Optional[str] = None
     role: Optional[str] = None
-    # ==========================================
+
+
+# ==========================================
 # AUTHENTICATION & LOGIN MODELS
 # ==========================================
 
