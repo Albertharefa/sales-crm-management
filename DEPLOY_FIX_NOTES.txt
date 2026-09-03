@@ -1,40 +1,60 @@
-SALES CRM MANAGEMENT - DEPLOY FIX
+SALES CRM MANAGEMENT - PRODUCTION HARDENING
+===============================================
 
-Perbaikan utama:
-1. models/crm.py dipusatkan dan dibuat bebas circular import.
-2. Ditambahkan schema yang sebelumnya hilang:
-   OptionsResponse, SalesTeamMetric, Opportunity, OpportunityCreate,
-   PurchaseOrder, PurchaseOrderCreate, serta schema pendukung dashboard/upload.
-3. Field frontend diselaraskan:
-   Customer, Product, Quotation, Purchase Order, Opportunity, Activity/Task.
-4. Customer API sekarang benar-benar server-side pagination + search dan
-   mengembalikan {items,page,page_size,total}.
-5. Validasi create customer/product/opportunity/order/quotation diperbaiki.
-6. Quotation menghitung subtotal, discount, tax, dan grand_total di server.
-7. Purchase Order menghitung total di server.
-8. UploadResponse diselaraskan dengan response upload frontend.
-9. UserPublic tidak lagi membawa password_hash ke response.
-10. Semua router yang sebelumnya gagal import dapat dimuat oleh server.
+This package is the consolidated deployment version.
 
-File utama yang diperbarui:
-- backend/models/crm.py
-- backend/routers/customers.py
-- backend/routers/products.py
-- backend/routers/pipeline.py
-- backend/routers/orders.py
-- backend/routers/quotations.py
+MAIN FIXES
+----------
+1. Fixed the original import-chain failures by keeping all CRM schemas centralized
+   in backend/models/crm.py.
+2. All production routers are imported explicitly; no feature is silently skipped.
+3. Added /api/* compatibility aliases for the existing frontend and API tests.
+4. Kept clean public Swagger paths such as /customers and /pipeline.
+5. Added /api and /api/health endpoints.
+6. Production root now serves the React CRM application instead of raw JSON.
+7. Added React SPA fallback so /customers, /pipeline, /quotations, etc. survive
+   browser refreshes.
+8. Added a premium 404 page.
+9. Frontend API client supports VITE_API_URL and robust API/network errors.
+10. Authentication remains httpOnly-cookie based.
+11. Cookie Secure behavior is configurable through COOKIE_SECURE.
+12. Session records receive a 7-day MongoDB TTL index.
+13. Added MongoDB connection timeouts, pool settings, and production indexes.
+14. Added Super Admin RBAC protection to users/audit/export administration APIs.
+15. Added root Dockerfile using a Node frontend build stage and Python/FastAPI runtime.
+16. Added railway.toml with Docker build, health check, and restart policy.
+17. Added .dockerignore and backend/.env.example.
+18. No real credentials are included.
 
-Validasi lokal:
-- Semua file Python berhasil compile.
-- Semua import dari models.crm berhasil ditemukan.
-- CustomerCreate sekarang menolak payload {} dengan 422.
-- Field date Pydantic diperbaiki agar tidak menjadi NoneType akibat
-  konflik nama field "date" dengan from __future__ annotations.
+RAILWAY VARIABLES
+-----------------
+MONGO_URL=<your MongoDB connection string>
+DB_NAME=sales_crm
+ADMIN_EMAIL=<your admin email>
+ADMIN_PASSWORD=<strong password, minimum 8 chars>
+COOKIE_SECURE=true
+CORS_ORIGINS=
+OPENAI_API_KEY=<optional>
+OPENAI_MODEL=gpt-5.4
 
-Deployment:
-Commit/push isi project ini ke branch yang dipakai Railway.
-Setelah deploy, cek Deploy Logs dan Swagger. Target startup:
+EXPECTED STARTUP
+----------------
 CRM SALES MANAGEMENT API STARTING
-MongoDB connection OK
+INFO: MongoDB connection OK
 CRM API READY
 Application startup complete.
+
+EXPECTED LIVE URLS
+------------------
+/                  React CRM application
+/login             Login
+/api/*             Frontend API
+/docs              Swagger
+/redoc             ReDoc
+/health            Railway health check
+
+DEPLOYMENT
+----------
+Push the project root (including Dockerfile and railway.toml) to the GitHub
+repository connected to Railway. Do not upload node_modules or any .env file.
+Railway builds the frontend and backend into one service.
