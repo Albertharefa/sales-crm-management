@@ -1,7 +1,6 @@
 import os
-from fastapi import FastAPI, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pymongo import MongoClient
 
 app = FastAPI(title="Sales CRM Management API")
@@ -18,20 +17,9 @@ def health_check():
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# Serve Frontend jika ada, atau fallback pesan API
-dist_path = os.path.join(os.path.dirname(__file__), "dist")
-if os.path.exists(dist_path):
-    app.mount("/assets", StaticFiles(directory=os.path.join(dist_path, "assets")), name="assets")
-
-    @app.get("/{full_path:path}")
-    def serve_frontend(full_path: str):
-        if full_path.startswith("api"):
-            raise HTTPException(status_code=404, detail="Not found")
-        index_file = os.path.join(dist_path, "index.html")
-        if os.path.exists(index_file):
-            return FileResponse(index_file)
-        return {"message": "Frontend index.html missing"}
-else:
-    @app.get("/")
-    def root():
-        return {"message": "Sales CRM API is running successfully!"}
+@app.get("/")
+def serve_frontend():
+    index_file = os.path.join(os.path.dirname(__file__), "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
+    return {"message": "Sales CRM API is running successfully!"}
