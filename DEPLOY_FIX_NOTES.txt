@@ -58,3 +58,16 @@ FINAL PRODUCTION PACKAGING (2026-09-03)
 - Admin password is no longer overwritten on every restart; explicit ADMIN_FORCE_PASSWORD_RESET=true is required.
 - CORS is restricted to FRONTEND_ORIGINS in development/integrations rather than wildcard credentials.
 - COOKIE_SECURE can be disabled for local HTTP development.
+
+
+FINAL HARDENING — 2026-09-03
+----------------------------
+- Fixed the production API contract: frontend /api/* routes are now served by FastAPI while legacy unprefixed routes remain available.
+- Production root now serves the React/Vite SPA instead of only returning the API status JSON.
+- Added SPA deep-link fallback and safe static-file resolution.
+- Added MongoDB indexes for common CRM queries plus session TTL expiration.
+- Session cookies respect COOKIE_SECURE and server-side session age is validated.
+- Existing admin passwords are preserved on restart; ADMIN_FORCE_PASSWORD_RESET=true is required for deliberate rotation.
+- CORS no longer uses wildcard origins with credentials; configure CORS_ORIGINS only when cross-origin access is required.
+- Added /api/health alongside /health for frontend/integration compatibility.
+- Added Railway healthcheckPath=/health.
