@@ -5,22 +5,21 @@ RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/
 
 WORKDIR /app
 
-# Salin seluruh file proyek
+# Salin seluruh file proyek ke dalam container
 COPY . /app
 
-# Masuk ke folder frontend, pastikan tailwindcss/vite terdaftar, lalu install dan build
+# Masuk ke folder frontend dan instal semua modul secara lengkap
 WORKDIR /app/frontend
 RUN npm install
-RUN npm install @tailwindcss/vite --save
 RUN npm run build
 
-# Pindah kembali ke root
+# Pindah ke root untuk setup backend Python
 WORKDIR /app
 
 # Install dependencies Python backend
 RUN pip3 install --no-cache-dir -r backend/requirements.txt --break-system-packages
 
-# Salin hasil build frontend ke folder backend
+# Salin hasil build frontend ke dalam folder backend
 RUN cp -r /app/frontend/dist /app/backend/dist
 
 # Jalankan server
