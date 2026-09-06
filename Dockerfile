@@ -1,14 +1,29 @@
-FROM python:3.10-slim
+# Stage 1: Build Frontend React App
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
 
+# Stage 2: Production Python API Backend
+FROM python:3.11-slim AS backend
 WORKDIR /app
 
-# Salin folder backend
-COPY backend/ ./backend/
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
 
-WORKDIR /app/backend
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies Python
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-EXPOSE 8080
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
+COPY backend/ .
+COPY --from=frontend-builder /app/frontend/dist ./dist
+
+# Railway menggunakan port dinamis, pastikan aplikasi mendengarkan port 8000 atau $PORT
+EXPOSE 8000
+
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
