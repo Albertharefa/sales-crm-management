@@ -8,25 +8,19 @@ from pymongo import MongoClient
 # Inisialisasi Aplikasi FastAPI
 app = FastAPI(title="Sales CRM Management API")
 
-# Konfigurasi MongoDB (Otomatis membaca environment variable Railway atau fallback ke koneksi lokal)
+# Konfigurasi MongoDB
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
 client = MongoClient(MONGO_URI)
 db = client["CRM-Sales-Management"]
 
-# Contoh Schema Pydantic untuk data sederhana
 class CustomerModel(BaseModel):
     name: str
     email: str
     phone: str = None
 
-# ==========================================
-# API ROUTERS & ENDPOINTS
-# ==========================================
-
 @app.get("/api/health")
 def health_check():
     try:
-        # Cek koneksi database
         client.admin.command('ping')
         return {"status": "success", "message": "Sales CRM API is running and connected to MongoDB."}
     except Exception as e:
@@ -43,7 +37,7 @@ def get_customers():
 @app.post("/api/customers")
 def create_customer(customer: CustomerModel):
     try:
-        result = db.customers.insert_one(customer.dict())
+        db.customers.insert_one(customer.dict())
         return {"status": "success", "message": "Customer created successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -52,29 +46,30 @@ def create_customer(customer: CustomerModel):
 # MENYAJIKAN FRONTEND (REACT / VITE DIST)
 # ==========================================
 
-# Otomatis mendeteksi lokasi folder dist baik di dalam folder backend maupun di root utama
-dist_path = None
-for path in ["dist", "../dist", "backend/dist"]:
+# Mencari folder dist di berbagai kemungkinan direktori Docker
+dist_dir = None
+possible_paths = ["dist", "../dist", "/app/backend/dist", "/app/dist", "./backend/dist"]
+
+for path in possible_paths:
     if os.path.exists(path) and os.path.exists(os.path.join(path, "index.html")):
-        dist_path = path
+        dist_dir = path
         break
 
-if dist_path:
-    assets_path = os.path.join(dist_path, "assets")
-    if os.path.exists(assets_path):
-        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
+if dist_dir:
+    assets_dir = os.path.join(dist_dir, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
     
     @app.get("/{full_path:path}")
     def serve_frontend(full_path: str):
-        # Biarkan jalur yang diawali 'api' ditangani oleh router API di atas
         if full_path.startswith("api"):
             raise HTTPException(status_code=404, detail="API endpoint not found")
         
-        index_file = os.path.join(dist_path, "index.html")
+        index_file = os.path.join(dist_dir, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
         return {"error": "Frontend index.html not found."}
 else:
     @app.get("/")
     def root_fallback():
-        return {"message": "Sales CRM API is running. Frontend dist folder not found, please build the frontend."}
+        return {"message": "Sales CRM API is running. Frontend dist folder not found, please check Dockerfile copy path."}
