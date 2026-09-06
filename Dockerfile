@@ -1,29 +1,18 @@
-FROM node:18-slim
-
-# Install Python dan pip
-RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/*
+FROM python:3.10-slim
 
 WORKDIR /app
 
-# Salin seluruh file proyek ke dalam container
-COPY . /app
+# Salin seluruh folder backend
+COPY backend/ ./backend/
 
-# Masuk ke folder frontend, instal modul secara eksplisit, lalu build
-WORKDIR /app/frontend
-RUN npm install
-RUN npm install tailwindcss @tailwindcss/vite --save
-RUN npm run build
+# Jika folder dist frontend sudah ada di lokal/repo, salin ke backend
+# (Jika belum ada, server akan otomatis menampilkan pesan API running agar tidak crash)
+COPY backend/dist/ ./backend/dist/ 2>/dev/null || true
 
-# Pindah kembali ke root
-WORKDIR /app
-
-# Install dependencies Python backend
-RUN pip3 install --no-cache-dir -r backend/requirements.txt --break-system-packages
-
-# Salin hasil build frontend langsung ke dalam folder backend
-RUN cp -r /app/frontend/dist /app/backend/dist
-
-# Jalankan server
 WORKDIR /app/backend
+
+# Install dependencies Python
+RUN pip install --no-cache-dir -r requirements.txt
+
 EXPOSE 8080
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
