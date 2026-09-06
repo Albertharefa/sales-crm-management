@@ -8,18 +8,19 @@ WORKDIR /app
 # Salin seluruh file proyek ke dalam container
 COPY . /app
 
-# Masuk ke folder frontend dan instal semua modul secara lengkap
+# Masuk ke folder frontend, instal modul secara eksplisit, lalu build
 WORKDIR /app/frontend
 RUN npm install
+RUN npm install tailwindcss @tailwindcss/vite --save
 RUN npm run build
 
-# Pindah ke root untuk setup backend Python
+# Pindah kembali ke root
 WORKDIR /app
 
 # Install dependencies Python backend
 RUN pip3 install --no-cache-dir -r backend/requirements.txt --break-system-packages
 
-# Salin hasil build frontend ke dalam folder backend
+# Salin hasil build frontend langsung ke dalam folder backend
 RUN cp -r /app/frontend/dist /app/backend/dist
 
 # Jalankan server
