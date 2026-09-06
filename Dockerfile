@@ -1,24 +1,28 @@
-# Menggunakan image Python versi ringan (slim)
-FROM python:3.11-slim
+# Tahap 1: Build Frontend (React / Vite)
+FROM node:18-alpine AS frontend-builder
+WORKDIR /app/frontend
+COPY frontend/package*.json ./
+RUN npm install
+COPY frontend/ ./
+RUN npm run build
 
-# Menyiapkan folder kerja di dalam server
+# Tahap 2: Setup Backend Python
+FROM python:3.10-slim
 WORKDIR /app
 
-# Menghindari Python membuat file cache (.pyc) dan memastikan log langsung tercetak
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+# Install dependencies backend
+COPY backend/requirements.txt ./backend/
+RUN pip install --no-cache-dir -r backend/requirements.txt
 
-# Menyalin file daftar kebutuhan (library)
-COPY backend/requirements.txt .
+# Salin seluruh kode backend
+COPY backend/ ./backend/
 
-# Menginstal library tanpa menyimpan cache instalasi agar file lebih kecil
-RUN pip install --no-cache-dir -r requirements.txt
+# Salin hasil build frontend (dist) dari tahap 1 ke dalam folder backend
+COPY --from=frontend-builder /app/frontend/dist ./backend/dist
 
-# Menyalin seluruh folder backend ke dalam server
-COPY backend/ .
+# Masuk ke folder backend agar server berjalan dari sana
+WORKDIR /app/backend
 
-# Membuka port yang akan digunakan
-EXPOSE 8000
-
-# Perintah untuk menjalankan server FastAPI dengan uvicorn
-CMD uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1
+# Jalankan server menggunakan Uvicorn
+EXPOSE 8080
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
