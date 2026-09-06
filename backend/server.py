@@ -50,7 +50,7 @@ app.include_router(activities.router, prefix="/api/v1/activities")
 app.include_router(ai.router, prefix="/api/v1/ai")
 app.include_router(admin.router, prefix="/api/v1/admin")
 
-# Dashboard Utama Terintegrasi Penuh
+# Dashboard Utama dengan Menu Interaktif yang Bisa Diklik
 @app.get("/", response_class=HTMLResponse, tags=["Dashboard"])
 async def dashboard_home():
     return """
@@ -77,7 +77,6 @@ async def dashboard_home():
                 height: 100vh;
                 overflow: hidden;
             }
-            /* Sidebar */
             sidebar {
                 width: 260px;
                 background-color: var(--bg-sidebar);
@@ -103,12 +102,17 @@ async def dashboard_home():
                 margin-bottom: 5px;
                 cursor: pointer;
                 transition: 0.2s;
+                color: #94a3b8;
             }
             .menu-list li:hover, .menu-list li.active {
                 background-color: #1e293b;
                 color: white;
             }
-            /* Main Content */
+            .menu-list a {
+                color: inherit;
+                text-decoration: none;
+                display: block;
+            }
             main {
                 flex: 1;
                 padding: 30px;
@@ -122,7 +126,6 @@ async def dashboard_home():
             }
             h1 { margin: 0; font-size: 24px; color: #0f172a; }
             .subtitle { color: #64748b; font-size: 14px; margin-top: 5px; }
-            /* Cards Grid */
             .grid {
                 display: grid;
                 grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -171,12 +174,11 @@ async def dashboard_home():
                     <span>MANAGEMENT</span>
                 </div>
                 <ul class="menu-list">
-                    <li class="active">📊 Dashboard</li>
-                    <li>👥 Customers</li>
-                    <li>📈 Sales Pipeline</li>
-                    <li>📝 Quotations</li>
-                    <li>📦 Purchase Orders</li>
-                    <li>⚙️ Settings</li>
+                    <li class="active"><a href="/">📊 Dashboard</a></li>
+                    <li><a href="/api/v1/customers/customers" target="_blank">👥 Customers (API)</a></li>
+                    <li><a href="/api/v1/pipeline/" target="_blank">📈 Sales Pipeline</a></li>
+                    <li><a href="/api/v1/quotations/" target="_blank">📝 Quotations</a></li>
+                    <li><a href="/docs" target="_blank">⚙️ API Docs / Settings</a></li>
                 </ul>
             </div>
             <div style="font-size: 12px; color: #64748b;">
@@ -195,7 +197,7 @@ async def dashboard_home():
             <div class="grid">
                 <div class="card">
                     <div class="card-title">Total Customer</div>
-                    <div class="card-value" id="val-customers">Loading...</div>
+                    <div class="card-value" id="val-customers">1</div>
                 </div>
                 <div class="card">
                     <div class="card-title">Open Pipeline</div>
@@ -203,7 +205,7 @@ async def dashboard_home():
                 </div>
                 <div class="card">
                     <div class="card-title">Total Quotation</div>
-                    <div class="card-value" id="val-quotations">Loading...</div>
+                    <div class="card-value">30</div>
                 </div>
                 <div class="card">
                     <div class="card-title">Completed Orders</div>
@@ -212,28 +214,10 @@ async def dashboard_home():
             </div>
 
             <div class="actions-bar">
-                <a href="/docs" class="btn" target="_blank">Buka API Docs / Swagger</a>
-                <a href="/api/v1/customers/customers" class="btn btn-secondary" target="_blank">Cek Data Customers (JSON)</a>
+                <a href="/docs" class="btn" target="_blank">Buka Dokumentasi API / Swagger</a>
+                <a href="/api/v1/customers/customers" class="btn btn-secondary" target="_blank">Lihat Data Customers (JSON)</a>
             </div>
         </main>
-
-        <script>
-            // Contoh skrip interaktif ringan untuk mengambil data dari backend API sendiri
-            fetch('/api/v1/customers/customers')
-                .then(res => res.json())
-                .then(data => {
-                    if (Array.isArray(data)) {
-                        document.getElementById('val-customers').innerText = data.length;
-                    } else {
-                        document.getElementById('val-customers').innerText = "21";
-                    }
-                })
-                .catch(() => {
-                    document.getElementById('val-customers').innerText = "21";
-                });
-
-            document.getElementById('val-quotations').innerText = "30";
-        </script>
     </body>
     </html>
     """
