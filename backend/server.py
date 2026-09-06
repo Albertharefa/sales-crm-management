@@ -1,65 +1,75 @@
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 import os
-import uvicorn
-import logging
+from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from pymongo import MongoClient
 
-from lib.db import connect_to_mongo, close_mongo_connection
-# Impor router (pastikan path import sesuai struktur foldermu)
-from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin
+# Inisialisasi Aplikasi FastAPI
+app = FastAPI(title="Sales CRM Management API")
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+# Konfigurasi MongoDB (Otomatis membaca environment variable Railway atau fallback ke koneksi lokal)
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017/")
+client = MongoClient(MONGO_URI)
+db = client["CRM-Sales-Management"]
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Dijalankan saat server mulai (startup)
-    await connect_to_mongo()
-    yield
-    # Dijalankan saat server dimatikan (shutdown)
-    await close_mongo_connection()
+# Contoh Schema Pydantic untuk data sederhana
+class CustomerModel(BaseModel):
+    name: str
+    email: str
+    phone: str = None
 
-app = FastAPI(
-    title="Sales CRM Production API",
-    version="1.0.0",
-    lifespan=lifespan
-)
+# ==========================================
+# API ROUTERS & ENDPOINTS
+# ==========================================
 
-# Konfigurasi CORS agar frontend Vercel/Netlify bisa berkomunikasi dengan backend ini
-origins = os.getenv("CORS_ORIGINS", "*").split(",")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.get("/api/health")
+def health_check():
+    try:
+        # Cek koneksi database
+        client.admin.command('ping')
+        return {"status": "success", "message": "Sales CRM API is running and connected to MongoDB."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
-# Tangani error global agar server tidak mati jika ada bug
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logging.error(f"Error pada rute {request.url.path}: {str(exc)}")
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Terjadi kesalahan internal pada server. Silakan coba lagi."}
-    )
+@app.get("/api/customers")
+def get_customers():
+    try:
+        customers = list(db.customers.find({}, {"_id": False}))
+        return {"customers": customers}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-# Daftarkan semua rute API
-app.include_router(auth.router, prefix="/api/v1/auth")
-app.include_router(customers.router, prefix="/api/v1/customers")
-app.include_router(pipeline.router, prefix="/api/v1/pipeline")
-app.include_router(quotations.router, prefix="/api/v1/quotations")
-app.include_router(orders.router, prefix="/api/v1/orders")
-app.include_router(activities.router, prefix="/api/v1/activities")
-app.include_router(ai.router, prefix="/api/v1/ai")
-app.include_router(admin.router, prefix="/api/v1/admin")
+@app.post("/api/customers")
+def create_customer(customer: CustomerModel):
+    try:
+        result = db.customers.insert_one(customer.dict())
+        return {"status": "success", "message": "Customer created successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/", tags=["Root"])
-async def root():
-    return {"message": "Sales CRM API is running."}
+# ==========================================
+# MENYAJIKAN FRONTEND (REACT / VITE DIST)
+# ==========================================
 
-if __name__ == "__main__":
-    # Server otomatis mendeteksi PORT yang diberikan oleh layanan hosting (Render/Railway)
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run("server:app", host="0.0.0.0", port=port)
+# Memastikan folder hasil build frontend (dist) disajikan agar aplikasi tampil di web
+if os.path.exists("dist"):
+    # Menyajikan folder aset statis (JS, CSS, gambar)
+    if os.path.exists("dist/assets"):
+        app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
+    
+    # Catch-all route untuk mendukung Single Page Application (React Router)
+    @app.get("/{full_path:path}")
+    def serve_frontend(full_path: str):
+        # Biarkan jalur yang diawali 'api' ditangani oleh router API di atas
+        if full_path.startswith("api"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        index_file = "dist/index.html"
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"error": "Frontend build files (dist/index.html) not found."}
+else:
+    @app.get("/")
+    def root_fallback():
+        return {"message": "Sales CRM API is running. Frontend dist folder not found, please build the frontend."}
