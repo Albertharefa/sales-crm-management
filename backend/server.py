@@ -52,23 +52,28 @@ def create_customer(customer: CustomerModel):
 # MENYAJIKAN FRONTEND (REACT / VITE DIST)
 # ==========================================
 
-# Memastikan folder hasil build frontend (dist) disajikan agar aplikasi tampil di web
-if os.path.exists("dist"):
-    # Menyajikan folder aset statis (JS, CSS, gambar)
-    if os.path.exists("dist/assets"):
-        app.mount("/assets", StaticFiles(directory="dist/assets"), name="assets")
+# Otomatis mendeteksi lokasi folder dist baik di dalam folder backend maupun di root utama
+dist_path = None
+for path in ["dist", "../dist", "backend/dist"]:
+    if os.path.exists(path) and os.path.exists(os.path.join(path, "index.html")):
+        dist_path = path
+        break
+
+if dist_path:
+    assets_path = os.path.join(dist_path, "assets")
+    if os.path.exists(assets_path):
+        app.mount("/assets", StaticFiles(directory=assets_path), name="assets")
     
-    # Catch-all route untuk mendukung Single Page Application (React Router)
     @app.get("/{full_path:path}")
     def serve_frontend(full_path: str):
         # Biarkan jalur yang diawali 'api' ditangani oleh router API di atas
         if full_path.startswith("api"):
             raise HTTPException(status_code=404, detail="API endpoint not found")
         
-        index_file = "dist/index.html"
+        index_file = os.path.join(dist_path, "index.html")
         if os.path.exists(index_file):
             return FileResponse(index_file)
-        return {"error": "Frontend build files (dist/index.html) not found."}
+        return {"error": "Frontend index.html not found."}
 else:
     @app.get("/")
     def root_fallback():
