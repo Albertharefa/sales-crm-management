@@ -5,22 +5,19 @@ RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/
 
 WORKDIR /app
 
-# Salin seluruh file proyek ke dalam container
+# Salin seluruh file proyek
 COPY . /app
 
-# Masuk ke folder frontend, hapus lockfile/node_modules lama, install bersih, lalu build
+# Masuk ke folder frontend, install dependensi secara bersih, lalu build
 WORKDIR /app/frontend
-RUN rm -rf node_modules package-lock.json
 RUN npm install
 RUN npm run build
 
-# Pindah kembali ke root
+# Pindah ke root dan install backend requirements
 WORKDIR /app
-
-# Install dependencies Python backend
 RUN pip3 install --no-cache-dir -r backend/requirements.txt --break-system-packages
 
-# Salin hasil build frontend langsung ke dalam folder backend
+# Pindahkan hasil build frontend ke folder backend
 RUN cp -r /app/frontend/dist /app/backend/dist
 
 # Jalankan server
