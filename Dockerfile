@@ -18,14 +18,28 @@ COPY frontend/package.json ./
 
 # Clean npm cache and install dependencies
 # package-lock is intentionally not required
+ENV NODE_ENV=development \
+    NPM_CONFIG_PRODUCTION=false \
+    NPM_CONFIG_OMIT=""
+
 RUN npm cache clean --force \
     && npm install \
         --include=dev \
+        --no-omit=dev \
         --no-audit \
         --no-fund \
-        --package-lock=false \
         --legacy-peer-deps \
-    && node -e "require.resolve('@tailwindcss/vite')"
+        --prefer-online \
+    && npm install \
+        --include=dev \
+        --no-omit=dev \
+        --no-audit \
+        --no-fund \
+        --legacy-peer-deps \
+        --prefer-online \
+        @tailwindcss/vite@4.3.3 \
+        tailwindcss@4.3.3 \
+    && node -e "console.log('Tailwind Vite:', require.resolve('@tailwindcss/vite')); console.log('Tailwind:', require.resolve('tailwindcss'))"
 
 # Copy complete frontend source
 COPY frontend/ ./
