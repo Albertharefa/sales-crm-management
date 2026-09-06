@@ -20,10 +20,12 @@ COPY frontend/package.json ./
 # package-lock is intentionally not required
 RUN npm cache clean --force \
     && npm install \
+        --include=dev \
         --no-audit \
         --no-fund \
         --package-lock=false \
-        --legacy-peer-deps
+        --legacy-peer-deps \
+    && node -e "require.resolve('@tailwindcss/vite')"
 
 # Copy complete frontend source
 COPY frontend/ ./
