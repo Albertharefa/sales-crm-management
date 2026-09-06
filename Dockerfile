@@ -1,29 +1,25 @@
-FROM python:3.10-slim
+FROM node:18-slim
 
-# Install Node.js dan npm
-RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
+# Install Python dan pip di dalam image Node.js
+RUN apt-get update && apt-get install -y python3 python3-pip python3-venv && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Salin seluruh file proyek ke dalam container
+# Salin seluruh file project
 COPY . /app
 
-# Masuk ke folder frontend dan pastikan semua dependencies (termasuk tailwindcss/vite) terpasang
+# Build Frontend
 WORKDIR /app/frontend
 RUN npm install
-RUN npm install @tailwindcss/vite --save
 RUN npm run build
 
-# Kembali ke root /app
-WORKDIR /app
-
-# Install dependencies Python backend
-RUN pip install --no-cache-dir -r backend/requirements.txt
-
-# Salin hasil build frontend (dist) langsung ke dalam folder backend
-RUN cp -r frontend/dist backend/dist
-
-# Jalankan server backend
+# Pindah ke backend dan instal dependencies Python
 WORKDIR /app/backend
+RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages
+
+# Salin hasil build frontend ke folder backend
+RUN cp -r /app/frontend/dist /app/backend/dist
+
+# Jalankan server
 EXPOSE 8080
 CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
