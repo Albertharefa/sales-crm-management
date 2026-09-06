@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import uvicorn
@@ -40,7 +41,7 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Terjadi kesalahan internal pada server. Silakan coba lagi."}
     )
 
-# Daftarkan semua rute API yang sudah ada
+# Daftarkan rute API
 app.include_router(auth.router, prefix="/api/v1/auth")
 app.include_router(customers.router, prefix="/api/v1/customers")
 app.include_router(pipeline.router, prefix="/api/v1/pipeline")
@@ -50,68 +51,27 @@ app.include_router(activities.router, prefix="/api/v1/activities")
 app.include_router(ai.router, prefix="/api/v1/ai")
 app.include_router(admin.router, prefix="/api/v1/admin")
 
-# Tampilan Halaman Utama (Dashboard Web Langsung Muncul)
-@app.get("/", response_class=HTMLResponse, tags=["Root"])
-async def root():
-    return """
-    <!DOCTYPE html>
-    <html lang="id">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Sales CRM Management</title>
-        <style>
-            body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                height: 100vh;
-                margin: 0;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                color: white;
-            }
-            .card {
-                background: rgba(255, 255, 255, 0.1);
-                padding: 40px;
-                border-radius: 16px;
-                backdrop-filter: blur(12px);
-                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-                text-align: center;
-                max-width: 450px;
-                width: 90%;
-            }
-            h1 { margin-bottom: 10px; font-size: 26px; }
-            p { color: #e2e8f0; font-size: 15px; margin-bottom: 25px; }
-            .btn {
-                display: inline-block;
-                background: #10b981;
-                color: white;
-                padding: 12px 24px;
-                border-radius: 8px;
-                text-decoration: none;
-                font-weight: bold;
-                transition: background 0.3s;
-                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-            }
-            .btn:hover { background: #059669; }
-            .status {
-                margin-top: 20px;
-                font-size: 13px;
-                color: #93c5fd;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="card">
-            <h1>Sales CRM Management</h1>
-            <p>Sistem backend dan database MongoDB Anda sudah terhubung dan aktif sepenuhnya di Railway!</p>
-            <a href="/docs" class="btn">Buka Dokumentasi API / Docs</a>
-            <div class="status">● Status: Live & Ready to Use</div>
-        </div>
-    </body>
-    </html>
-    """
+# Mengarahkan langsung ke tampilan frontend React
+frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+
+if os.path.exists(frontend_path):
+    if os.path.exists(os.path.join(frontend_path, "public")):
+        app.mount("/public", StaticFiles(directory=os.path.join(frontend_path, "public")), name="public")
+
+    @app.get("/{full_path:path}", tags=["Frontend"])
+    def serve_frontend(full_path: str):
+        if full_path.startswith("api") or full_path == "docs" or full_path == "openapi.json":
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not found")
+        
+        index_file = os.path.join(frontend_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"message": "Frontend index.html not found"}
+else:
+    @app.get("/", tags=["Root"])
+    async def root():
+        return {"message": "Sales CRM API is running."}
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
