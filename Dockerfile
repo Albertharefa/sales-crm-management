@@ -5,18 +5,19 @@ RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists
 
 WORKDIR /app
 
-# Salin seluruh file proyek
+# Salin seluruh file proyek ke dalam container
 COPY . /app
 
-# Masuk ke folder frontend, instal seluruh dependensi, dan build
+# Masuk ke folder frontend dan pastikan semua dependencies (termasuk tailwindcss/vite) terpasang
 WORKDIR /app/frontend
 RUN npm install
+RUN npm install @tailwindcss/vite --save
 RUN npm run build
 
-# Kembali ke folder root /app
+# Kembali ke root /app
 WORKDIR /app
 
-# Install dependencies backend Python
+# Install dependencies Python backend
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Salin hasil build frontend (dist) langsung ke dalam folder backend
