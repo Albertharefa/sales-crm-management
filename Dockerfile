@@ -1,17 +1,20 @@
 FROM python:3.10-slim
 
-# Install Node.js agar bisa build frontend
+# Install Node.js dan npm
 RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Salin seluruh isi project
+# Salin seluruh isi project ke container
 COPY . /app
 
-# Build Frontend (React / Vite)
-RUN cd frontend && npm install && npm run build
+# Build Frontend (React / Vite) & pastikan plugin tailwind terpasang
+RUN cd frontend && \
+    npm install && \
+    npm install @tailwindcss/vite --save-dev && \
+    npm run build
 
-# Install Dependencies Backend
+# Install Dependencies Backend Python
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Pindahkan hasil build frontend ke folder backend agar terbaca server
