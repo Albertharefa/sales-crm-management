@@ -39,19 +39,9 @@ async def ensure_admin_user():
         return
 
     existing = await db.users.find_one({"email": email})
-    force_reset = os.getenv("ADMIN_FORCE_PASSWORD_RESET", "false").strip().lower() in ("1", "true", "yes", "on")
-
+    # Never perform password hashing/reset during application startup.
+    # Production authentication can use ADMIN_PASSWORD explicitly via auth.py.
     if existing:
-        if force_reset:
-            await db.users.update_one(
-                {"email": email},
-                {"$set": {
-                    "password_hash": pwd_context.hash(password),
-                    "status": "Active",
-                    "role": "SUPER_ADMIN",
-                }},
-            )
-            logger.info("CRM admin password reset from ADMIN_PASSWORD: %s", email)
         return
 
     from datetime import datetime, timezone
