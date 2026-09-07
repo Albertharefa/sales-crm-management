@@ -2,7 +2,8 @@ FROM node:22-alpine AS frontend-builder
 WORKDIR /build/frontend
 COPY frontend/package.json ./
 ENV NODE_ENV=development NPM_CONFIG_PRODUCTION=false NPM_CONFIG_OMIT=""
-RUN npm install --include=dev --no-audit --no-fund --legacy-peer-deps
+RUN npm install --include=dev --no-audit --no-fund --legacy-peer-deps --force \
+    && npm ls @tailwindcss/vite tailwindcss tw-animate-css
 COPY frontend/ ./
 RUN npm run build
 
