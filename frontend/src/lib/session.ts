@@ -3,7 +3,7 @@
 import { queryClient } from "./queryClient";
 import { apiPost } from "./api";
 
-// Call after every successful login/signup.
+// Call after every successful login.
 export function beginSession(): void {
   queryClient.clear();
 }
@@ -11,7 +11,7 @@ export function beginSession(): void {
 // Call from every sign-out control; the hard redirect resets all in-memory state.
 export async function endSession(redirectTo: string = "/login"): Promise<void> {
   try {
-    await apiPost("/auth/logout");
+    await apiPost("/logout");
   } finally {
     queryClient.clear();
     window.location.assign(redirectTo);
