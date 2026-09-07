@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, apiGet } from "@/lib/api";
+import axios from "axios";
+import { apiGet } from "@/lib/api";
 import { endSession } from "@/lib/session";
 import type { User } from "@/lib/types";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -35,7 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
-    if (sessionError instanceof ApiError && sessionError.status === 401) {
+    if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) {
       queryClient.clear();
       navigate("/login", { replace: true });
     }
