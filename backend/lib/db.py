@@ -1,30 +1,65 @@
-import os
 import logging
+import os
+
 from motor.motor_asyncio import AsyncIOMotorClient
+from passlib.context import CryptContext
 
 logger = logging.getLogger("crm.db")
 
-# 1. Ambil URL dari variabel Railway
-mongodb_url = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+# Support both Railway's preferred MONGODB_URI and the original project MONGO_URL.
+mongodb_url = os.getenv("MONGODB_URI") or os.getenv("MONGO_URL") or "mongodb://localhost:27017"
 db_name = os.getenv("DB_NAME", "sales_crm_db")
 
-# 2. Deklarasikan 'client' dan 'db' secara global agar rute lama tidak error
 client = AsyncIOMotorClient(
     mongodb_url,
     maxPoolSize=50,
-    minPoolSize=10,
-    serverSelectionTimeoutMS=5000
+    minPoolSize=5,
+    serverSelectionTimeoutMS=5000,
 )
 db = client[db_name]
 
-# 3. Fungsi untuk mengecek koneksi saat server menyala
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
 async def connect_to_mongo():
     try:
-        await client.admin.command('ping')
-        logger.info(f"Berhasil terhubung ke MongoDB Atlas pada database: {db_name}")
-    except Exception as e:
-        logger.error(f"Gagal terhubung ke MongoDB: {e}")
+        await client.admin.command("ping")
+        logger.info("MongoDB connection OK: %s", db_name)
+    except Exception as exc:
+        logger.error("MongoDB connection failed: %s", exc)
+        raise
+
+
+async def ensure_admin_user():
+    email = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    password = os.getenv("ADMIN_PASSWORD", "")
+
+    if not email or not password:
+        logger.warning("ADMIN_EMAIL/ADMIN_PASSWORD not configured; admin auto-seed skipped")
+        return
+
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        # Keep an existing account intact; never overwrite its password on restart.
+        return
+
+    from datetime import datetime, timezone
+    import uuid
+
+    user = {
+        "id": str(uuid.uuid4()),
+        "user_id": "USR-ADMIN",
+        "name": "Super Admin",
+        "email": email,
+        "role": "SUPER_ADMIN",
+        "status": "Active",
+        "password_hash": pwd_context.hash(password),
+        "created_at": datetime.now(timezone.utc),
+    }
+    await db.users.insert_one(user)
+    logger.info("CRM admin user auto-created: %s", email)
+
 
 async def close_mongo_connection():
     client.close()
-    logger.info("Koneksi MongoDB ditutup.")
+    logger.info("MongoDB connection closed")
