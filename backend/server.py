@@ -6,23 +6,48 @@ import os
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from passlib.context import CryptContext
 
-from lib.db import connect_to_mongo, close_mongo_connection
+from lib.db import connect_to_mongo, close_mongo_connection, db
 from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin
+from routers.common import new_id, now
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("crm.server")
+
 BASE_DIR = Path(__file__).resolve().parent
 FRONTEND_DIST = BASE_DIR.parent / "frontend" / "dist"
 INDEX_FILE = FRONTEND_DIST / "index.html"
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+async def ensure_admin():
+    email = os.getenv("ADMIN_EMAIL", "").strip().lower()
+    password = os.getenv("ADMIN_PASSWORD", "")
+    if not email or not password:
+        logger.warning("ADMIN_EMAIL/ADMIN_PASSWORD not set; admin auto-seed skipped")
+        return
+    existing = await db.users.find_one({"email": email})
+    if existing:
+        return
+    await db.users.insert_one({
+        "id": new_id(),
+        "user_id": "USR-0001",
+        "email": email,
+        "name": os.getenv("ADMIN_NAME", "System Administrator"),
+        "role": "SUPER_ADMIN",
+        "status": "Active",
+        "password_hash": pwd_context.hash(password),
+        "created_at": now(),
+    })
+    logger.info("Initial SUPER_ADMIN user created: %s", email)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
         await connect_to_mongo()
+        await ensure_admin()
     except Exception:
-        logger.exception("MongoDB startup check failed")
-        # Keep the process alive so Railway health checks can report the service.
+        logger.exception("MongoDB startup/seed check failed")
     yield
     await close_mongo_connection()
 
@@ -31,18 +56,27 @@ app = FastAPI(title="Sales CRM Production API", version="1.0.0", lifespan=lifesp
 raw_origins = os.getenv("CORS_ORIGINS", "").strip()
 origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
 if origins:
-    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 @app.get("/health", tags=["system"])
 async def health():
-    return {"status": "ok", "service": "sales-crm-management"}
+    try:
+        await db.command("ping")
+        return {"status": "ok", "database": "connected", "service": "sales-crm-management"}
+    except Exception:
+        return JSONResponse(status_code=503, content={"status": "degraded", "database": "unavailable", "service": "sales-crm-management"})
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.exception("Unhandled error on %s", request.url.path)
     return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"detail": "Terjadi kesalahan internal pada server."})
 
-# Routers already declare their resource prefixes; mount the shared API prefix once.
 API_PREFIX = "/api/v1"
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(customers.router, prefix=API_PREFIX)
@@ -53,7 +87,6 @@ app.include_router(activities.router, prefix=API_PREFIX)
 app.include_router(ai.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
 
-# Serve the built React SPA from the same origin in production.
 if FRONTEND_DIST.exists():
     from fastapi.staticfiles import StaticFiles
     assets_dir = FRONTEND_DIST / "assets"
@@ -62,7 +95,6 @@ if FRONTEND_DIST.exists():
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def spa_fallback(full_path: str):
-    # Never intercept API/docs/system paths.
     if full_path.startswith(("api/", "docs", "redoc", "openapi.json", "health")):
         return JSONResponse(status_code=404, content={"detail": "Not Found"})
     if INDEX_FILE.exists():
