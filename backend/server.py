@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user
+from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
 from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads
 from routers.dashboard import router as dashboard_router
 
@@ -59,7 +59,6 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"detail": "Terjadi kesalahan internal pada server. Silakan coba lagi."},
     )
 
-# All application APIs live under one stable versioned prefix.
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(customers.router, prefix="/api/v1")
 app.include_router(pipeline.router, prefix="/api/v1")
@@ -74,11 +73,25 @@ app.include_router(dashboard_router, prefix="/api/v1")
 
 @app.get("/health", tags=["system"])
 async def health():
-    return {
-        "status": "ok",
-        "service": "sales-crm-management",
-        "version": "2.0.0",
-    }
+    try:
+        await db.command("ping")
+        return {
+            "status": "ok",
+            "database": "ok",
+            "service": "sales-crm-management",
+            "version": "2.0.0",
+        }
+    except Exception:
+        logging.exception("Health check database ping failed")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "degraded",
+                "database": "unavailable",
+                "service": "sales-crm-management",
+                "version": "2.0.0",
+            },
+        )
 
 @app.get("/api/v1/health", tags=["system"])
 async def api_health():
@@ -105,7 +118,6 @@ async def frontend_root():
 
 @app.get("/{full_path:path}", include_in_schema=False)
 async def frontend_spa(full_path: str):
-    # Never intercept API paths.
     if full_path.startswith(("api/", "docs", "openapi.json", "health")):
         return JSONResponse({"detail": "Not Found"}, status_code=404)
     index = FRONTEND_DIST / "index.html"
