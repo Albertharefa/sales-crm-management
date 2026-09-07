@@ -18,7 +18,7 @@ const navGroups = [
 ];
 
 export function useCurrentUser() {
-  return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/auth/me"), retry: false, staleTime: 60_000 });
+  return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/me"), retry: false, staleTime: 60_000 });
 }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
