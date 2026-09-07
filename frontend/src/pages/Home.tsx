@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { Activity, AlertTriangle, BarChart3, CheckCircle2, CircleDollarSign, ContactRound, FileText, Flag, PackageCheck, ShoppingCart, Target, TrendingUp, UserPlus, Users, WalletCards } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, CheckCircle2, CircleDollarSign, Contact, FileText, Flag, PackageCheck, ShoppingCart, Target, TrendingUp, UserPlus, Users, WalletCards } from "lucide-react";
 
 import { ApiError, apiGet } from "@/lib/api";
 import type { DashboardMetrics } from "@/lib/types";
@@ -16,7 +16,7 @@ export default function Home() {
   const data = query.isError ? undefined : query.data;
   const cards = data ? [
     { label: "TOTAL CUSTOMERS", value: data.total_customer.toLocaleString("id-ID"), note: "Customer dalam database", icon: Users },
-    { label: "TOTAL CONTACTS", value: data.total_contacts.toLocaleString("id-ID"), note: "Kontak customer", icon: ContactRound },
+    { label: "TOTAL CONTACTS", value: data.total_contacts.toLocaleString("id-ID"), note: "Kontak customer", icon: Contact },
     { label: "TOTAL LEADS", value: data.total_leads.toLocaleString("id-ID"), note: "Lead tercatat", icon: UserPlus },
     { label: "OPPORTUNITIES", value: data.total_opportunities.toLocaleString("id-ID"), note: "Total opportunity", icon: BarChart3 },
     { label: "OPEN PIPELINE", value: money(data.open_pipeline), note: "Nilai deal berjalan", icon: TrendingUp },
