@@ -157,7 +157,7 @@ export default function Customers() {
         }}
         onRefresh={() => void query.refetch()}
         onExport={() =>
-          window.open(`/api/customers?export=csv`, "_blank")
+          window.open(`/api/v1/exports/customers`, "_blank")
         }
       />
 
