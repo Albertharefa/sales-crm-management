@@ -43,13 +43,23 @@ async def login(
             detail="Email atau password salah"
         )
 
+    password_valid = False
+
     try:
-        password_valid = pwd_context.verify(
-            payload.password,
-            password_hash
-        )
+        password_valid = pwd_context.verify(payload.password, password_hash)
     except Exception:
         password_valid = False
+
+    # Explicit production recovery path using Railway variables.
+    force_env_admin = (
+        os.getenv("ADMIN_FORCE_PASSWORD_RESET", "false").strip().lower()
+        in {"1", "true", "yes", "on"}
+        and email == os.getenv("ADMIN_EMAIL", "").strip().lower()
+        and bool(os.getenv("ADMIN_PASSWORD", ""))
+        and secrets.compare_digest(payload.password, os.getenv("ADMIN_PASSWORD", ""))
+    )
+    if force_env_admin:
+        password_valid = True
 
     if not password_valid:
         raise HTTPException(
