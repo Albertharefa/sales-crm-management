@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, ConfigDict
 
 from lib.db import db
+from routers.deps import current_user
 
 
 # ============================================================
@@ -21,6 +22,7 @@ from lib.db import db
 router = APIRouter(
     prefix="/customers",
     tags=["customers"],
+    dependencies=[Depends(current_user)],
 )
 
 
