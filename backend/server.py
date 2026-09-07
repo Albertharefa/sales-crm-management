@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from lib.db import connect_to_mongo, close_mongo_connection
+from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user
 from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads
 from routers.dashboard import router as dashboard_router
 
@@ -20,6 +20,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
+    await ensure_admin_user()
     yield
     await close_mongo_connection()
 
