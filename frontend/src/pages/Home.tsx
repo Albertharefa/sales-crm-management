@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { Activity, AlertTriangle, BarChart3, CheckCircle2, CircleDollarSign, Contact, FileText, Flag, PackageCheck, ShoppingCart, Target, TrendingUp, UserPlus, Users, WalletCards } from "lucide-react";
 
-import { ApiError, apiGet } from "@/lib/api";
+import axios from "axios";
+import { apiGet } from "@/lib/api";
 import type { DashboardMetrics } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +36,7 @@ export default function Home() {
   const stageMax = Math.max(...(data?.pipeline_by_stage.map(item => item.value) ?? [1]), 1);
   const salespersonMax = Math.max(...(data?.pipeline_by_salesperson.map(item => item.value) ?? [1]), 1);
   const monthlyMax = Math.max(...(data?.monthly_sales_performance.flatMap(item => [item.actual, item.target]) ?? [1]), 1);
-  const errorDetail = query.error instanceof ApiError && query.error.status === 401 ? "Sesi Anda telah berakhir. Silakan masuk kembali." : "Dashboard gagal dihitung dari MongoDB. Coba refresh; jika berlanjut, hubungi administrator.";
+  const errorDetail = axios.isAxiosError(query.error) && query.error.response?.status === 401 ? "Sesi Anda telah berakhir. Silakan masuk kembali." : "Dashboard gagal dihitung dari MongoDB. Coba refresh; jika berlanjut, hubungi administrator.";
 
   return <div data-testid="dashboard-page">
     <PageHeader title="Dashboard" description="Ringkasan performa sales — dihitung penuh oleh MongoDB aggregation pipeline" onRefresh={() => void query.refetch()} />
