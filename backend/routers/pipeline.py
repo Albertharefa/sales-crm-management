@@ -32,7 +32,7 @@ async def create_opportunity(payload: OpportunityCreate, user: dict = Depends(cu
     count = await db.opportunities.count_documents({}) + 1
     doc = {"id": new_id(), "opportunity_id": f"OPP-{now().year}-{count:05d}", "customer_name": customer["name"], "sales_id": user["id"], "sales_name": user["name"], **payload.model_dump(mode="json"), "created_at": now()}
     await db.opportunities.insert_one(doc)
-    await audit(user, "Create", "Sales Pipeline", doc["id"], {"name": doc["name"]})
+    await audit(user, "Create", "Sales Pipeline", doc["id"], {"title": doc["title"]})
     return Opportunity(**doc)
 
 
