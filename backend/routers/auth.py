@@ -9,7 +9,7 @@ from models.crm import LoginRequest, UserPublic
 from routers.deps import current_user
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(tags=["auth"])
 
 pwd_context = CryptContext(
     schemes=["bcrypt"],
