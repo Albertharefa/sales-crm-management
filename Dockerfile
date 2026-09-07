@@ -1,112 +1,19 @@
-# ============================================================
-# SALES CRM MANAGEMENT
-# Production Dockerfile
-# React/Vite Frontend + Python/FastAPI Backend
-# ============================================================
-
-
-# ============================================================
-# STAGE 1 — BUILD FRONTEND
-# ============================================================
-
 FROM node:22-alpine AS frontend-builder
-
 WORKDIR /build/frontend
-
-# Copy package definition first for better Docker caching
 COPY frontend/package.json ./
-
-# Clean npm cache and install dependencies
-# package-lock is intentionally not required
-ENV NODE_ENV=development \
-    NPM_CONFIG_PRODUCTION=false \
-    NPM_CONFIG_OMIT=""
-
-RUN npm cache clean --force \
-    && npm install \
-        --include=dev \
-        --no-omit=dev \
-        --no-audit \
-        --no-fund \
-        --legacy-peer-deps \
-        --prefer-online \
-    && npm install \
-        --include=dev \
-        --no-omit=dev \
-        --no-audit \
-        --no-fund \
-        --legacy-peer-deps \
-        --prefer-online \
-        @tailwindcss/vite@4.3.3 \
-        tailwindcss@4.3.3 \
-    && node -e "console.log('Tailwind Vite:', require.resolve('@tailwindcss/vite')); console.log('Tailwind:', require.resolve('tailwindcss'))"
-
-# Copy complete frontend source
+ENV NODE_ENV=development NPM_CONFIG_PRODUCTION=false NPM_CONFIG_OMIT=""
+RUN npm install --include=dev --no-audit --no-fund --legacy-peer-deps
 COPY frontend/ ./
-
-# Build React/Vite application
 RUN npm run build
 
-
-# ============================================================
-# STAGE 2 — PYTHON BACKEND
-# ============================================================
-
 FROM python:3.12-slim
-
 WORKDIR /app
-
-# Python production settings
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Railway provides PORT dynamically
-ENV PORT=8000
-
-
-# ============================================================
-# BACKEND DEPENDENCIES
-# ============================================================
-
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PORT=8000
 COPY backend/requirements.txt /app/backend/requirements.txt
-
 RUN python -m pip install --no-cache-dir --upgrade pip \
-    && python -m pip install --no-cache-dir \
-       -r /app/backend/requirements.txt
-
-
-# ============================================================
-# BACKEND SOURCE
-# ============================================================
-
+    && python -m pip install --no-cache-dir -r /app/backend/requirements.txt
 COPY backend/ /app/backend/
-
-
-# ============================================================
-# FRONTEND PRODUCTION BUILD
-# ============================================================
-
-COPY --from=frontend-builder \
-    /build/frontend/dist \
-    /app/frontend/dist
-
-
-# ============================================================
-# APPLICATION DIRECTORY
-# ============================================================
-
+COPY --from=frontend-builder /build/frontend/dist /app/frontend/dist
 WORKDIR /app/backend
-
-
-# ============================================================
-# NETWORK
-# ============================================================
-
 EXPOSE 8000
-
-
-# ============================================================
-# START APPLICATION
-# ============================================================
-
-CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "exec uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
