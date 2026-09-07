@@ -1,5 +1,5 @@
 from typing import Any
-from fastapi import Cookie, HTTPException
+from fastapi import Cookie, Depends, HTTPException
 from lib.db import db
 
 
@@ -16,8 +16,8 @@ async def current_user(crm_session: str | None = Cookie(default=None)) -> dict[s
 
 
 def require_roles(*roles: str):
-    async def dependency(user: dict[str, Any] = None):
-        if user is None or user.get("role") not in roles:
+    async def dependency(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+        if user.get("role") not in roles:
             raise HTTPException(status_code=403, detail="Anda tidak memiliki izin")
         return user
 
