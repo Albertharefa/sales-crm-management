@@ -1,96 +1,31 @@
 from __future__ import annotations
 
-"""
-CRM Models
-Sales CRM Management System
-
-Centralized Pydantic models for the CRM API.
-
-IMPORTANT:
-- This file must NOT import anything from routers.*
-- Routers may import models from this file.
-- Keep schemas centralized here to prevent circular imports.
-"""
-
-from typing import TypeVar, Generic, List, Any, Dict, Optional
+from typing import TypeVar, Generic, List, Any, Optional
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field
 
-T = TypeVar('T')
+T = TypeVar("T")
+
+class CRMBaseModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="ignore", arbitrary_types_allowed=True)
 
 class Paginated(BaseModel, Generic[T]):
     items: List[T]
     total: int
     page: int
-    size: int
-
-
-# ==========================================
-# BASE MODEL
-# ==========================================
-
-class CRMBaseModel(BaseModel):
-    model_config = ConfigDict(
-        populate_by_name=True,
-        arbitrary_types_allowed=True
-    )
-
-
-# ==========================================
-# CUSTOMER MODELS
-# ==========================================
-
-class CustomerBase(CRMBaseModel):
-    name: str
-    company_name: str
-    email: str
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    industry: Optional[str] = None
-    status: Optional[str] = "active"
-
-
-class CustomerCreate(CustomerBase):
-    pass
-
-
-class CustomerUpdate(CRMBaseModel):
-    name: Optional[str] = None
-    company_name: Optional[str] = None
-    email: Optional[str] = None
-    phone: Optional[str] = None
-    address: Optional[str] = None
-    industry: Optional[str] = None
-    status: Optional[str] = None
-
-
-class CustomerInDB(CustomerBase):
-    id: str = Field(alias="_id")
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-    assigned_to: Optional[str] = None
-
-
-Customer = CustomerInDB
-
-
-# ==========================================
-# OPPORTUNITY / PIPELINE MODELS
-# ==========================================
+    page_size: int
 
 class OpportunityBase(CRMBaseModel):
     title: str
     customer_id: str
-    value: float
-    stage: str = "lead"  # lead, proposal, negotiation, won, lost
+    value: float = 0
+    stage: str = "Lead"
     probability: int = 10
     expected_close_date: Optional[date] = None
     notes: Optional[str] = None
 
-
 class OpportunityCreate(OpportunityBase):
     pass
-
 
 class OpportunityUpdate(CRMBaseModel):
     title: Optional[str] = None
@@ -101,45 +36,38 @@ class OpportunityUpdate(CRMBaseModel):
     notes: Optional[str] = None
     status: Optional[str] = None
 
-
 class OpportunityInDB(OpportunityBase):
-    id: str = Field(alias="_id")
-    owner_id: str
-    status: str = "open"
+    id: str
+    opportunity_id: Optional[str] = None
+    customer_name: Optional[str] = None
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+    loss_reason: Optional[str] = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-
 
 Opportunity = OpportunityInDB
-
-
-# ==========================================
-# QUOTATION MODELS
-# ==========================================
 
 class QuotationItem(CRMBaseModel):
     product_id: Optional[str] = None
     description: str
-    quantity: int
-    unit_price: float
-    discount: float = 0.0
-    total: float
-
+    quantity: int = 1
+    unit_price: float = 0
+    discount: float = 0
+    tax: float = 0
+    total: float = 0
 
 class QuotationBase(CRMBaseModel):
     customer_id: str
     opportunity_id: Optional[str] = None
     items: List[QuotationItem]
-    subtotal: float
-    tax: float = 0.0
-    total_amount: float
+    subtotal: float = 0
+    tax: float = 0
+    total_amount: float = 0
     valid_until: Optional[date] = None
     notes: Optional[str] = None
 
-
 class QuotationCreate(QuotationBase):
     pass
-
 
 class QuotationUpdate(CRMBaseModel):
     items: Optional[List[QuotationItem]] = None
@@ -150,180 +78,111 @@ class QuotationUpdate(CRMBaseModel):
     valid_until: Optional[date] = None
     notes: Optional[str] = None
 
-
 class QuotationInDB(QuotationBase):
-    id: str = Field(alias="_id")
-    quotation_number: str
-    status: str = "draft"  # draft, sent, accepted, rejected
-    created_by: str
+    id: str
+    number: Optional[str] = None
+    customer_name: Optional[str] = None
+    sales_name: Optional[str] = None
+    status: str = "Draft"
+    discount_total: float = 0
+    tax_total: float = 0
+    grand_total: float = 0
     created_at: datetime
-    updated_at: Optional[datetime] = None
-
 
 Quotation = QuotationInDB
 
-
-# ==========================================
-# ORDER MODELS
-# ==========================================
-
-class OrderBase(CRMBaseModel):
-    quotation_id: Optional[str] = None
+class PurchaseOrderBase(CRMBaseModel):
     customer_id: str
     items: List[QuotationItem]
-    total_amount: float
-    shipping_address: Optional[str] = None
-    payment_terms: Optional[str] = None
-
-
-class OrderCreate(OrderBase):
-    pass
-
-
-class OrderUpdate(CRMBaseModel):
-    status: Optional[str] = None
-    shipping_address: Optional[str] = None
-    payment_terms: Optional[str] = None
-
-
-class OrderInDB(OrderBase):
-    id: str = Field(alias="_id")
-    order_number: str
-    status: str = "pending"  # pending, processing, shipped, completed, cancelled
-    created_by: str
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-
-Order = OrderInDB
-
-
-# ==========================================
-# PURCHASE ORDER MODELS
-# ==========================================
-
-class PurchaseOrderBase(CRMBaseModel):
-    supplier_name: Optional[str] = None
-    items: List[QuotationItem]
-    total_amount: float
+    total: float = 0
     notes: Optional[str] = None
 
-
 class PurchaseOrderCreate(PurchaseOrderBase):
-    pass
-
+    po_number: Optional[str] = None
+    status: str = "Received"
 
 class PurchaseOrderUpdate(CRMBaseModel):
     status: Optional[str] = None
     notes: Optional[str] = None
 
-
 class PurchaseOrderInDB(PurchaseOrderBase):
-    id: str = Field(alias="_id")
+    id: str
     po_number: str
-    status: str = "pending"
-    created_by: str
+    customer_name: Optional[str] = None
+    sales_name: Optional[str] = None
+    status: str = "Received"
     created_at: datetime
-    updated_at: Optional[datetime] = None
-
 
 PurchaseOrder = PurchaseOrderInDB
 
-
-# ==========================================
-# ACTIVITY & TASK MODELS
-# ==========================================
-
 class ActivityBase(CRMBaseModel):
-    title: str
-    activity_type: str = "call"  # call, meeting, email, task
+    subject: str
+    activity_type: str = "Call"
     customer_id: Optional[str] = None
-    opportunity_id: Optional[str] = None
-    due_date: Optional[datetime] = None
+    date: Optional[datetime] = None
     description: Optional[str] = None
-    completed: bool = False
-
+    status: str = "Open"
+    next_follow_up: Optional[datetime] = None
 
 class ActivityCreate(ActivityBase):
     pass
 
-
 class ActivityUpdate(CRMBaseModel):
-    title: Optional[str] = None
+    subject: Optional[str] = None
     activity_type: Optional[str] = None
-    due_date: Optional[datetime] = None
+    date: Optional[datetime] = None
     description: Optional[str] = None
-    completed: Optional[bool] = None
-
+    status: Optional[str] = None
+    next_follow_up: Optional[datetime] = None
 
 class ActivityInDB(ActivityBase):
-    id: str = Field(alias="_id")
-    assigned_to: str
+    id: str
+    activity_id: Optional[str] = None
+    customer_name: Optional[str] = None
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-
 
 Activity = ActivityInDB
 Task = ActivityInDB
 TaskCreate = ActivityCreate
 TaskUpdate = ActivityUpdate
 
-
-# ==========================================
-# USER & AUTH MODELS
-# ==========================================
-
-class UserBase(CRMBaseModel):
+class UserCreate(CRMBaseModel):
     email: str
-    full_name: str
-    role: str = "sales_rep"  # admin, sales_manager, sales_rep
-    is_active: bool = True
-
-
-class UserCreate(UserBase):
+    name: str
+    role: str = "SALES"
+    status: str = "Active"
     password: str
 
-
-class UserInDB(UserBase):
-    id: str = Field(alias="_id")
-    hashed_password: str
-    created_at: datetime
-
-
-class Token(CRMBaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class TokenData(CRMBaseModel):
-    email: Optional[str] = None
-    role: Optional[str] = None
-
-
-# ==========================================
-# AUTHENTICATION & LOGIN MODELS
-# ==========================================
+class UserPublic(CRMBaseModel):
+    id: str
+    email: str
+    name: str = ""
+    role: str = "SALES"
+    status: str = "Active"
+    created_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
 
 class LoginRequest(CRMBaseModel):
     email: str
     password: str
 
-
-class UserPublic(UserBase):
-    id: str = Field(alias="_id")
-    created_at: datetime
-
-
-# ==========================================
-# ADMIN & METRICS MODELS
-# ==========================================
-
 class OptionsResponse(CRMBaseModel):
     options: Optional[List[Any]] = None
-
+    customers: Optional[List[Any]] = None
+    products: Optional[List[Any]] = None
+    users: Optional[List[Any]] = None
 
 class SalesTeamMetric(CRMBaseModel):
-    user_id: Optional[str] = None
-    name: Optional[str] = None
-    deals_won: Optional[int] = 0
-    total_value: Optional[float] = 0.0
+    sales: Optional[str] = None
+    role: Optional[str] = None
+    manager: Optional[str] = None
+    open_pipeline: float = 0
+    weighted: float = 0
+    won: float = 0
+    po: int = 0
+    po_value: float = 0
+    activities: int = 0
+    indent: int = 0
+    overdue: int = 0
