@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'sonner';
 
 import Login from './pages/Login';
@@ -16,11 +15,8 @@ import SalesTeam from './pages/SalesTeam';
 import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 
-const queryClient = new QueryClient();
-
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
       <Router>
         <Toaster position="top-right" richColors />
         <Routes>
@@ -39,6 +35,5 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
-    </QueryClientProvider>
   );
 }
