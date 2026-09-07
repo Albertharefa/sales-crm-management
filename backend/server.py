@@ -36,6 +36,12 @@ configured_origins = os.getenv(
     "https://sales-crm-management-production.up.railway.app",
 )
 origins = [item.strip() for item in configured_origins.split(",") if item.strip()]
+if "*" in origins:
+    origins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://sales-crm-management-production.up.railway.app",
+    ]
 
 app.add_middleware(
     CORSMiddleware,
