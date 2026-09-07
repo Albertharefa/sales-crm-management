@@ -1,3 +1,4 @@
+import os
 import secrets
 from datetime import datetime, timezone
 
@@ -96,7 +97,8 @@ async def login(
         httponly=True,
         samesite="lax",
         max_age=60 * 60 * 24 * 7,
-        secure=True
+        secure=os.getenv("COOKIE_SECURE", "true").strip().lower() in {"1", "true", "yes", "on"},
+        path="/",
     )
 
     return UserPublic(
@@ -125,7 +127,8 @@ async def logout(
         })
 
     response.delete_cookie(
-        key="crm_session"
+        key="crm_session",
+        path="/",
     )
 
     return Response(status_code=204)
