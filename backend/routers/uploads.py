@@ -18,7 +18,7 @@ async def upload_file(file: UploadFile = File(...), user: dict = Depends(current
         raise HTTPException(status_code=413, detail="Ukuran file maksimum 10MB")
     doc = {"id": new_id(), "file_name": file.filename or "upload", "content_type": file.content_type, "content": content, "size": len(content), "uploaded_by": user["id"], "created_at": datetime.now(timezone.utc)}
     await db.documents.insert_one(doc)
-    return UploadResponse(id=doc["id"], file_name=doc["file_name"], content_type=doc["content_type"], size=doc["size"], url=f"/api/uploads/{doc['id']}")
+    return UploadResponse(id=doc["id"], file_name=doc["file_name"], content_type=doc["content_type"], size=doc["size"], url=f"/api/v1/uploads/{doc['id']}")
 
 
 @router.get("/{file_id}")
