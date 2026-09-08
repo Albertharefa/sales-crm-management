@@ -224,7 +224,7 @@ export default function Customers() {
           label: "Tambah Customer",
           onClick: () => setModal(true),
         }}
-        onRefresh={() => void query.refetch()}
+        onRefresh={() => window.location.reload()}
         onExport={() =>
           window.open(`/api/v1/customers/export`, "_blank")
         }
