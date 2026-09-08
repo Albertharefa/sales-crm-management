@@ -14,6 +14,8 @@ import { Search, Trash2, Eye, X } from "lucide-react";
 
 export default function Customers() {
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [industry, setIndustry] = useState("");
   const [modal, setModal] = useState(false);
   const [detailModal, setDetailModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
@@ -40,11 +42,13 @@ export default function Customers() {
   ========================= */
 
   const query = useQuery({
-    queryKey: ["customers", page, search],
+    queryKey: ["customers", page, search, status, industry],
     queryFn: () =>
       apiGet<Paginated<Customer>>(
         `/customers?page=${page}&page_size=10&search=${encodeURIComponent(
           search
+        )}&status=${encodeURIComponent(status)}&industry=${encodeURIComponent(
+          industry
         )}`
       ),
   });
@@ -184,19 +188,29 @@ export default function Customers() {
 
         <select
           className={selectClass}
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
           data-testid="customers-status-filter"
         >
-          <option>Semua status</option>
-          <option>Active</option>
-          <option>Prospect</option>
-          <option>Inactive</option>
+          <option value="">Semua status</option>
+          <option value="Active">Active</option>
+          <option value="Prospect">Prospect</option>
+          <option value="Inactive">Inactive</option>
         </select>
 
         <select
           className={selectClass}
+          value={industry}
+          onChange={(e) => {
+            setIndustry(e.target.value);
+            setPage(1);
+          }}
           data-testid="customers-industry-filter"
         >
-          <option>Semua industri</option>
+          <option value="">Semua industri</option>
 
           {[
             "Manufacturing",
@@ -259,6 +273,16 @@ export default function Customers() {
                   </td>
                 </tr>
 
+              ) : query.isError ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="px-4 py-10 text-center text-red-500"
+                    data-testid="customers-error-state"
+                  >
+                    Gagal memuat customer. Silakan tekan Refresh.
+                  </td>
+                </tr>
               ) : query.data?.items?.length ? (
 
                 query.data.items.map((customer) => (
