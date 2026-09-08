@@ -26,12 +26,17 @@ export default function Customers() {
 
   const [form, setForm] = useState({
     name: "",
+    company_name: "",
     industry: "Manufacturing",
+    source: "Referral",
     city: "Jakarta",
+    province: "",
     phone: "",
     email: "",
     pic_name: "",
+    pic_position: "",
     status: "Active",
+    sales_name: "",
     address: "",
     notes: "",
   });
@@ -745,7 +750,6 @@ export default function Customers() {
           title="Tambah Customer"
           onClose={() => setModal(false)}
         >
-
           <form
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -754,17 +758,19 @@ export default function Customers() {
             }}
             data-testid="customer-create-form"
           >
-
             <Field label="Nama Customer" required>
               <Input
                 value={form.name}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    name: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
                 data-testid="customer-name-input"
+              />
+            </Field>
+
+            <Field label="Perusahaan">
+              <Input
+                value={form.company_name}
+                onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                data-testid="customer-company-input"
               />
             </Field>
 
@@ -772,44 +778,56 @@ export default function Customers() {
               <select
                 className={selectClass}
                 value={form.industry}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    industry: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, industry: e.target.value })}
                 data-testid="customer-industry-input"
               >
                 <option>Manufacturing</option>
                 <option>Oil & Gas</option>
                 <option>Mining</option>
+                <option>Otomotif</option>
+                <option>FMCG</option>
+                <option>Telekomunikasi</option>
+                <option>Konstruksi</option>
                 <option>EPC</option>
                 <option>Power Generation</option>
+              </select>
+            </Field>
+
+            <Field label="Sumber">
+              <select
+                className={selectClass}
+                value={form.source}
+                onChange={(e) => setForm({ ...form, source: e.target.value })}
+                data-testid="customer-source-input"
+              >
+                <option>Referral</option>
+                <option>Website</option>
+                <option>Pameran</option>
+                <option>Cold Call</option>
+                <option>Partner</option>
               </select>
             </Field>
 
             <Field label="Kota">
               <Input
                 value={form.city}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    city: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
                 data-testid="customer-city-input"
+              />
+            </Field>
+
+            <Field label="Provinsi">
+              <Input
+                value={form.province}
+                onChange={(e) => setForm({ ...form, province: e.target.value })}
+                data-testid="customer-province-input"
               />
             </Field>
 
             <Field label="Telepon">
               <Input
                 value={form.phone}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    phone: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 data-testid="customer-phone-input"
               />
             </Field>
@@ -818,12 +836,7 @@ export default function Customers() {
               <Input
                 type="email"
                 value={form.email}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    email: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
                 data-testid="customer-email-input"
               />
             </Field>
@@ -831,13 +844,16 @@ export default function Customers() {
             <Field label="Nama PIC">
               <Input
                 value={form.pic_name}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    pic_name: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, pic_name: e.target.value })}
                 data-testid="customer-pic-input"
+              />
+            </Field>
+
+            <Field label="Jabatan PIC">
+              <Input
+                value={form.pic_position}
+                onChange={(e) => setForm({ ...form, pic_position: e.target.value })}
+                data-testid="customer-pic-position-input"
               />
             </Field>
 
@@ -845,12 +861,7 @@ export default function Customers() {
               <select
                 className={selectClass}
                 value={form.status}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    status: e.target.value,
-                  })
-                }
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
                 data-testid="customer-status-input"
               >
                 <option>Active</option>
@@ -859,27 +870,43 @@ export default function Customers() {
               </select>
             </Field>
 
+            <Field label="Sales Penanggung Jawab">
+              <select
+                className={selectClass}
+                value={form.sales_name}
+                onChange={(e) => setForm({ ...form, sales_name: e.target.value })}
+                data-testid="customer-sales-input"
+              >
+                <option value="">— Pilih sales —</option>
+                {salesOptionsQuery.data?.map((salesName) => (
+                  <option key={salesName} value={salesName}>
+                    {salesName}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
             <div className="sm:col-span-2">
-
               <Field label="Alamat">
-
                 <Textarea
                   value={form.address}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      address: e.target.value,
-                    })
-                  }
+                  onChange={(e) => setForm({ ...form, address: e.target.value })}
                   data-testid="customer-address-input"
                 />
-
               </Field>
+            </div>
 
+            <div className="sm:col-span-2">
+              <Field label="Catatan">
+                <Textarea
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                  data-testid="customer-notes-input"
+                />
+              </Field>
             </div>
 
             <div className="flex justify-end gap-2 sm:col-span-2">
-
               <Button
                 type="button"
                 variant="outline"
@@ -888,21 +915,15 @@ export default function Customers() {
               >
                 Batal
               </Button>
-
               <Button
                 type="submit"
                 disabled={create.isPending}
                 data-testid="customer-save-button"
               >
-                {create.isPending
-                  ? "Menyimpan..."
-                  : "Simpan"}
+                {create.isPending ? "Menyimpan..." : "Simpan"}
               </Button>
-
             </div>
-
           </form>
-
         </Modal>
 
       )}
