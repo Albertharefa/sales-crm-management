@@ -66,6 +66,10 @@ export default function Pipeline() {
     queryFn: () => apiGet<Options>("/options"),
   });
 
+  const refreshPage = () => {
+    window.location.reload();
+  };
+
   const create = useMutation({
     mutationFn: () =>
       apiPost<Opportunity>("/pipeline", {
@@ -133,6 +137,7 @@ export default function Pipeline() {
       <PageHeader
         title="Sales Pipeline"
         description="Weighted value = value × probability, dihitung di server"
+        onRefresh={refreshPage}
         action={{ label: "Opportunity", onClick: () => setModal(true) }}
         onExport={() => window.open("/api/v1/exports/pipeline", "_blank")}
       />
@@ -155,92 +160,49 @@ export default function Pipeline() {
 
       <div className="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant={view === "table" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setView("table")}
-            data-testid="pipeline-table-view-button"
-          >
-            <List className="mr-2 size-4" />
-            Table
+          <Button variant={view === "table" ? "default" : "outline"} size="sm" onClick={() => setView("table")} data-testid="pipeline-table-view-button">
+            <List className="mr-2 size-4" />Table
           </Button>
-          <Button
-            variant={view === "kanban" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setView("kanban")}
-            data-testid="pipeline-kanban-view-button"
-          >
-            <KanbanSquare className="mr-2 size-4" />
-            Kanban
+          <Button variant={view === "kanban" ? "default" : "outline"} size="sm" onClick={() => setView("kanban")} data-testid="pipeline-kanban-view-button">
+            <KanbanSquare className="mr-2 size-4" />Kanban
           </Button>
         </div>
 
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input
-              className="pl-9"
-              placeholder="Cari opportunity / customer..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              data-testid="pipeline-search-input"
-            />
+            <Input className="pl-9" placeholder="Cari opportunity / customer..." value={search} onChange={(e) => setSearch(e.target.value)} data-testid="pipeline-search-input" />
           </div>
 
-          <select
-            className={selectClass}
-            value={stage}
-            onChange={(e) => setStage(e.target.value)}
-            data-testid="pipeline-stage-filter"
-          >
+          <select className={selectClass} value={stage} onChange={(e) => setStage(e.target.value)} data-testid="pipeline-stage-filter">
             <option value="">Semua stage</option>
             {stages.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
 
-          <select
-            className={selectClass}
-            value={salesId}
-            onChange={(e) => setSalesId(e.target.value)}
-            data-testid="pipeline-sales-filter"
-          >
+          <select className={selectClass} value={salesId} onChange={(e) => setSalesId(e.target.value)} data-testid="pipeline-sales-filter">
             <option value="">Semua sales</option>
             {(options.data?.users ?? [])
               .filter((user) => ["SALES", "SALES_MANAGER"].includes(user.role))
-              .map((user) => (
-                <option key={user.id} value={user.id}>{user.name}</option>
-              ))}
+              .map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
           </select>
 
-          <select
-            className={selectClass}
-            value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
-            data-testid="pipeline-customer-filter"
-          >
+          <select className={selectClass} value={customerId} onChange={(e) => setCustomerId(e.target.value)} data-testid="pipeline-customer-filter">
             <option value="">Semua customer</option>
-            {(options.data?.customers ?? []).map((customer) => (
-              <option key={customer.id} value={customer.id}>{customer.name}</option>
-            ))}
+            {(options.data?.customers ?? []).map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
           </select>
         </div>
 
         {(search || stage || salesId || customerId) && (
           <div className="mt-3 flex justify-end">
-            <Button variant="ghost" size="sm" onClick={resetFilters}>
-              Reset filter
-            </Button>
+            <Button variant="ghost" size="sm" onClick={resetFilters}>Reset filter</Button>
           </div>
         )}
       </div>
 
       {list.isLoading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-400">
-          Memuat pipeline...
-        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-400">Memuat pipeline...</div>
       ) : list.isError ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-600">
-          Gagal memuat Sales Pipeline. Silakan refresh.
-        </div>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-600">Gagal memuat Sales Pipeline. Silakan refresh.</div>
       ) : view === "table" ? (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
@@ -263,39 +225,19 @@ export default function Pipeline() {
                     <td className="px-4 py-3 text-slate-600">{item.sales_name ?? "—"}</td>
                     <td className="px-4 py-3 font-mono text-xs">{money(item.value)}</td>
                     <td className="px-4 py-3">{item.probability}%</td>
-                    <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-800">
-                      {money(item.value * item.probability / 100)}
-                    </td>
+                    <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-800">{money(item.value * item.probability / 100)}</td>
                     <td className="px-4 py-3">
-                      <select
-                        className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs"
-                        value={item.stage}
-                        onChange={(e) => changeStage.mutate({ id: item.id, nextStage: e.target.value })}
-                        disabled={changeStage.isPending}
-                        aria-label={`Stage ${item.name}`}
-                      >
+                      <select className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs" value={item.stage} onChange={(e) => changeStage.mutate({ id: item.id, nextStage: e.target.value })} disabled={changeStage.isPending} aria-label={`Stage ${item.name}`}>
                         {stages.map((itemStage) => <option key={itemStage}>{itemStage}</option>)}
                       </select>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{item.target_close ?? "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title="Edit Opportunity"
-                          onClick={() => toast.info("Edit Opportunity akan kita aktifkan pada tahap berikutnya.")}
-                        >
+                        <Button type="button" variant="ghost" size="icon" title="Edit Opportunity" onClick={() => toast.info("Edit Opportunity akan kita aktifkan pada tahap berikutnya.")}>
                           <Pencil className="size-4" />
                         </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          title="Hapus Opportunity"
-                          onClick={() => toast.info("Hapus Opportunity akan kita aktifkan pada tahap berikutnya.")}
-                        >
+                        <Button type="button" variant="ghost" size="icon" title="Hapus Opportunity" onClick={() => toast.info("Hapus Opportunity akan kita aktifkan pada tahap berikutnya.")}>
                           <Trash2 className="size-4 text-red-500" />
                         </Button>
                       </div>
@@ -305,25 +247,15 @@ export default function Pipeline() {
               </tbody>
             </table>
           </div>
-          {!items.length && (
-            <div className="border-t border-slate-200 p-10 text-center text-sm text-slate-400">
-              Tidak ada opportunity yang sesuai filter.
-            </div>
-          )}
-          <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
-            Menampilkan {items.length} dari {list.data?.total ?? 0} opportunity
-          </div>
+          {!items.length && <div className="border-t border-slate-200 p-10 text-center text-sm text-slate-400">Tidak ada opportunity yang sesuai filter.</div>}
+          <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">Menampilkan {items.length} dari {list.data?.total ?? 0} opportunity</div>
         </div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-4">
           {stages.map((stageName) => {
             const stageItems = items.filter((item) => item.stage === stageName);
             return (
-              <div
-                key={stageName}
-                className="w-80 shrink-0 rounded-xl border border-slate-200 bg-slate-100/80 p-3"
-                data-testid={`pipeline-kanban-column-${stageName.toLowerCase()}`}
-              >
+              <div key={stageName} className="w-80 shrink-0 rounded-xl border border-slate-200 bg-slate-100/80 p-3" data-testid={`pipeline-kanban-column-${stageName.toLowerCase()}`}>
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold">{stageName}</h3>
                   <Badge variant={stageVariant(stageName)}>{stageItems.length}</Badge>
@@ -335,13 +267,8 @@ export default function Pipeline() {
                         <div className="text-sm font-semibold">{item.name}</div>
                         <div className="mt-1 text-xs text-slate-500">{item.customer_name}</div>
                         <div className="mt-3 text-xs text-slate-500">{item.sales_name ?? "—"}</div>
-                        <div className="mt-4 flex items-center justify-between font-mono text-xs">
-                          <span>{money(item.value)}</span>
-                          <span className="text-blue-600">{item.probability}%</span>
-                        </div>
-                        <div className="mt-1 text-right text-[10px] text-slate-400">
-                          Weighted {money(item.value * item.probability / 100)}
-                        </div>
+                        <div className="mt-4 flex items-center justify-between font-mono text-xs"><span>{money(item.value)}</span><span className="text-blue-600">{item.probability}%</span></div>
+                        <div className="mt-1 text-right text-[10px] text-slate-400">Weighted {money(item.value * item.probability / 100)}</div>
                       </CardContent>
                     </Card>
                   ))}
@@ -354,120 +281,60 @@ export default function Pipeline() {
 
       {modal && (
         <Modal title="Tambah Opportunity" onClose={() => setModal(false)}>
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              create.mutate();
-            }}
-            data-testid="opportunity-create-form"
-          >
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); create.mutate(); }} data-testid="opportunity-create-form">
             <div className="sm:col-span-2">
               <Field label="Opportunity" required>
-                <Input
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  data-testid="opportunity-name-input"
-                />
+                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} data-testid="opportunity-name-input" />
               </Field>
             </div>
 
             <Field label="Customer" required>
-              <select
-                className={selectClass}
-                value={form.customer_id}
-                onChange={(e) => setForm({ ...form, customer_id: e.target.value })}
-                data-testid="opportunity-customer-input"
-              >
+              <select className={selectClass} value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} data-testid="opportunity-customer-input">
                 <option value="">— Pilih customer —</option>
-                {(options.data?.customers ?? []).map((customer: Customer) => (
-                  <option value={customer.id} key={customer.id}>{customer.name}</option>
-                ))}
+                {(options.data?.customers ?? []).map((customer: Customer) => <option value={customer.id} key={customer.id}>{customer.name}</option>)}
               </select>
             </Field>
 
             <Field label="Sales Penanggung Jawab">
-              <select
-                className={selectClass}
-                value={form.sales_id}
-                onChange={(e) => setForm({ ...form, sales_id: e.target.value })}
-                data-testid="opportunity-sales-input"
-              >
+              <select className={selectClass} value={form.sales_id} onChange={(e) => setForm({ ...form, sales_id: e.target.value })} data-testid="opportunity-sales-input">
                 <option value="">— Gunakan sales login —</option>
                 {(options.data?.users ?? [])
                   .filter((user) => ["SALES", "SALES_MANAGER"].includes(user.role))
-                  .map((user) => (
-                    <option value={user.id} key={user.id}>{user.name}</option>
-                  ))}
+                  .map((user) => <option value={user.id} key={user.id}>{user.name}</option>)}
               </select>
             </Field>
 
             <Field label="Stage">
-              <select
-                className={selectClass}
-                value={form.stage}
-                onChange={(e) => setForm({ ...form, stage: e.target.value })}
-                data-testid="opportunity-stage-input"
-              >
+              <select className={selectClass} value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value })} data-testid="opportunity-stage-input">
                 {stages.map((item) => <option key={item}>{item}</option>)}
               </select>
             </Field>
 
             <Field label="Value (Rp)" required>
-              <Input
-                type="number"
-                min="0"
-                value={form.value}
-                onChange={(e) => setForm({ ...form, value: e.target.value })}
-                data-testid="opportunity-value-input"
-              />
+              <Input type="number" min="0" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} data-testid="opportunity-value-input" />
             </Field>
 
             <Field label="Probability (%)">
-              <Input
-                type="number"
-                min="0"
-                max="100"
-                value={form.probability}
-                onChange={(e) => setForm({ ...form, probability: e.target.value })}
-                data-testid="opportunity-probability-input"
-              />
+              <Input type="number" min="0" max="100" value={form.probability} onChange={(e) => setForm({ ...form, probability: e.target.value })} data-testid="opportunity-probability-input" />
             </Field>
 
             <Field label="Target Close">
-              <Input
-                type="date"
-                value={form.target_close}
-                onChange={(e) => setForm({ ...form, target_close: e.target.value })}
-                data-testid="opportunity-close-input"
-              />
+              <Input type="date" value={form.target_close} onChange={(e) => setForm({ ...form, target_close: e.target.value })} data-testid="opportunity-close-input" />
             </Field>
 
             <Field label="Next Action">
-              <Input
-                value={form.next_action}
-                onChange={(e) => setForm({ ...form, next_action: e.target.value })}
-                data-testid="opportunity-next-action-input"
-              />
+              <Input value={form.next_action} onChange={(e) => setForm({ ...form, next_action: e.target.value })} data-testid="opportunity-next-action-input" />
             </Field>
 
             <div className="sm:col-span-2">
               <Field label="Description">
-                <Textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  data-testid="opportunity-description-input"
-                />
+                <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} data-testid="opportunity-description-input" />
               </Field>
             </div>
 
             <div className="flex justify-end gap-2 sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setModal(false)}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={create.isPending} data-testid="opportunity-save-button">
-                {create.isPending ? "Menyimpan..." : "Simpan"}
-              </Button>
+              <Button type="button" variant="outline" onClick={() => setModal(false)}>Batal</Button>
+              <Button type="submit" disabled={create.isPending} data-testid="opportunity-save-button">{create.isPending ? "Menyimpan..." : "Simpan"}</Button>
             </div>
           </form>
         </Modal>
