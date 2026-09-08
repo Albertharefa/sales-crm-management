@@ -55,6 +55,7 @@ export interface Opportunity {
   name: string;
   customer_id: string;
   customer_name: string;
+  sales_id?: string;
   sales_name?: string;
   value: number;
   probability: number;
