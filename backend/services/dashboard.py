@@ -4,7 +4,6 @@ from typing import Any
 
 from bson import ObjectId
 from lib.db import db
-from models.crm import DashboardMetrics
 
 
 OPEN_STAGES = ["Lead", "Qualification", "Proposal", "Negotiation"]
@@ -53,7 +52,7 @@ async def _aggregate_one(collection: str, pipeline: list[dict]) -> dict:
 
 
 class DashboardService:
-    async def get_metrics(self, user: dict) -> DashboardMetrics:
+    async def get_metrics(self, user: dict) -> dict[str, Any]:
         current = datetime.now(timezone.utc)
         stalled_before = current - timedelta(days=30)
         year_start = datetime(current.year, 1, 1, tzinfo=timezone.utc)
@@ -139,33 +138,35 @@ class DashboardService:
         target_by_month = {int(row["_id"]): float(row["target"]) for row in target_result.get("monthly", []) if row.get("_id")}
         monthly_sales = [{"month": f"{current.year}-{month:02d}", "label": MONTH_LABELS[month - 1], "actual": actual_by_month.get(f"{current.year}-{month:02d}", 0), "target": target_by_month.get(month, 0)} for month in range(1, 13)]
 
-        metrics = DashboardMetrics(
-            total_customer=total_customer,
-            total_contacts=total_contacts,
-            total_leads=total_leads,
-            total_opportunities=int(opportunity_totals.get("total_opportunities", 0)),
-            open_pipeline=float(opportunity_totals.get("open_pipeline", 0)),
-            weighted_pipeline=float(opportunity_totals.get("weighted_pipeline", 0)),
-            won_value=float(opportunity_totals.get("won_value", 0)),
-            lost_value=float(opportunity_totals.get("lost_value", 0)),
-            win_rate=(won_count / closed_count * 100) if closed_count else 0,
-            total_quotation=int(quotation_totals.get("total_quotation", 0)),
-            active_quotations=int(quotation_totals.get("active_quotations", 0)),
-            quotation_value=float(quotation_totals.get("quotation_value", 0)),
-            total_po=int(order_totals.get("total_po", 0)),
-            po_value=po_value,
-            open_orders=int(order_totals.get("open_orders", 0)),
-            completed_orders=int(order_totals.get("completed_orders", 0)),
-            overdue_orders=int(order_totals.get("overdue_orders", 0)),
-            activities=int(activity_totals.get("activities", 0)),
-            overdue_activities=int(activity_totals.get("overdue_activities", 0)),
-            sales_target=sales_target,
-            target_achievement=(po_value / sales_target * 100) if sales_target else 0,
-            pipeline_by_stage=pipeline_by_stage,
-            pipeline_by_salesperson=pipeline_by_salesperson,
-            monthly_sales_performance=monthly_sales,
-            recent_activities=_json_safe(activity_result.get("recent", [])),
-            deal_risks=_json_safe(opportunity_result.get("risks", [])),
-            generated_at=current,
-        )
-        # The router performs the final JSON-safe conversion. Returning the already-built\n        # Pydantic model here avoids a second model_dump/model_validate cycle that can\n        # trigger BSON ObjectId serialization inside arbitrary nested dashboard fields.\n        return metrics
+        # Return a plain dictionary from the service boundary.
+        # Keeping Pydantic out of this path prevents BSON ObjectId serialization
+        # from failing before the router can safely normalize MongoDB values.
+        return {
+            "total_customer": total_customer,
+            "total_contacts": total_contacts,
+            "total_leads": total_leads,
+            "total_opportunities": int(opportunity_totals.get("total_opportunities", 0)),
+            "open_pipeline": float(opportunity_totals.get("open_pipeline", 0)),
+            "weighted_pipeline": float(opportunity_totals.get("weighted_pipeline", 0)),
+            "won_value": float(opportunity_totals.get("won_value", 0)),
+            "lost_value": float(opportunity_totals.get("lost_value", 0)),
+            "win_rate": (won_count / closed_count * 100) if closed_count else 0,
+            "total_quotation": int(quotation_totals.get("total_quotation", 0)),
+            "active_quotations": int(quotation_totals.get("active_quotations", 0)),
+            "quotation_value": float(quotation_totals.get("quotation_value", 0)),
+            "total_po": int(order_totals.get("total_po", 0)),
+            "po_value": po_value,
+            "open_orders": int(order_totals.get("open_orders", 0)),
+            "completed_orders": int(order_totals.get("completed_orders", 0)),
+            "overdue_orders": int(order_totals.get("overdue_orders", 0)),
+            "activities": int(activity_totals.get("activities", 0)),
+            "overdue_activities": int(activity_totals.get("overdue_activities", 0)),
+            "sales_target": sales_target,
+            "target_achievement": (po_value / sales_target * 100) if sales_target else 0,
+            "pipeline_by_stage": _json_safe(pipeline_by_stage),
+            "pipeline_by_salesperson": _json_safe(pipeline_by_salesperson),
+            "monthly_sales_performance": _json_safe(monthly_sales),
+            "recent_activities": _json_safe(activity_result.get("recent", [])),
+            "deal_risks": _json_safe(opportunity_result.get("risks", [])),
+            "generated_at": current,
+        }
