@@ -234,6 +234,17 @@ class Customer(BaseModel):
 
 
 # ============================================================
+# PAGINATED CUSTOMER RESPONSE
+# ============================================================
+
+class PaginatedCustomers(BaseModel):
+    items: List[Customer]
+    page: int
+    page_size: int
+    total: int
+
+
+# ============================================================
 # CUSTOMER CREATE
 # ============================================================
 
@@ -405,65 +416,61 @@ async def generate_customer_id() -> str:
 
 @router.get(
     "",
-    response_model=List[Customer],
+    response_model=PaginatedCustomers,
     summary="List Customers",
 )
 async def list_customers(
-    page: int = Query(
-        1,
-        ge=1,
-    ),
-    page_size: int = Query(
-        25,
-        ge=1,
-        le=100,
-    ),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(25, ge=1, le=100),
+    search: str = Query(""),
+    status: str = Query(""),
+    industry: str = Query(""),
 ):
-
     try:
+        filters: Dict[str, Any] = {}
 
-        skip = (
-            page - 1
-        ) * page_size
+        if search.strip():
+            term = search.strip()
+            filters["$or"] = [
+                {"name": {"$regex": term, "$options": "i"}},
+                {"company_name": {"$regex": term, "$options": "i"}},
+                {"company": {"$regex": term, "$options": "i"}},
+                {"customer_id": {"$regex": term, "$options": "i"}},
+                {"pic_name": {"$regex": term, "$options": "i"}},
+                {"email": {"$regex": term, "$options": "i"}},
+            ]
 
-        cursor = (
-            db.customers
-            .find({})
-            .sort(
-                [
-                    ("created_at", -1)
-                ]
-            )
+        if status.strip() and status.strip().lower() != "semua status":
+            filters["status"] = status.strip()
+
+        if industry.strip() and industry.strip().lower() != "semua industri":
+            filters["industry"] = industry.strip()
+
+        total = await db.customers.count_documents(filters)
+        skip = (page - 1) * page_size
+
+        customers = await (
+            db.customers.find(filters, {"_id": 0})
+            .sort([("created_at", -1), ("customer_id", -1)])
             .skip(skip)
             .limit(page_size)
+            .to_list(length=page_size)
         )
 
-        customers = await cursor.to_list(
-            length=page_size
+        items = [
+            Customer.model_validate(normalize_customer(customer))
+            for customer in customers
+        ]
+
+        return PaginatedCustomers(
+            items=items,
+            page=page,
+            page_size=page_size,
+            total=total,
         )
-
-        result = []
-
-        for customer in customers:
-
-            normalized = normalize_customer(
-                customer
-            )
-
-            result.append(
-                Customer.model_validate(
-                    normalized
-                )
-            )
-
-        return result
 
     except Exception as exc:
-
-        print(
-            f"ERROR: GET /customers failed: {exc}"
-        )
-
+        print(f"ERROR: GET /customers failed: {exc}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to list customers: {str(exc)}",
