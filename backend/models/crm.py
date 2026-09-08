@@ -77,6 +77,7 @@ class Customer(CustomerBase):
 class OpportunityBase(CRMBaseModel):
     name: str
     customer_id: str
+    sales_id: Optional[str] = None
     value: float = Field(ge=0)
     probability: int = Field(default=10, ge=0, le=100)
     stage: str = "Lead"
@@ -109,7 +110,6 @@ class Opportunity(OpportunityBase):
     id: str
     opportunity_id: str
     customer_name: str = ""
-    sales_id: Optional[str] = None
     sales_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
