@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiDelete, apiGet, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { Customer, Paginated, Contact } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Search, Trash2, Eye, X } from "lucide-react";
+import { Search, Trash2, Eye, X, Pencil } from "lucide-react";
 
 export default function Customers() {
   const [search, setSearch] = useState("");
@@ -19,6 +19,7 @@ export default function Customers() {
   const [sales, setSales] = useState("");
   const [modal, setModal] = useState(false);
   const [detailModal, setDetailModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
     null
   );
@@ -73,7 +74,7 @@ export default function Customers() {
     queryKey: ["customer-detail", selectedCustomerId],
     queryFn: () =>
       apiGet<Customer>(`/customers/${selectedCustomerId}`),
-    enabled: !!selectedCustomerId && detailModal,
+    enabled: !!selectedCustomerId && (detailModal || editModal),
   });
 
   /* =========================
@@ -102,6 +103,58 @@ export default function Customers() {
     setDetailModal(false);
     setSelectedCustomerId(null);
   };
+
+  /* =========================
+     EDIT CUSTOMER
+  ========================= */
+
+  const updateCustomer = useMutation({
+    mutationFn: () =>
+      apiPut<Customer>(`/customers/${selectedCustomerId}`, {
+        ...form,
+        email: form.email || null,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["customers"] });
+      qc.invalidateQueries({
+        queryKey: ["customer-detail", selectedCustomerId],
+      });
+      setEditModal(false);
+      setSelectedCustomerId(null);
+      toast.success("Customer berhasil diperbarui");
+    },
+    onError: () => {
+      toast.error("Customer gagal diperbarui");
+    },
+  });
+
+  const openEdit = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setEditModal(true);
+  };
+
+  useEffect(() => {
+    if (!editModal || !detailQuery.data) return;
+
+    const customer = detailQuery.data;
+
+    setForm({
+      name: customer.name ?? "",
+      company_name: customer.company_name ?? "",
+      industry: customer.industry ?? "Manufacturing",
+      source: customer.source ?? "Referral",
+      city: customer.city ?? "",
+      province: customer.province ?? "",
+      phone: customer.phone ?? "",
+      email: customer.email ?? "",
+      pic_name: customer.pic_name ?? "",
+      pic_position: customer.pic_position ?? "",
+      status: customer.status ?? "Active",
+      sales_name: customer.sales_name ?? "",
+      address: customer.address ?? "",
+      notes: customer.notes ?? "",
+    });
+  }, [editModal, detailQuery.data]);
 
   /* =========================
      CREATE CUSTOMER
@@ -399,6 +452,16 @@ export default function Customers() {
                           title="Lihat detail"
                         >
                           <Eye className="size-4 text-blue-600" />
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => openEdit(customer.id)}
+                          data-testid={`customer-edit-${customer.customer_id}`}
+                          title="Edit customer"
+                        >
+                          <Pencil className="size-4 text-slate-600" />
                         </Button>
 
                         <Button
@@ -738,6 +801,225 @@ export default function Customers() {
 
         </Modal>
 
+      )}
+
+      {/* =====================================================
+          EDIT CUSTOMER MODAL
+      ===================================================== */}
+
+      {editModal && (
+        <Modal
+          title="Edit Customer"
+          onClose={() => {
+            setEditModal(false);
+            setSelectedCustomerId(null);
+          }}
+        >
+          {detailQuery.isLoading ? (
+            <div className="py-10 text-center text-slate-500">
+              Memuat data customer...
+            </div>
+          ) : detailQuery.isError || !detailQuery.data ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              Gagal mengambil data customer.
+            </div>
+          ) : (
+            <form
+              className="grid gap-4 sm:grid-cols-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateCustomer.mutate();
+              }}
+              data-testid="customer-edit-form"
+            >
+              <Field label="Nama Customer" required>
+                <Input
+                  value={form.name}
+                  onChange={(e) =>
+                    setForm({ ...form, name: e.target.value })
+                  }
+                  data-testid="customer-edit-name-input"
+                />
+              </Field>
+
+              <Field label="Perusahaan">
+                <Input
+                  value={form.company_name}
+                  onChange={(e) =>
+                    setForm({ ...form, company_name: e.target.value })
+                  }
+                  data-testid="customer-edit-company-input"
+                />
+              </Field>
+
+              <Field label="Industri">
+                <select
+                  className={selectClass}
+                  value={form.industry}
+                  onChange={(e) =>
+                    setForm({ ...form, industry: e.target.value })
+                  }
+                >
+                  <option>Manufacturing</option>
+                  <option>Oil & Gas</option>
+                  <option>Mining</option>
+                  <option>Otomotif</option>
+                  <option>FMCG</option>
+                  <option>Telekomunikasi</option>
+                  <option>Konstruksi</option>
+                  <option>EPC</option>
+                  <option>Power Generation</option>
+                </select>
+              </Field>
+
+              <Field label="Sumber">
+                <select
+                  className={selectClass}
+                  value={form.source}
+                  onChange={(e) =>
+                    setForm({ ...form, source: e.target.value })
+                  }
+                >
+                  <option>Referral</option>
+                  <option>Website</option>
+                  <option>Pameran</option>
+                  <option>Cold Call</option>
+                  <option>Partner</option>
+                </select>
+              </Field>
+
+              <Field label="Kota">
+                <Input
+                  value={form.city}
+                  onChange={(e) =>
+                    setForm({ ...form, city: e.target.value })
+                  }
+                />
+              </Field>
+
+              <Field label="Provinsi">
+                <Input
+                  value={form.province}
+                  onChange={(e) =>
+                    setForm({ ...form, province: e.target.value })
+                  }
+                />
+              </Field>
+
+              <Field label="Telepon">
+                <Input
+                  value={form.phone}
+                  onChange={(e) =>
+                    setForm({ ...form, phone: e.target.value })
+                  }
+                />
+              </Field>
+
+              <Field label="Email">
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) =>
+                    setForm({ ...form, email: e.target.value })
+                  }
+                />
+              </Field>
+
+              <Field label="Nama PIC">
+                <Input
+                  value={form.pic_name}
+                  onChange={(e) =>
+                    setForm({ ...form, pic_name: e.target.value })
+                  }
+                />
+              </Field>
+
+              <Field label="Jabatan PIC">
+                <Input
+                  value={form.pic_position}
+                  onChange={(e) =>
+                    setForm({ ...form, pic_position: e.target.value })
+                  }
+                />
+              </Field>
+
+              <Field label="Status">
+                <select
+                  className={selectClass}
+                  value={form.status}
+                  onChange={(e) =>
+                    setForm({ ...form, status: e.target.value })
+                  }
+                >
+                  <option>Active</option>
+                  <option>Prospect</option>
+                  <option>Inactive</option>
+                </select>
+              </Field>
+
+              <Field label="Sales Penanggung Jawab">
+                <select
+                  className={selectClass}
+                  value={form.sales_name}
+                  onChange={(e) =>
+                    setForm({ ...form, sales_name: e.target.value })
+                  }
+                >
+                  <option value="">— Pilih sales —</option>
+                  {salesOptionsQuery.data?.map((salesName) => (
+                    <option key={salesName} value={salesName}>
+                      {salesName}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <div className="sm:col-span-2">
+                <Field label="Alamat">
+                  <Textarea
+                    value={form.address}
+                    onChange={(e) =>
+                      setForm({ ...form, address: e.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+
+              <div className="sm:col-span-2">
+                <Field label="Catatan">
+                  <Textarea
+                    value={form.notes}
+                    onChange={(e) =>
+                      setForm({ ...form, notes: e.target.value })
+                    }
+                  />
+                </Field>
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-slate-200 pt-4 sm:col-span-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditModal(false);
+                    setSelectedCustomerId(null);
+                  }}
+                  disabled={updateCustomer.isPending}
+                >
+                  Batal
+                </Button>
+
+                <Button
+                  type="submit"
+                  disabled={updateCustomer.isPending}
+                  data-testid="customer-edit-save-button"
+                >
+                  {updateCustomer.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </Modal>
       )}
 
       {/* =====================================================
