@@ -168,4 +168,4 @@ class DashboardService:
             deal_risks=_json_safe(opportunity_result.get("risks", [])),
             generated_at=current,
         )
-        return DashboardMetrics.model_validate(_json_safe(metrics.model_dump()))
+        # The router performs the final JSON-safe conversion. Returning the already-built\n        # Pydantic model here avoids a second model_dump/model_validate cycle that can\n        # trigger BSON ObjectId serialization inside arbitrary nested dashboard fields.\n        return metrics
