@@ -301,7 +301,7 @@ export default function Home() {
                     <div className="mb-2 flex items-center gap-3">
                       <span className="flex size-7 items-center justify-center rounded-lg bg-slate-100 text-xs font-semibold text-slate-500">{index + 1}</span>
                       <span className="text-sm font-medium text-slate-700">{item.name} <span className="text-xs text-slate-400">{item.count} deal</span></span>
-                      <span className="ml-auto font-mono text-xs font-semibold text-slate-600">{compactMoney(item.value)} <span className="text-blue-600">{Math.round(item.percentage ?? (totalPipelineValue ? item.value / totalPipelineValue * 100 : 0))}%</span></span>
+                      <span className="ml-auto font-mono text-xs font-semibold text-slate-600">{compactMoney(item.value)} <span className="text-blue-600">{Math.round(totalPipelineValue ? item.value / totalPipelineValue * 100 : 0)}%</span></span>
                     </div>
                     <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                       <div
