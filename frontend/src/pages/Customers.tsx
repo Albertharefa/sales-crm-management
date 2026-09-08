@@ -16,6 +16,7 @@ export default function Customers() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [industry, setIndustry] = useState("");
+  const [sales, setSales] = useState("");
   const [modal, setModal] = useState(false);
   const [detailModal, setDetailModal] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(
@@ -42,15 +43,21 @@ export default function Customers() {
   ========================= */
 
   const query = useQuery({
-    queryKey: ["customers", page, search, status, industry],
+    queryKey: ["customers", page, search, status, industry, sales],
     queryFn: () =>
       apiGet<Paginated<Customer>>(
         `/customers?page=${page}&page_size=10&search=${encodeURIComponent(
           search
         )}&status=${encodeURIComponent(status)}&industry=${encodeURIComponent(
           industry
-        )}`
+        )}&sales_name=${encodeURIComponent(sales)}`
       ),
+  });
+
+  const salesOptionsQuery = useQuery({
+    queryKey: ["customer-sales-options"],
+    queryFn: () => apiGet<string[]>("/customers/sales-options"),
+    staleTime: 5 * 60 * 1000,
   });
 
   /* =========================
@@ -220,6 +227,23 @@ export default function Customers() {
             "Power Generation",
           ].map((v) => (
             <option key={v}>{v}</option>
+          ))}
+        </select>
+
+        <select
+          className={selectClass}
+          value={sales}
+          onChange={(e) => {
+            setSales(e.target.value);
+            setPage(1);
+          }}
+          data-testid="customers-sales-filter"
+        >
+          <option value="">Semua sales</option>
+          {salesOptionsQuery.data?.map((salesName) => (
+            <option key={salesName} value={salesName}>
+              {salesName}
+            </option>
           ))}
         </select>
 
