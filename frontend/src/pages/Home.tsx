@@ -47,6 +47,42 @@ const stageColors: Record<string, string> = {
   Lost: "#f43f5e",
 };
 
+const normalizeDashboardMetrics = (input: DashboardMetrics): DashboardMetrics => {
+  const numeric = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : Number(value) || 0);
+  const array = <T,>(value: unknown): T[] => (Array.isArray(value) ? value as T[] : []);
+
+  return {
+    ...input,
+    total_customer: numeric(input.total_customer),
+    total_contacts: numeric(input.total_contacts),
+    total_leads: numeric(input.total_leads),
+    total_opportunities: numeric(input.total_opportunities),
+    open_pipeline: numeric(input.open_pipeline),
+    weighted_pipeline: numeric(input.weighted_pipeline),
+    won_value: numeric(input.won_value),
+    lost_value: numeric(input.lost_value),
+    win_rate: numeric(input.win_rate),
+    total_quotation: numeric(input.total_quotation),
+    active_quotations: numeric(input.active_quotations),
+    quotation_value: numeric(input.quotation_value),
+    total_po: numeric(input.total_po),
+    po_value: numeric(input.po_value),
+    open_orders: numeric(input.open_orders),
+    completed_orders: numeric(input.completed_orders),
+    overdue_orders: numeric(input.overdue_orders),
+    activities: numeric(input.activities),
+    overdue_activities: numeric(input.overdue_activities),
+    sales_target: numeric(input.sales_target),
+    target_achievement: numeric(input.target_achievement),
+    pipeline_by_stage: array<DashboardMetrics["pipeline_by_stage"][number]>(input.pipeline_by_stage),
+    pipeline_by_salesperson: array<DashboardMetrics["pipeline_by_salesperson"][number]>(input.pipeline_by_salesperson),
+    monthly_sales_performance: array<DashboardMetrics["monthly_sales_performance"][number]>(input.monthly_sales_performance),
+    recent_activities: array<DashboardMetrics["recent_activities"][number]>(input.recent_activities),
+    deal_risks: array<DashboardMetrics["deal_risks"][number]>(input.deal_risks),
+    generated_at: input.generated_at || new Date().toISOString(),
+  };
+};
+
 function KpiCard({
   label,
   value,
@@ -90,10 +126,11 @@ export default function Home() {
   const [customer, setCustomer] = useState("Semua customer");
 
   const query = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: () => apiGet<DashboardMetrics>("/dashboard?client_version=20260908"),
+    queryKey: ["dashboard", "20260908"],
+    queryFn: async () => normalizeDashboardMetrics(await apiGet<DashboardMetrics>("/dashboard?client_version=20260908")),
     retry: 1,
     staleTime: 30_000,
+    refetchOnMount: "always",
   });
 
   const customersQuery = useQuery({
