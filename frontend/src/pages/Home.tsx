@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { apiGet } from "@/lib/api";
-import type { DashboardMetrics } from "@/lib/types";
+import type { Customer, DashboardMetrics } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
 const money = (value: number) =>
@@ -96,16 +96,70 @@ export default function Home() {
     staleTime: 30_000,
   });
 
+  const customersQuery = useQuery({
+    queryKey: ["dashboard-customers"],
+    queryFn: () => apiGet<Customer[]>("/customers?page=1&page_size=100"),
+    retry: 1,
+    staleTime: 60_000,
+  });
+
   const data = query.isError ? undefined : query.data;
 
+  const dummySales = [
+    "Admin",
+    "Ahmad Ihwal Fadilah",
+    "Aripin",
+    "Albert Wellkomputindo",
+    "Fery",
+    "Paulus",
+  ];
+
+  const dummyCustomers = [
+    "PT Anugerah Teknik Nusantara",
+    "PT Baja Mandiri Sejahtera",
+    "PT Cakrawala Energi",
+    "PT Delta Mesin Presisi",
+    "PT Elsicom Engineering",
+    "PT Emerald Industrial",
+    "PT Fajar Otomasi Indonesia",
+    "PT Garuda Metalindo Jaya",
+    "PT Harapan Sentosa Kimia",
+    "PT Indo Prima Kabel",
+    "PT Jaya Konstruksi Utama",
+    "PT Karya Logam Perkasa",
+    "PT Lintas Nusa Telekom",
+    "PT Mega Sarana Pangan",
+    "PT Nusantara Mining Tools",
+    "PT Optima Daya Listrik",
+    "PT Pertiwi Agro Industri",
+    "PT Quantum Elektronika",
+    "PT Rajawali Truck Parts",
+  ];
+
   const salesOptions = useMemo(
-    () => ["Semua sales", ...(data?.pipeline_by_salesperson.map((item) => item.name) ?? [])],
+    () => [
+      "Semua sales",
+      ...Array.from(
+        new Set([
+          ...dummySales,
+          ...(data?.pipeline_by_salesperson.map((item) => item.name) ?? []),
+        ]),
+      ).filter(Boolean),
+    ],
     [data],
   );
 
   const customerOptions = useMemo(
-    () => ["Semua customer", ...Array.from(new Set(data?.deal_risks.map((item) => item.customer_name) ?? []))],
-    [data],
+    () => [
+      "Semua customer",
+      ...Array.from(
+        new Set([
+          ...dummyCustomers,
+          ...(customersQuery.data?.map((item) => item.name || item.company_name || item.company || "") ?? []),
+        ]),
+      ).filter(Boolean),
+    ],
+    [customersQuery.data],
   );
 
   const stageRows = useMemo(
@@ -163,7 +217,7 @@ export default function Home() {
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:min-w-[760px]">
           {[
-            { value: period, set: setPeriod, options: ["Semua periode", "Tahun ini", "Bulan ini", "Kuartal ini"] },
+            { value: period, set: setPeriod, options: ["Semua periode", "30 hari terakhir", "90 hari terakhir", "1 tahun terakhir"] },
             { value: sales, set: setSales, options: salesOptions },
             { value: stage, set: setStage, options: ["Semua stage", "Lead", "Qualification", "Proposal", "Negotiation", "Won", "Lost"] },
             { value: customer, set: setCustomer, options: customerOptions },
