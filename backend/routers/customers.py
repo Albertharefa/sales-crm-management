@@ -446,6 +446,9 @@ async def list_customers(
         if industry.strip() and industry.strip().lower() != "semua industri":
             filters["industry"] = industry.strip()
 
+        if sales_name.strip() and sales_name.strip().lower() != "semua sales":
+            filters["sales_name"] = sales_name.strip()
+
         total = await db.customers.count_documents(filters)
         skip = (page - 1) * page_size
 
@@ -475,6 +478,28 @@ async def list_customers(
             status_code=500,
             detail=f"Failed to list customers: {str(exc)}",
         )
+
+
+# ============================================================
+# GET /customers/sales-options
+# SALES ASSIGNED TO CUSTOMERS
+# ============================================================
+
+@router.get(
+    "/sales-options",
+    response_model=List[str],
+    summary="List Sales Assigned to Customers",
+)
+async def customer_sales_options():
+    sales = await db.customers.distinct("sales_name")
+    return sorted(
+        {
+            str(name).strip()
+            for name in sales
+            if name is not None and str(name).strip()
+        },
+        key=str.casefold,
+    )
 
 
 # ============================================================
