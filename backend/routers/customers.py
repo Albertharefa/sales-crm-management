@@ -257,6 +257,7 @@ class CustomerCreate(BaseModel):
     company: Optional[str] = None
 
     industry: str = "Manufacturing"
+    source: str = "Referral"
     city: str = "Jakarta"
     province: str = ""
 
