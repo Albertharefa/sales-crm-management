@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Search, List, KanbanSquare } from "lucide-react";
+import { Search, List, KanbanSquare, Pencil, Trash2 } from "lucide-react";
 
 const money = (value: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -134,7 +134,6 @@ export default function Pipeline() {
         title="Sales Pipeline"
         description="Weighted value = value × probability, dihitung di server"
         action={{ label: "Opportunity", onClick: () => setModal(true) }}
-        onRefresh={() => void list.refetch()}
         onExport={() => window.open("/api/v1/exports/pipeline", "_blank")}
       />
 
@@ -154,34 +153,29 @@ export default function Pipeline() {
         ))}
       </div>
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <Button
-          variant={view === "table" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setView("table")}
-          data-testid="pipeline-table-view-button"
-        >
-          <List className="mr-2 size-4" />
-          Table
-        </Button>
-        <Button
-          variant={view === "kanban" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setView("kanban")}
-          data-testid="pipeline-kanban-view-button"
-        >
-          <KanbanSquare className="mr-2 size-4" />
-          Kanban
-        </Button>
-        {(search || stage || salesId || customerId) && (
-          <Button variant="ghost" size="sm" onClick={resetFilters}>
-            Reset filter
-          </Button>
-        )}
-      </div>
-
       <div className="mb-5 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant={view === "table" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("table")}
+            data-testid="pipeline-table-view-button"
+          >
+            <List className="mr-2 size-4" />
+            Table
+          </Button>
+          <Button
+            variant={view === "kanban" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setView("kanban")}
+            data-testid="pipeline-kanban-view-button"
+          >
+            <KanbanSquare className="mr-2 size-4" />
+            Kanban
+          </Button>
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
             <Input
@@ -229,6 +223,14 @@ export default function Pipeline() {
             ))}
           </select>
         </div>
+
+        {(search || stage || salesId || customerId) && (
+          <div className="mt-3 flex justify-end">
+            <Button variant="ghost" size="sm" onClick={resetFilters}>
+              Reset filter
+            </Button>
+          </div>
+        )}
       </div>
 
       {list.isLoading ? (
@@ -242,10 +244,10 @@ export default function Pipeline() {
       ) : view === "table" ? (
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-left text-sm">
+            <table className="w-full min-w-[1250px] text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
                 <tr>
-                  {["Opportunity", "Customer", "Sales", "Value", "Prob.", "Weighted", "Stage", "Target Close"].map((head) => (
+                  {["Opportunity", "Customer", "Sales", "Value", "Prob.", "Weighted", "Stage", "Target Close", "Aksi"].map((head) => (
                     <th key={head} className="px-4 py-3 font-semibold">{head}</th>
                   ))}
                 </tr>
@@ -276,6 +278,28 @@ export default function Pipeline() {
                       </select>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{item.target_close ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="Edit Opportunity"
+                          onClick={() => toast.info("Edit Opportunity akan kita aktifkan pada tahap berikutnya.")}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          title="Hapus Opportunity"
+                          onClick={() => toast.info("Hapus Opportunity akan kita aktifkan pada tahap berikutnya.")}
+                        >
+                          <Trash2 className="size-4 text-red-500" />
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
