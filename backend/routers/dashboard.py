@@ -16,10 +16,12 @@ logger = logging.getLogger(__name__)
 async def dashboard(user: dict = Depends(current_user)):
     try:
         metrics = await service.get_metrics(user)
-        # Do not use model_dump(mode="json") here: Pydantic may inspect nested BSON
-        # values before our fallback converter gets a chance to normalize them.
-        payload = metrics.model_dump()
-        payload_json = json.loads(json.dumps(payload, default=str))
+        if metrics is None:
+            raise RuntimeError("DashboardService returned no metrics")
+
+        # DashboardService returns a plain dictionary so MongoDB/BSON values are
+        # normalized only at this final HTTP response boundary.
+        payload_json = json.loads(json.dumps(metrics, default=str))
         return JSONResponse(content=payload_json)
     except Exception as exc:
         logger.exception("Dashboard aggregation failed for user %s", user.get("id"))
