@@ -91,7 +91,7 @@ export default function Home() {
 
   const query = useQuery({
     queryKey: ["dashboard"],
-    queryFn: () => apiGet<DashboardMetrics>("/dashboard"),
+    queryFn: () => apiGet<DashboardMetrics>("/dashboard?client_version=20260908"),
     retry: 1,
     staleTime: 30_000,
   });
