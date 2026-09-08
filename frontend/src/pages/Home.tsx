@@ -240,7 +240,7 @@ export default function Home() {
       {query.isError && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert" data-testid="dashboard-error">
           <span>{errorDetail}</span>
-          <Button variant="outline" size="sm" onClick={() => void query.refetch()}>Refresh</Button>
+          <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Refresh</Button>
         </div>
       )}
 
@@ -453,7 +453,7 @@ export default function Home() {
 
           <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-xs text-slate-400">
             <span>Live MongoDB aggregation · Diperbarui {new Date(data.generated_at).toLocaleString("id-ID")}</span>
-            <Button variant="outline" size="sm" onClick={() => void query.refetch()}><Gauge className="mr-2 size-4" />Refresh dashboard</Button>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}><Gauge className="mr-2 size-4" />Refresh dashboard</Button>
           </div>
         </>
       )}
