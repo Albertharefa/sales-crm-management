@@ -212,6 +212,7 @@ class Customer(BaseModel):
     company: Optional[str] = None
 
     industry: str = "Manufacturing"
+    source: str = "Referral"
     city: str = "Jakarta"
     province: str = ""
 
@@ -286,6 +287,7 @@ class CustomerUpdate(BaseModel):
     company: Optional[str] = None
 
     industry: Optional[str] = None
+    source: Optional[str] = None
     city: Optional[str] = None
     province: Optional[str] = None
 
@@ -592,6 +594,8 @@ async def create_customer(
             "company": company_name,
 
             "industry": payload.industry,
+
+            "source": payload.source,
 
             "city": payload.city,
 
