@@ -21,6 +21,8 @@ logging.basicConfig(
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
     await ensure_admin_user()
+    from seed_demo_data import seed_demo_data
+    await seed_demo_data()
     yield
     await close_mongo_connection()
 
