@@ -2,12 +2,16 @@ from datetime import date, datetime
 from typing import Any, Generic, Optional, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+from bson import ObjectId
 
 T = TypeVar("T")
 
 
 class CRMBaseModel(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(
+        extra="ignore",
+        json_encoders={ObjectId: str},
+    )
 
 
 class Paginated(BaseModel, Generic[T]):
