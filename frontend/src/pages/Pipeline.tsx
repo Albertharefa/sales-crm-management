@@ -67,7 +67,10 @@ export default function Pipeline() {
   });
 
   const refreshPage = () => {
-    window.location.reload();
+    void Promise.all([
+      qc.invalidateQueries({ queryKey: ["pipeline"] }),
+      qc.invalidateQueries({ queryKey: ["options"] }),
+    ]);
   };
 
   const create = useMutation({
