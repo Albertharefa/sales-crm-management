@@ -139,7 +139,7 @@ class DashboardService:
         target_by_month = {int(row["_id"]): float(row["target"]) for row in target_result.get("monthly", []) if row.get("_id")}
         monthly_sales = [{"month": f"{current.year}-{month:02d}", "label": MONTH_LABELS[month - 1], "actual": actual_by_month.get(f"{current.year}-{month:02d}", 0), "target": target_by_month.get(month, 0)} for month in range(1, 13)]
 
-        return DashboardMetrics(
+        metrics = DashboardMetrics(
             total_customer=total_customer,
             total_contacts=total_contacts,
             total_leads=total_leads,
@@ -168,3 +168,4 @@ class DashboardService:
             deal_risks=_json_safe(opportunity_result.get("risks", [])),
             generated_at=current,
         )
+        return DashboardMetrics.model_validate(_json_safe(metrics.model_dump()))
