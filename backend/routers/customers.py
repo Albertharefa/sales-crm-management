@@ -425,6 +425,7 @@ async def list_customers(
     search: str = Query(""),
     status: str = Query(""),
     industry: str = Query(""),
+    sales_name: str = Query(""),
 ):
     try:
         filters: Dict[str, Any] = {}
