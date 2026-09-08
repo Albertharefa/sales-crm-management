@@ -16,8 +16,9 @@ logger = logging.getLogger(__name__)
 async def dashboard(user: dict = Depends(current_user)):
     try:
         metrics = await service.get_metrics(user)
-        payload = metrics.model_dump(mode="json")
-        # Final JSON boundary: MongoDB/BSON ObjectId values must never reach Starlette serialization.
+        # Do not use model_dump(mode="json") here: Pydantic may inspect nested BSON
+        # values before our fallback converter gets a chance to normalize them.
+        payload = metrics.model_dump()
         payload_json = json.loads(json.dumps(payload, default=str))
         return JSONResponse(content=payload_json)
     except Exception as exc:
