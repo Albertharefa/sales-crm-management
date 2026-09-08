@@ -6,9 +6,12 @@
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+import csv
+import io
 import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict
 
 from lib.db import db
@@ -32,6 +35,98 @@ router = APIRouter(
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+# ============================================================
+# EXPORT CUSTOMERS
+# ============================================================
+
+@router.get(
+    "/export",
+    summary="Export Customers CSV",
+)
+async def export_customers():
+    """
+    Export seluruh customer ke CSV dengan susunan kolom standar CRM.
+    """
+
+    columns = [
+        "created_at",
+        "customer_id",
+        "company_name",
+        "name PIC",
+        "phone",
+        "pic_position",
+        "address",
+        "city",
+        "province",
+        "email",
+        "industry",
+        "notes",
+        "Sales_Name",
+        "sales_id",
+        "source",
+        "status",
+    ]
+
+    cursor = db.customers.find(
+        {},
+        {"_id": 0},
+    ).sort("created_at", -1)
+
+    buffer = io.StringIO(newline="")
+    writer = csv.writer(buffer, lineterminator="\r\n")
+    writer.writerow(columns)
+
+    async for raw_customer in cursor:
+        customer = normalize_customer(raw_customer)
+
+        created_at = customer.get("created_at")
+        if isinstance(created_at, datetime):
+            created_at_value = (
+                f"{created_at.month}/{created_at.day}/{created_at.year}"
+            )
+        elif created_at:
+            try:
+                parsed = datetime.fromisoformat(
+                    str(created_at).replace("Z", "+00:00")
+                )
+                created_at_value = (
+                    f"{parsed.month}/{parsed.day}/{parsed.year}"
+                )
+            except ValueError:
+                created_at_value = str(created_at)
+        else:
+            created_at_value = ""
+
+        writer.writerow([
+            created_at_value,
+            customer.get("customer_id", ""),
+            customer.get("company_name", ""),
+            customer.get("pic_name", ""),
+            customer.get("phone", ""),
+            customer.get("pic_position", ""),
+            customer.get("address", ""),
+            customer.get("city", ""),
+            customer.get("province", ""),
+            customer.get("email", ""),
+            customer.get("industry", ""),
+            customer.get("notes", ""),
+            customer.get("sales_name", ""),
+            customer.get("sales_id", ""),
+            customer.get("source", ""),
+            customer.get("status", ""),
+        ])
+
+    content = "\ufeff" + buffer.getvalue()
+
+    return StreamingResponse(
+        iter([content]),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="customers.csv"'
+        },
+    )
 
 
 # ============================================================
