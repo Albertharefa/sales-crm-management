@@ -1,7 +1,8 @@
 import asyncio
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
+from bson import ObjectId
 from lib.db import db
 from models.crm import DashboardMetrics
 
@@ -31,6 +32,19 @@ def _number(field: str) -> dict:
 
 def _date(field: str) -> dict:
     return {"$convert": {"input": f"${field}", "to": "date", "onError": None, "onNull": None}}
+
+
+def _json_safe(value: Any) -> Any:
+    """Convert MongoDB/BSON values inside dashboard payloads to JSON-safe values."""
+    if isinstance(value, ObjectId):
+        return str(value)
+    if isinstance(value, (datetime, date)):
+        return value
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 async def _aggregate_one(collection: str, pipeline: list[dict]) -> dict:
@@ -120,7 +134,7 @@ class DashboardService:
         by_stage_rows = {row["_id"]: row for row in opportunity_result.get("by_stage", [])}
         extra_stages = [name for name in by_stage_rows if name not in REFERENCE_STAGES]
         pipeline_by_stage = [{"name": stage, "count": int(by_stage_rows.get(stage, {}).get("count", 0)), "value": float(by_stage_rows.get(stage, {}).get("value", 0))} for stage in [*REFERENCE_STAGES, *extra_stages]]
-        pipeline_by_salesperson = [{"name": row["_id"], "count": int(row["count"]), "value": float(row["value"])} for row in opportunity_result.get("by_salesperson", [])]
+        pipeline_by_salesperson = [{"name": str(row["_id"]) if isinstance(row["_id"], ObjectId) else row["_id"], "count": int(row["count"]), "value": float(row["value"])} for row in opportunity_result.get("by_salesperson", [])]
         actual_by_month = {row["_id"]: float(row["actual"]) for row in order_result.get("monthly", []) if row.get("_id")}
         target_by_month = {int(row["_id"]): float(row["target"]) for row in target_result.get("monthly", []) if row.get("_id")}
         monthly_sales = [{"month": f"{current.year}-{month:02d}", "label": MONTH_LABELS[month - 1], "actual": actual_by_month.get(f"{current.year}-{month:02d}", 0), "target": target_by_month.get(month, 0)} for month in range(1, 13)]
@@ -150,7 +164,7 @@ class DashboardService:
             pipeline_by_stage=pipeline_by_stage,
             pipeline_by_salesperson=pipeline_by_salesperson,
             monthly_sales_performance=monthly_sales,
-            recent_activities=activity_result.get("recent", []),
-            deal_risks=opportunity_result.get("risks", []),
+            recent_activities=_json_safe(activity_result.get("recent", [])),
+            deal_risks=_json_safe(opportunity_result.get("risks", [])),
             generated_at=current,
         )
