@@ -88,13 +88,17 @@ export default function Pipeline() {
     staleTime: 60_000,
   });
 
-  const refreshPage = () => {
-    void Promise.all([
-      qc.invalidateQueries({ queryKey: ["pipeline"] }),
-      qc.invalidateQueries({ queryKey: ["options"] }),
-      qc.invalidateQueries({ queryKey: ["pipeline-sales-options"] }),
-      qc.invalidateQueries({ queryKey: ["pipeline-customer-options"] }),
+  const refreshPage = async () => {
+    // Force an immediate refetch of the data currently displayed.
+    // invalidateQueries alone may leave the user without visible feedback
+    // when the active query is already considered fresh.
+    await Promise.all([
+      list.refetch(),
+      options.refetch(),
+      salesOptions.refetch(),
+      customerOptions.refetch(),
     ]);
+    toast.success("Sales Pipeline berhasil diperbarui");
   };
 
   const create = useMutation({
