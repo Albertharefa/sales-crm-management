@@ -60,6 +60,20 @@ DEMO_OPPORTUNITIES = [
 ]
 
 
+DEMO_ACTIVITIES = [
+    ("DEMO-ACT-001", "Customer Visit - PT Nusantara Petro Energy", "Call", 0, 5, "DEMO-CUS-001", "Andi Wijaya", "Open"),
+    ("DEMO-ACT-002", "Technical Discussion - Industrial PC Requirement", "Meeting", 0, 7, "DEMO-CUS-002", "Sari Lestari", "Open"),
+    ("DEMO-ACT-003", "Follow up penawaran Fuel Gas Heater Package", "Follow Up", -1, 3, "DEMO-CUS-001", "Andi Wijaya", "Open"),
+    ("DEMO-ACT-004", "WhatsApp follow-up proposal", "WhatsApp", -2, 2, "DEMO-CUS-002", "Sari Lestari", "Open"),
+    ("DEMO-ACT-005", "Customer meeting - Power Control Upgrade", "Meeting", 1, 5, "DEMO-CUS-003", "Dina Pratama", "Open"),
+    ("DEMO-ACT-006", "Call overdue quotation confirmation", "Call", -4, -1, "DEMO-CUS-004", "Andi Wijaya", "Open"),
+    ("DEMO-ACT-007", "Email overdue technical clarification", "Email", -6, -2, "DEMO-CUS-005", "Sari Lestari", "Open"),
+    ("DEMO-ACT-008", "Presentation - Remote I/O solution", "Presentation", -3, None, "DEMO-CUS-005", "Dina Pratama", "Completed"),
+    ("DEMO-ACT-009", "Visit completed - Petrochemical project", "Visit", -8, None, "DEMO-CUS-004", "Andi Wijaya", "Completed"),
+    ("DEMO-ACT-010", "Other - Internal opportunity review", "Other", -10, None, "DEMO-CUS-003", "Sari Lestari", "Cancelled"),
+]
+
+
 async def seed_demo_data():
     # Users: add exactly these three demo users if they do not already exist.
     for base in DEMO_USERS:
@@ -138,6 +152,47 @@ async def seed_demo_data():
             "updated_at": now(),
         }
         await db.opportunities.insert_one(doc)
+
+
+    # Activities: add ten stable demo records covering today, upcoming,
+    # overdue, completed, and cancelled states. Sales are resolved from
+    # the same Users collection used by Customers and Sales Pipeline.
+    for activity_id, subject, activity_type, date_offset, followup_offset, customer_id, sales_name, status in DEMO_ACTIVITIES:
+        if await db.activities.find_one({"activity_id": activity_id}):
+            continue
+
+        sales = await db.users.find_one({"name": sales_name})
+        customer_ref = customer_ids.get(customer_id)
+
+        doc = {
+            "id": new_id(),
+            "activity_id": activity_id,
+            "subject": subject,
+            "activity_type": activity_type,
+            "date": (date.today() + timedelta(days=date_offset)).isoformat(),
+            "customer_id": customer_ref or customer_id,
+            "customer_name": next(
+                (
+                    customer[1]
+                    for customer in DEMO_CUSTOMERS
+                    if customer[0] == customer_id
+                ),
+                "",
+            ),
+            "sales_id": sales["id"] if sales else None,
+            "sales_name": sales_name,
+            "next_follow_up": (
+                (date.today() + timedelta(days=followup_offset)).isoformat()
+                if followup_offset is not None
+                else None
+            ),
+            "status": status,
+            "description": "Demo activity for CRM Aktivitas Sales UI verification.",
+            "is_demo": True,
+            "demo_label": "CRM UI demo data",
+            "created_at": now(),
+        }
+        await db.activities.insert_one(doc)
 
     print("CRM demo data ready: 5 customers, 5 pipeline opportunities, 3 users")
 
