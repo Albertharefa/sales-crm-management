@@ -324,6 +324,7 @@ export default function Customers() {
             <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
 
               <tr>
+                <th className="px-4 py-3 font-semibold">No</th>
                 {[
                   "Customer ID",
                   "Nama Customer",
@@ -351,7 +352,7 @@ export default function Customers() {
 
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-4 py-10 text-center text-slate-400"
                     data-testid="customers-loading-state"
                   >
@@ -371,13 +372,15 @@ export default function Customers() {
                 </tr>
               ) : query.data?.items?.length ? (
 
-                query.data.items.map((customer) => (
+                query.data.items.map((customer, index) => (
 
                   <tr
                     key={customer.id}
                     className="hover:bg-slate-50"
                     data-testid={`customer-row-${customer.customer_id}`}
                   >
+
+                    <td className="px-4 py-3 text-slate-500">{(page - 1) * pageSize + index + 1}</td>
 
                     {/* CUSTOMER ID - CLICKABLE */}
 
