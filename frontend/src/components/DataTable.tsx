@@ -31,19 +31,23 @@ export default function DataTable<T extends { id: string }>({
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
-            <tr>{columns.map(column => <th key={column.key} className="whitespace-nowrap px-4 py-3 font-semibold">{column.label}</th>)}</tr>
+            <tr>
+              <th className="whitespace-nowrap px-4 py-3 font-semibold">No</th>
+              {columns.map(column => <th key={column.key} className="whitespace-nowrap px-4 py-3 font-semibold">{column.label}</th>)}
+            </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr><td colSpan={columns.length} className="px-4 py-12 text-center text-slate-400">Memuat data...</td></tr>
+              <tr><td colSpan={columns.length + 1} className="px-4 py-12 text-center text-slate-400">Memuat data...</td></tr>
             ) : items.length ? (
               items.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50" data-testid={testId + "-row-" + item.id}>
+                  <td className="whitespace-nowrap px-4 py-3 text-slate-500">{(page - 1) * pageSize + items.indexOf(item) + 1}</td>
                   {columns.map(column => <td key={column.key} className="whitespace-nowrap px-4 py-3">{column.render(item)}</td>)}
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={columns.length} className="px-4 py-12 text-center text-slate-400">{empty ?? "Belum ada data"}</td></tr>
+              <tr><td colSpan={columns.length + 1} className="px-4 py-12 text-center text-slate-400">{empty ?? "Belum ada data"}</td></tr>
             )}
           </tbody>
         </table>
