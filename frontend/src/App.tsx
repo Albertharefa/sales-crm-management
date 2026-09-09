@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import Customers from './pages/Customers';
 import Pipeline from './pages/Pipeline';
 import Quotations from './pages/Quotations';
+import QuotationPrint from './pages/QuotationPrint';
 import PurchaseOrders from './pages/PurchaseOrders';
 import OrderMonitoring from './pages/OrderMonitoring';
 import Activities from './pages/Activities';
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="/customers" element={<Protected><Customers /></Protected>} />
         <Route path="/pipeline" element={<Protected><Pipeline /></Protected>} />
         <Route path="/quotations" element={<Protected><Quotations /></Protected>} />
+        <Route path="/quotations/:quotationId/print" element={<QuotationPrint />} />
         <Route path="/purchase-orders" element={<Protected><PurchaseOrders /></Protected>} />
         <Route path="/order-monitoring" element={<Protected><OrderMonitoring /></Protected>} />
         <Route path="/activities" element={<Protected><Activities /></Protected>} />
