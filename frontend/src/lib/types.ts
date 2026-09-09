@@ -125,7 +125,9 @@ export interface Quotation {
   date: string;
   customer_id: string;
   customer_name: string;
+  sales_id?: string;
   sales_name?: string;
+  customer_po_number?: string;
   items: QuotationItem[];
   subtotal: number;
   discount_total: number;
