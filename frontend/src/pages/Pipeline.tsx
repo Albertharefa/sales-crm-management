@@ -242,14 +242,16 @@ export default function Pipeline() {
             <table className="w-full min-w-[1250px] text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
                 <tr>
+                  <th className="px-4 py-3 font-semibold">No</th>
                   {["Opportunity", "Customer", "Sales", "Value", "Prob.", "Weighted", "Stage", "Target Close", "Aksi"].map((head) => (
                     <th key={head} className="px-4 py-3 font-semibold">{head}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <tr key={item.id} className="hover:bg-slate-50" data-testid={`opportunity-row-${item.opportunity_id}`}>
+                    <td className="px-4 py-3 text-slate-500">{(page - 1) * pageSize + index + 1}</td>
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-800">{item.name}</div>
                       <div className="font-mono text-[10px] text-slate-400">{item.opportunity_id}</div>
