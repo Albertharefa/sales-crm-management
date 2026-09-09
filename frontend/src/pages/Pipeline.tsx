@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Search, List, KanbanSquare, Pencil, Trash2 } from "lucide-react";
+import PaginationControls from "@/components/PaginationControls";
 
 const money = (value: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -36,6 +37,8 @@ export default function Pipeline() {
   const [stage, setStage] = useState("");
   const [salesId, setSalesId] = useState("");
   const [customerId, setCustomerId] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
   const [form, setForm] = useState({
     name: "",
     customer_id: "",
@@ -50,14 +53,14 @@ export default function Pipeline() {
 
   const qc = useQueryClient();
 
-  const queryParams = new URLSearchParams({ page: "1", page_size: "100" });
+  const queryParams = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
   if (search.trim()) queryParams.set("search", search.trim());
   if (stage) queryParams.set("stage", stage);
   if (salesId) queryParams.set("sales_id", salesId);
   if (customerId) queryParams.set("customer_id", customerId);
 
   const list = useQuery({
-    queryKey: ["pipeline", search, stage, salesId, customerId],
+    queryKey: ["pipeline", page, pageSize, search, stage, salesId, customerId],
     queryFn: () => apiGet<Paginated<Opportunity>>(`/pipeline?${queryParams.toString()}`),
   });
 
@@ -174,22 +177,22 @@ export default function Pipeline() {
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input className="pl-9" placeholder="Cari opportunity / customer..." value={search} onChange={(e) => setSearch(e.target.value)} data-testid="pipeline-search-input" />
+            <Input className="pl-9" placeholder="Cari opportunity / customer..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} data-testid="pipeline-search-input" />
           </div>
 
-          <select className={selectClass} value={stage} onChange={(e) => setStage(e.target.value)} data-testid="pipeline-stage-filter">
+          <select className={selectClass} value={stage} onChange={(e) => { setStage(e.target.value); setPage(1); }} data-testid="pipeline-stage-filter">
             <option value="">Semua stage</option>
             {stages.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
 
-          <select className={selectClass} value={salesId} onChange={(e) => setSalesId(e.target.value)} data-testid="pipeline-sales-filter">
+          <select className={selectClass} value={salesId} onChange={(e) => { setSalesId(e.target.value); setPage(1); }} data-testid="pipeline-sales-filter">
             <option value="">Semua sales</option>
             {(options.data?.users ?? [])
               .filter((user) => ["SALES", "SALES_MANAGER"].includes(user.role))
               .map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
           </select>
 
-          <select className={selectClass} value={customerId} onChange={(e) => setCustomerId(e.target.value)} data-testid="pipeline-customer-filter">
+          <select className={selectClass} value={customerId} onChange={(e) => { setCustomerId(e.target.value); setPage(1); }} data-testid="pipeline-customer-filter">
             <option value="">Semua customer</option>
             {(options.data?.customers ?? []).map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
           </select>
@@ -251,7 +254,14 @@ export default function Pipeline() {
             </table>
           </div>
           {!items.length && <div className="border-t border-slate-200 p-10 text-center text-sm text-slate-400">Tidak ada opportunity yang sesuai filter.</div>}
-          <div className="border-t border-slate-200 px-4 py-3 text-xs text-slate-500">Menampilkan {items.length} dari {list.data?.total ?? 0} opportunity</div>
+          <PaginationControls
+            page={page}
+            pageSize={pageSize}
+            total={list.data?.total ?? 0}
+            onPage={setPage}
+            onPageSize={(size) => { setPageSize(size); setPage(1); }}
+            testId="pipeline"
+          />
         </div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-4">
