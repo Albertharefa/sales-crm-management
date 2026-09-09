@@ -39,6 +39,7 @@ export default function Customers() {
     pic_name: "",
     pic_position: "",
     status: "Active",
+    sales_id: "",
     sales_name: "",
     address: "",
     notes: "",
@@ -58,14 +59,14 @@ export default function Customers() {
           search
         )}&status=${encodeURIComponent(status)}&industry=${encodeURIComponent(
           industry
-        )}&sales_name=${encodeURIComponent(sales)}`
+        )}&sales_id=${encodeURIComponent(sales)}`
       ),
   });
 
   const salesOptionsQuery = useQuery({
-    queryKey: ["customer-sales-options"],
-    queryFn: () => apiGet<string[]>("/customers/sales-options"),
-    staleTime: 5 * 60 * 1000,
+    queryKey: ["sales-master-options"],
+    queryFn: () => apiGet<{ id: string; name: string }[]>("/customers/sales-options"),
+    staleTime: 60_000,
   });
 
   /* =========================
@@ -152,6 +153,7 @@ export default function Customers() {
       pic_name: customer.pic_name ?? "",
       pic_position: customer.pic_position ?? "",
       status: customer.status ?? "Active",
+      sales_id: customer.sales_id ?? "",
       sales_name: customer.sales_name ?? "",
       address: customer.address ?? "",
       notes: customer.notes ?? "",
@@ -300,11 +302,11 @@ export default function Customers() {
           data-testid="customers-sales-filter"
         >
           <option value="">Semua sales</option>
-          {salesOptionsQuery.data?.map((salesName) => (
-            <option key={salesName} value={salesName}>
-              {salesName}
-            </option>
-          ))}
+          {salesOptionsQuery.data?.map((sales) => (
+                    <option key={sales.id} value={sales.id}>
+                      {sales.name}
+                    </option>
+                  ))}
         </select>
 
       </div>
@@ -930,15 +932,22 @@ export default function Customers() {
               <Field label="Sales Penanggung Jawab">
                 <select
                   className={selectClass}
-                  value={form.sales_name}
-                  onChange={(e) =>
-                    setForm({ ...form, sales_name: e.target.value })
-                  }
+                  value={form.sales_id}
+                  onChange={(e) => {
+                    const selected = salesOptionsQuery.data?.find(
+                      (sales) => sales.id === e.target.value,
+                    );
+                    setForm({
+                      ...form,
+                      sales_id: e.target.value,
+                      sales_name: selected?.name ?? "",
+                    });
+                  }}
                 >
                   <option value="">— Pilih sales —</option>
-                  {salesOptionsQuery.data?.map((salesName) => (
-                    <option key={salesName} value={salesName}>
-                      {salesName}
+                  {salesOptionsQuery.data?.map((sales) => (
+                    <option key={sales.id} value={sales.id}>
+                      {sales.name}
                     </option>
                   ))}
                 </select>
@@ -1125,16 +1134,25 @@ export default function Customers() {
             <Field label="Sales Penanggung Jawab">
               <select
                 className={selectClass}
-                value={form.sales_name}
-                onChange={(e) => setForm({ ...form, sales_name: e.target.value })}
+                value={form.sales_id}
+                  onChange={(e) => {
+                    const selected = salesOptionsQuery.data?.find(
+                      (sales) => sales.id === e.target.value,
+                    );
+                    setForm({
+                      ...form,
+                      sales_id: e.target.value,
+                      sales_name: selected?.name ?? "",
+                    });
+                  }}
                 data-testid="customer-sales-input"
               >
                 <option value="">— Pilih sales —</option>
-                {salesOptionsQuery.data?.map((salesName) => (
-                  <option key={salesName} value={salesName}>
-                    {salesName}
-                  </option>
-                ))}
+                {salesOptionsQuery.data?.map((sales) => (
+                    <option key={sales.id} value={sales.id}>
+                      {sales.name}
+                    </option>
+                  ))}
               </select>
             </Field>
 
@@ -1198,15 +1216,3 @@ function DetailItem({
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
-
-      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-        {label}
-      </div>
-
-      <div className="text-sm text-slate-800">
-        {value || "—"}
-      </div>
-
-    </div>
-  );
-}
