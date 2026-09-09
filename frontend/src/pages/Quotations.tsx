@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Dispatch, SetStateAction } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
@@ -72,6 +73,7 @@ const emptyForm = (): QuotationForm => ({
 });
 
 export default function Quotations() {
+  const navigate = useNavigate();
   const [createModal, setCreateModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
@@ -371,7 +373,15 @@ export default function Quotations() {
             key: "number",
             label: "Nomor",
             render: (item) => (
-              <span className="font-mono text-xs text-blue-600">{item.number}</span>
+              <button
+                type="button"
+                className="font-mono text-xs text-blue-600 hover:underline"
+                title="Buka quotation untuk cetak / simpan PDF"
+                onClick={() => navigate(`/quotations/${item.id}/print`)}
+                data-testid={`quotation-number-${item.id}`}
+              >
+                {item.number}
+              </button>
             ),
           },
           { key: "date", label: "Tanggal", render: (item) => item.date },
