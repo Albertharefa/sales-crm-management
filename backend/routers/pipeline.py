@@ -37,6 +37,29 @@ async def list_opportunities(
     )
 
 
+@router.get("/sales-options")
+async def sales_options(
+    user: dict = Depends(current_user),
+):
+    """
+    Return users who can own Sales Pipeline opportunities.
+
+    This endpoint deliberately normalizes role casing and excludes SUPER_ADMIN,
+    so the Pipeline sales filter does not depend on the generic /options payload.
+    """
+    users = await db.users.find(
+        {
+            "role": {
+                "$regex": r"^(sales|sales_manager)$",
+                "$options": "i",
+            }
+        },
+        {"_id": 0, "id": 1, "name": 1, "role": 1},
+    ).sort("name", 1).to_list(100)
+
+    return users
+
+
 @router.get("/kanban")
 async def kanban(
     sales_id: str | None = None,
