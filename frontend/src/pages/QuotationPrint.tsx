@@ -92,31 +92,46 @@ export default function QuotationPrint() {
         </Button>
       </div>
 
-      <main className="quotation-paper mx-auto min-h-[297mm] w-full max-w-[210mm] bg-white px-7 py-6 text-[11px] text-slate-800 shadow-sm sm:px-8">
+      <main className="quotation-paper mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col bg-white px-7 py-6 text-[11px] text-slate-800 shadow-sm sm:px-8">
         <header className="border-b-2 border-slate-900 pb-3">
-          <div className="flex items-start justify-between gap-6">
-            <div>
-              <div className="text-lg font-bold tracking-tight text-slate-900">
-                PT WELLRACOM INDUSTRI KOMPUTINDO
-              </div>
-              <div className="mt-0.5 text-[9px] leading-relaxed text-slate-500">
-                Industrial Computer & Automation Solution
-                <br />
-                www.wellracom.co.id · info@wellracom.co.id
+          <div className="flex items-start justify-between gap-5">
+            <div className="flex items-start gap-3">
+              <img
+                src="/wellracom-logo.svg"
+                alt="Wellracom"
+                className="size-[54px] shrink-0 object-contain"
+              />
+              <div className="pt-0.5">
+                <div className="text-[17px] font-bold tracking-tight text-slate-900">
+                  PT WELLRACOM INDUSTRI KOMPUTINDO
+                </div>
+                <div className="mt-0.5 text-[9px] leading-relaxed text-slate-500">
+                  Industrial Computing • Automation • Communication
+                  <br />
+                  www.wellracom.co.id · info@wellracom.co.id
+                </div>
               </div>
             </div>
-            <div className="flex size-12 items-center justify-center rounded border border-slate-300 text-xl font-bold text-slate-800">
-              W
+            <div className="min-w-[170px] text-right">
+              <div className="text-[22px] font-bold tracking-[0.08em] text-slate-900">
+                QUOTATION
+              </div>
+              <div className="mt-1 text-[10px] text-slate-700">
+                No: <span className="font-mono font-semibold">{q.number}</span>
+              </div>
+              <div className="text-[10px] text-slate-700">
+                Date: <span className="font-semibold">{dateId(q.date)}</span>
+              </div>
+              <div className="text-[10px] text-slate-700">
+                Valid Until: <span className="font-semibold">{dateId(q.valid_until)}</span>
+              </div>
             </div>
           </div>
         </header>
 
         <section className="mt-5 grid grid-cols-[1fr_175px] gap-6">
           <div>
-            <h1 className="text-[22px] font-bold tracking-[0.12em] text-slate-900">
-              QUOTATION
-            </h1>
-            <span className="mt-2 inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
+            <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
               {q.status}
             </span>
 
@@ -224,7 +239,7 @@ export default function QuotationPrint() {
           </div>
         </section>
 
-        <footer className="mt-14 border-t-2 border-slate-900 pt-3 text-[8px] text-slate-500">
+        <footer className="mt-auto border-t-2 border-slate-900 pt-3 text-[8px] text-slate-500">
           <div className="grid grid-cols-2 gap-8">
             <div>
               <div className="font-semibold text-slate-700">JAKARTA OFFICE</div>
