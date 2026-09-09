@@ -78,10 +78,22 @@ export default function Pipeline() {
     staleTime: 60_000,
   });
 
+  // Customer filter has its own endpoint for the same reason as the
+  // dedicated sales endpoint: it reads directly from the customers
+  // collection and does not depend on the shared /options payload.
+  const customerOptions = useQuery({
+    queryKey: ["pipeline-customer-options"],
+    queryFn: () =>
+      apiGet<{ id: string; name: string }[]>("/pipeline/customer-options"),
+    staleTime: 60_000,
+  });
+
   const refreshPage = () => {
     void Promise.all([
       qc.invalidateQueries({ queryKey: ["pipeline"] }),
       qc.invalidateQueries({ queryKey: ["options"] }),
+      qc.invalidateQueries({ queryKey: ["pipeline-sales-options"] }),
+      qc.invalidateQueries({ queryKey: ["pipeline-customer-options"] }),
     ]);
   };
 
@@ -203,7 +215,9 @@ export default function Pipeline() {
 
           <select className={selectClass} value={customerId} onChange={(e) => { setCustomerId(e.target.value); setPage(1); }} data-testid="pipeline-customer-filter">
             <option value="">Semua customer</option>
-            {(options.data?.customers ?? []).map((customer) => <option key={customer.id} value={customer.id}>{customer.name}</option>)}
+            {(customerOptions.data ?? []).map((customer) => (
+              <option key={customer.id} value={customer.id}>{customer.name}</option>
+            ))}
           </select>
         </div>
 
@@ -313,7 +327,7 @@ export default function Pipeline() {
             <Field label="Customer" required>
               <select className={selectClass} value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} data-testid="opportunity-customer-input">
                 <option value="">— Pilih customer —</option>
-                {(options.data?.customers ?? []).map((customer: Customer) => <option value={customer.id} key={customer.id}>{customer.name}</option>)}
+                {(customerOptions.data ?? []).map((customer: Customer) => <option value={customer.id} key={customer.id}>{customer.name}</option>)}
               </select>
             </Field>
 
