@@ -60,6 +60,46 @@ async def sales_options(
     return users
 
 
+@router.get("/customer-options")
+async def customer_options(
+    user: dict = Depends(current_user),
+):
+    """
+    Return customers for the Sales Pipeline customer filter.
+
+    The list is intentionally served from the customers collection instead of
+    relying on the generic /options payload, so the filter remains available
+    even when that shared options response is incomplete or stale.
+    """
+    customers = await db.customers.find(
+        {},
+        {"_id": 0, "id": 1, "customer_id": 1, "name": 1, "company_name": 1},
+    ).sort("name", 1).to_list(1000)
+
+    result = []
+    seen_ids = set()
+
+    for customer in customers:
+        customer_id = customer.get("id") or customer.get("customer_id")
+        if not customer_id or customer_id in seen_ids:
+            continue
+
+        display_name = (
+            customer.get("name")
+            or customer.get("company_name")
+            or customer.get("customer_id")
+            or str(customer_id)
+        )
+
+        result.append({
+            "id": str(customer_id),
+            "name": str(display_name),
+        })
+        seen_ids.add(customer_id)
+
+    return result
+
+
 @router.get("/kanban")
 async def kanban(
     sales_id: str | None = None,
