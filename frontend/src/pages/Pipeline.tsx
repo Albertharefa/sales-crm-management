@@ -69,6 +69,15 @@ export default function Pipeline() {
     queryFn: () => apiGet<Options>("/options"),
   });
 
+  // Sales filter has its own endpoint so it is independent from the
+  // generic options payload. This also tolerates legacy user-role casing.
+  const salesOptions = useQuery({
+    queryKey: ["pipeline-sales-options"],
+    queryFn: () =>
+      apiGet<{ id: string; name: string; role: string }[]>("/pipeline/sales-options"),
+    staleTime: 60_000,
+  });
+
   const refreshPage = () => {
     void Promise.all([
       qc.invalidateQueries({ queryKey: ["pipeline"] }),
@@ -187,9 +196,9 @@ export default function Pipeline() {
 
           <select className={selectClass} value={salesId} onChange={(e) => { setSalesId(e.target.value); setPage(1); }} data-testid="pipeline-sales-filter">
             <option value="">Semua sales</option>
-            {(options.data?.users ?? [])
-              .filter((user) => ["SALES", "SALES_MANAGER"].includes(user.role))
-              .map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
+            {(salesOptions.data ?? []).map((user) => (
+              <option key={user.id} value={user.id}>{user.name}</option>
+            ))}
           </select>
 
           <select className={selectClass} value={customerId} onChange={(e) => { setCustomerId(e.target.value); setPage(1); }} data-testid="pipeline-customer-filter">
@@ -311,9 +320,9 @@ export default function Pipeline() {
             <Field label="Sales Penanggung Jawab">
               <select className={selectClass} value={form.sales_id} onChange={(e) => setForm({ ...form, sales_id: e.target.value })} data-testid="opportunity-sales-input">
                 <option value="">— Gunakan sales login —</option>
-                {(options.data?.users ?? [])
-                  .filter((user) => ["SALES", "SALES_MANAGER"].includes(user.role))
-                  .map((user) => <option value={user.id} key={user.id}>{user.name}</option>)}
+                {(salesOptions.data ?? []).map((user) => (
+                  <option value={user.id} key={user.id}>{user.name}</option>
+                ))}
               </select>
             </Field>
 
