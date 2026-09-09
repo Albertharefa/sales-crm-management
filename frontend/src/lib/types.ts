@@ -123,6 +123,10 @@ export interface Quotation {
   id: string;
   number: string;
   date: string;
+  valid_until?: string;
+  payment_term?: string;
+  delivery_term?: string;
+  notes?: string;
   customer_id: string;
   customer_name: string;
   sales_id?: string;
