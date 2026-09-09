@@ -274,6 +274,21 @@ export default function QuotationPrint() {
           .no-print {
             display: none !important;
           }
+          /*
+           * Keep the printed quotation isolated to our React application.
+           * Browser extensions such as Apollo can inject a floating widget
+           * directly under <body>. Hiding non-#root body children in print
+           * prevents that external widget from appearing in the quotation/PDF.
+           */
+          body > *:not(#root) {
+            display: none !important;
+            visibility: hidden !important;
+          }
+          #root {
+            position: relative !important;
+            z-index: 0 !important;
+            isolation: isolate !important;
+          }
           .quotation-print-root {
             box-sizing: border-box !important;
             width: 210mm !important;
