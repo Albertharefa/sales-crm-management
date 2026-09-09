@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPatch, apiPost } from "@/lib/api";
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api";
 import type { Activity, Paginated, Task } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
 
 const ACTIVITY_TYPES = [
@@ -30,6 +31,9 @@ const ACTIVITY_TYPES = [
 export default function Activities() {
   const [mode, setMode] = useState("activities");
   const [modal, setModal] = useState(false);
+  const [detailModal, setDetailModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [activityFilter, setActivityFilter] = useState("");
   const [activityType, setActivityType] = useState("");
@@ -104,11 +108,68 @@ export default function Activities() {
     staleTime: 60_000,
   });
 
+  const activityDetail = useQuery({
+    queryKey: ["activity-detail", selectedActivityId],
+    queryFn: () => apiGet<Activity>(`/activities/${selectedActivityId}`),
+    enabled: !!selectedActivityId && (detailModal || editModal),
+  });
+
+  const openDetail = (id: string) => {
+    setSelectedActivityId(id);
+    setDetailModal(true);
+  };
+
+  const closeDetail = () => {
+    setDetailModal(false);
+    setSelectedActivityId(null);
+  };
+
+  const openEdit = (id: string) => {
+    setSelectedActivityId(id);
+    setEditModal(true);
+  };
+
+  const closeEdit = () => {
+    setEditModal(false);
+    setSelectedActivityId(null);
+  };
+
   const salesOptions = useQuery({
     queryKey: ["activities-sales-options"],
     queryFn: () =>
       apiGet<{ id: string; name: string }[]>("/activities/sales-options"),
     staleTime: 60_000,
+  });
+
+  const updateActivity = useMutation({
+    mutationFn: (values: {
+      subject: string;
+      activity_type: string;
+      date: string;
+      next_follow_up: string | null;
+      status: string;
+      description: string;
+    }) =>
+      apiPut<Activity>(`/activities/${selectedActivityId}`, values),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["activities-summary"] });
+      qc.invalidateQueries({ queryKey: ["activity-detail", selectedActivityId] });
+      closeEdit();
+      toast.success("Aktivitas berhasil diperbarui");
+    },
+    onError: () => toast.error("Aktivitas gagal diperbarui"),
+  });
+
+  const removeActivity = useMutation({
+    mutationFn: (id: string) => apiDelete<void>(`/activities/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["activities"] });
+      qc.invalidateQueries({ queryKey: ["activities-summary"] });
+      closeDetail();
+      toast.success("Aktivitas dihapus");
+    },
+    onError: () => toast.error("Aktivitas gagal dihapus"),
   });
 
   const create = useMutation({
@@ -371,6 +432,41 @@ export default function Activities() {
                 </Badge>
               ),
             },
+            {
+              key: "action",
+              label: "Aksi",
+              render: (item) => (
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => openDetail(item.id)}
+                    title="Lihat detail"
+                    data-testid={`activity-view-${item.activity_id}`}
+                  >
+                    <Eye className="size-4 text-blue-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => openEdit(item.id)}
+                    title="Edit aktivitas"
+                    data-testid={`activity-edit-${item.activity_id}`}
+                  >
+                    <Pencil className="size-4 text-slate-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => removeActivity.mutate(item.id)}
+                    title="Hapus aktivitas"
+                    data-testid={`activity-delete-${item.activity_id}`}
+                  >
+                    <Trash2 className="size-4 text-red-500" />
+                  </Button>
+                </div>
+              ),
+            },
           ]}
         />
       ) : (
@@ -433,6 +529,55 @@ export default function Activities() {
             },
           ]}
         />
+      )}
+
+      {detailModal && (
+        <Modal title="Detail Aktivitas" onClose={closeDetail}>
+          {activityDetail.isLoading ? (
+            <div className="py-10 text-center text-slate-500">
+              Memuat detail aktivitas...
+            </div>
+          ) : activityDetail.isError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              Gagal mengambil detail aktivitas.
+            </div>
+          ) : activityDetail.data ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <DetailItem label="Activity ID" value={activityDetail.data.activity_id} />
+              <DetailItem label="Tipe" value={activityDetail.data.activity_type} />
+              <DetailItem label="Tanggal" value={activityDetail.data.date} />
+              <DetailItem label="Status" value={activityDetail.data.status} />
+              <DetailItem label="Subjek" value={activityDetail.data.subject} />
+              <DetailItem label="Customer" value={activityDetail.data.customer_name} />
+              <DetailItem label="Sales" value={activityDetail.data.sales_name} />
+              <DetailItem label="Next Follow-up" value={activityDetail.data.next_follow_up} />
+              <div className="sm:col-span-2">
+                <DetailItem label="Deskripsi" value={activityDetail.data.description} />
+              </div>
+            </div>
+          ) : null}
+        </Modal>
+      )}
+
+      {editModal && (
+        <Modal title="Edit Aktivitas" onClose={closeEdit}>
+          {activityDetail.isLoading ? (
+            <div className="py-10 text-center text-slate-500">
+              Memuat aktivitas...
+            </div>
+          ) : activityDetail.isError || !activityDetail.data ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+              Gagal mengambil aktivitas.
+            </div>
+          ) : (
+            <EditActivityForm
+              activity={activityDetail.data}
+              onCancel={closeEdit}
+              onSubmit={(values) => updateActivity.mutate(values)}
+              saving={updateActivity.isPending}
+            />
+          )}
+        </Modal>
       )}
 
       {modal && (
@@ -563,5 +708,122 @@ export default function Activities() {
         </Modal>
       )}
     </div>
+  );
+}
+
+function DetailItem({
+  label,
+  value,
+}: {
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-3">
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </div>
+      <div className="text-sm text-slate-800">{value || "—"}</div>
+    </div>
+  );
+}
+
+function EditActivityForm({
+  activity,
+  onCancel,
+  onSubmit,
+  saving,
+}: {
+  activity: Activity;
+  onCancel: () => void;
+  onSubmit: (values: {
+    subject: string;
+    activity_type: string;
+    date: string;
+    next_follow_up: string | null;
+    status: string;
+    description: string;
+  }) => void;
+  saving: boolean;
+}) {
+  const [subject, setSubject] = useState(activity.subject);
+  const [activityType, setActivityType] = useState(activity.activity_type);
+  const [date, setDate] = useState(activity.date);
+  const [nextFollowUp, setNextFollowUp] = useState(activity.next_follow_up ?? "");
+  const [status, setStatus] = useState(activity.status);
+  const [description, setDescription] = useState(activity.description ?? "");
+
+  return (
+    <form
+      className="grid gap-4 sm:grid-cols-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit({
+          subject,
+          activity_type: activityType,
+          date,
+          next_follow_up: nextFollowUp || null,
+          status,
+          description,
+        });
+      }}
+    >
+      <div className="sm:col-span-2">
+        <Field label="Subjek" required>
+          <Input value={subject} onChange={(e) => setSubject(e.target.value)} />
+        </Field>
+      </div>
+
+      <Field label="Tipe">
+        <select className={selectClass} value={activityType} onChange={(e) => setActivityType(e.target.value)}>
+          {ACTIVITY_TYPES.map((type) => (
+            <option key={type}>{type}</option>
+          ))}
+        </select>
+      </Field>
+
+      <Field label="Tanggal" required>
+        <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </Field>
+
+      <Field label="Customer">
+        <Input value={activity.customer_name ?? "—"} disabled />
+      </Field>
+
+      <Field label="Sales">
+        <Input value={activity.sales_name ?? "—"} disabled />
+      </Field>
+
+      <Field label="Next Follow-up">
+        <Input
+          type="date"
+          value={nextFollowUp}
+          onChange={(e) => setNextFollowUp(e.target.value)}
+        />
+      </Field>
+
+      <Field label="Status">
+        <select className={selectClass} value={status} onChange={(e) => setStatus(e.target.value)}>
+          <option>Open</option>
+          <option>Completed</option>
+          <option>Cancelled</option>
+        </select>
+      </Field>
+
+      <div className="sm:col-span-2">
+        <Field label="Deskripsi">
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+      </div>
+
+      <div className="flex justify-end gap-2 sm:col-span-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Batal
+        </Button>
+        <Button type="submit" disabled={saving || !subject.trim()}>
+          {saving ? "Menyimpan..." : "Simpan"}
+        </Button>
+      </div>
+    </form>
   );
 }
