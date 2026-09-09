@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, Trash2, Eye, X, Pencil } from "lucide-react";
+import PaginationControls from "@/components/PaginationControls";
 
 export default function Customers() {
   const [search, setSearch] = useState("");
@@ -24,6 +25,7 @@ export default function Customers() {
     null
   );
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
 
   const [form, setForm] = useState({
     name: "",
@@ -49,10 +51,10 @@ export default function Customers() {
   ========================= */
 
   const query = useQuery({
-    queryKey: ["customers", page, search, status, industry, sales],
+    queryKey: ["customers", page, pageSize, search, status, industry, sales],
     queryFn: () =>
       apiGet<Paginated<Customer>>(
-        `/customers?page=${page}&page_size=10&search=${encodeURIComponent(
+        `/customers?page=${page}&page_size=${pageSize}&search=${encodeURIComponent(
           search
         )}&status=${encodeURIComponent(status)}&industry=${encodeURIComponent(
           industry
@@ -503,49 +505,17 @@ export default function Customers() {
 
         </div>
 
-        {/* =========================
-            PAGINATION
-        ========================= */}
-
-        <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
-
-          <span data-testid="customers-pagination-summary">
-            Menampilkan {query.data?.items.length ?? 0} dari{" "}
-            {query.data?.total ?? 0} data
-          </span>
-
-          <div className="flex items-center gap-2">
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              data-testid="customers-previous-page"
-            >
-              Sebelumnya
-            </Button>
-
-            <span data-testid="customers-current-page">
-              {page}
-            </span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={
-                !query.data ||
-                page * 10 >= query.data.total
-              }
-              onClick={() => setPage(page + 1)}
-              data-testid="customers-next-page"
-            >
-              Berikutnya
-            </Button>
-
-          </div>
-
-        </div>
+        <PaginationControls
+          page={page}
+          pageSize={pageSize}
+          total={query.data?.total ?? 0}
+          onPage={setPage}
+          onPageSize={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+          testId="customers"
+        />
 
       </div>
 
