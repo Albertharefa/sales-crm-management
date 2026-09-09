@@ -94,39 +94,55 @@ export default function QuotationPrint() {
 
       <main className="quotation-paper mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col bg-white px-7 py-6 text-[11px] text-slate-800 shadow-sm sm:px-8">
         <header className="border-b-2 border-slate-900 pb-3">
-          <div className="flex items-start justify-between gap-5">
-            <div className="flex items-start gap-3">
-              <div
-                aria-label="Wellracom"
-                className="size-[54px] shrink-0 overflow-hidden"
+          <div className="flex items-start gap-3">
+            <div
+              aria-label="Wellracom"
+              className="size-[54px] shrink-0 overflow-hidden"
+            >
+              <svg
+                viewBox="0 0 220 220"
+                xmlns="http://www.w3.org/2000/svg"
+                className="size-full"
+                role="img"
+                aria-label="Wellracom logo"
               >
-                <svg
-                  viewBox="0 0 220 220"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="size-full"
-                  role="img"
-                  aria-label="Wellracom logo"
-                >
-                  <circle cx="110" cy="110" r="102" fill="#fff" stroke="#111" strokeWidth="7" />
-                  <path d="M39 54 L74 126 L99 78 L110 101 L121 78 L146 126 L181 54 L161 54 L146 91 L132 64 L110 109 L88 64 L74 91 L59 54 Z" fill="#f59d00" />
-                  <path d="M86 51 L99 51 L110 76 L121 51 L134 51 L124 75 L110 93 L96 75 Z" fill="#111" />
-                  <path d="M110 93 L110 150" stroke="#111" strokeWidth="7" />
-                  <path d="M86 151 H134 L127 161 H93 Z" fill="#111" />
-                  <path d="M101 166 H119 L110 184 Z" fill="#111" />
-                </svg>
+                <circle cx="110" cy="110" r="102" fill="#fff" stroke="#111" strokeWidth="7" />
+                <path d="M39 54 L74 126 L99 78 L110 101 L121 78 L146 126 L181 54 L161 54 L146 91 L132 64 L110 109 L88 64 L74 91 L59 54 Z" fill="#f59d00" />
+                <path d="M86 51 L99 51 L110 76 L121 51 L134 51 L124 75 L110 93 L96 75 Z" fill="#111" />
+                <path d="M110 93 L110 150" stroke="#111" strokeWidth="7" />
+                <path d="M86 151 H134 L127 161 H93 Z" fill="#111" />
+                <path d="M101 166 H119 L110 184 Z" fill="#111" />
+              </svg>
+            </div>
+            <div className="pt-0.5">
+              <div className="text-[17px] font-bold tracking-tight text-slate-900">
+                PT WELLRACOM INDUSTRI KOMPUTINDO
               </div>
-              <div className="pt-0.5">
-                <div className="text-[17px] font-bold tracking-tight text-slate-900">
-                  PT WELLRACOM INDUSTRI KOMPUTINDO
-                </div>
-                <div className="mt-0.5 text-[9px] leading-relaxed text-slate-500">
-                  Industrial Computing • Automation • Communication
-                  <br />
-                  www.wellracom.co.id · info@wellracom.co.id
-                </div>
+              <div className="mt-0.5 text-[9px] leading-relaxed text-slate-500">
+                Industrial Computing • Automation • Communication
+                <br />
+                www.wellracom.co.id · info@wellracom.co.id
               </div>
             </div>
-            <div className="min-w-[170px] text-right">
+          </div>
+        </header>
+
+        <section className="mt-5">
+          <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
+            {q.status}
+          </span>
+
+          <div className="mt-5 grid grid-cols-[1fr_230px] items-start gap-6 text-[10px] leading-relaxed">
+            <div>
+              <div className="font-semibold uppercase text-slate-500">TO:</div>
+              <div className="mt-1 font-semibold text-slate-900">{customerName}</div>
+              <div>ATTN: {pic}</div>
+              <div>EMAIL: {email}</div>
+              <div>PHONE: {phone}</div>
+              {address && <div>{address}</div>}
+            </div>
+
+            <div className="pt-1 text-right">
               <div className="text-[22px] font-bold tracking-[0.08em] text-slate-900">
                 QUOTATION
               </div>
@@ -140,21 +156,6 @@ export default function QuotationPrint() {
                 Valid Until: <span className="font-semibold">{dateId(q.valid_until)}</span>
               </div>
             </div>
-          </div>
-        </header>
-
-        <section className="mt-5">
-          <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
-            {q.status}
-          </span>
-
-          <div className="mt-5 text-[10px] leading-relaxed">
-            <div className="font-semibold uppercase text-slate-500">TO:</div>
-            <div className="mt-1 font-semibold text-slate-900">{customerName}</div>
-            <div>ATTN: {pic}</div>
-            <div>EMAIL: {email}</div>
-            <div>PHONE: {phone}</div>
-            {address && <div>{address}</div>}
           </div>
         </section>
 
