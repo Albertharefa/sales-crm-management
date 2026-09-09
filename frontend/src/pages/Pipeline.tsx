@@ -340,7 +340,7 @@ export default function Pipeline() {
               <div key={stageName} className="w-80 shrink-0 rounded-xl border border-slate-200 bg-slate-100/80 p-3" data-testid={`pipeline-kanban-column-${stageName.toLowerCase()}`}>
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold">{stageName}</h3>
-                  <Badge variant="default">{stageItems.length}</Badge>
+                  <Badge variant="default" className="min-w-5 bg-blue-600 text-white">{stageItems.length}</Badge>
                 </div>
                 <div className="space-y-3">
                   {stageItems.map((item) => (
