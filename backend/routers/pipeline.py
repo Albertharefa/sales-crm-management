@@ -3,6 +3,7 @@ from lib.db import db
 from models.crm import Opportunity, OpportunityCreate, Paginated
 from routers.common import audit, new_id, now, page_collection
 from routers.deps import current_user
+from services.sales import get_sales_options
 
 router = APIRouter(prefix="/pipeline", tags=["pipeline"])
 STAGES = ["Lead", "Qualification", "Proposal", "Negotiation", "Won", "Lost"]
@@ -41,23 +42,8 @@ async def list_opportunities(
 async def sales_options(
     user: dict = Depends(current_user),
 ):
-    """
-    Return users who can own Sales Pipeline opportunities.
-
-    This endpoint deliberately normalizes role casing and excludes SUPER_ADMIN,
-    so the Pipeline sales filter does not depend on the generic /options payload.
-    """
-    users = await db.users.find(
-        {
-            "role": {
-                "$regex": r"^(sales|sales_manager)$",
-                "$options": "i",
-            }
-        },
-        {"_id": 0, "id": 1, "name": 1, "role": 1},
-    ).sort("name", 1).to_list(100)
-
-    return users
+    """Return the shared CRM Sales master used by all Sales selectors."""
+    return await get_sales_options()
 
 
 @router.get("/customer-options")
