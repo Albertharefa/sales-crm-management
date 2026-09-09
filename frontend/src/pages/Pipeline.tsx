@@ -309,6 +309,19 @@ export default function Pipeline() {
                         <div className="mt-3 text-xs text-slate-500">{item.sales_name ?? "—"}</div>
                         <div className="mt-4 flex items-center justify-between font-mono text-xs"><span>{money(item.value)}</span><span className="text-blue-600">{item.probability}%</span></div>
                         <div className="mt-1 text-right text-[10px] text-slate-400">Weighted {money(item.value * item.probability / 100)}</div>
+                        <select
+                          className="mt-3 h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs text-slate-700"
+                          value={item.stage}
+                          onChange={(e) => changeStage.mutate({ id: item.id, nextStage: e.target.value })}
+                          disabled={changeStage.isPending}
+                          aria-label={"Pindahkan " + item.name}
+                        >
+                          {stages.map((itemStage) => (
+                            <option key={itemStage} value={itemStage}>
+                              Pindah ke: {itemStage}
+                            </option>
+                          ))}
+                        </select>
                       </CardContent>
                     </Card>
                   ))}
