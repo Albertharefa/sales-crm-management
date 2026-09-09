@@ -60,20 +60,6 @@ DEMO_OPPORTUNITIES = [
 ]
 
 
-DEMO_ACTIVITIES = [
-    ("DEMO-ACT-001", "Follow-up Fuel Gas Heater Package", "Call", "DEMO-CUS-001", "Andi Wijaya", 1, "Open", "Follow up technical requirements and confirm customer evaluation timeline."),
-    ("DEMO-ACT-002", "Industrial PC Requirement Discussion", "Meeting", "DEMO-CUS-002", "Sari Lestari", 2, "Completed", "Discussed IPC specification, installation environment, and expected delivery."),
-    ("DEMO-ACT-003", "Power Control Upgrade Follow-up", "Email", "DEMO-CUS-003", "Andi Wijaya", 3, "Open", "Sent commercial and technical follow-up for the Eurotherm Epack solution."),
-    ("DEMO-ACT-004", "Site Visit - Process Temperature", "Visit", "DEMO-CUS-004", "Sari Lestari", 4, "Completed", "Site discussion covering temperature monitoring requirements and existing controller."),
-    ("DEMO-ACT-005", "Remote I/O Solution Presentation", "Presentation", "DEMO-CUS-005", "Andi Wijaya", 5, "Open", "Presented ICP DAS Remote I/O and industrial networking solution."),
-    ("DEMO-ACT-006", "Quotation Revision Follow-up", "Call", "DEMO-CUS-001", "Andi Wijaya", 6, "Open", "Customer requested clarification on quotation scope, delivery, and warranty."),
-    ("DEMO-ACT-007", "Engineering Requirement Review", "Meeting", "DEMO-CUS-002", "Sari Lestari", 7, "Completed", "Reviewed engineering requirements and shortlisted the proposed industrial PC configuration."),
-    ("DEMO-ACT-008", "Budgetary Proposal Sent", "Email", "DEMO-CUS-003", "Andi Wijaya", 8, "Completed", "Budgetary proposal sent for the power control upgrade project."),
-    ("DEMO-ACT-009", "Customer Requirement Collection", "Call", "DEMO-CUS-004", "Sari Lestari", 9, "Open", "Collected additional process data and application requirements for heater control."),
-    ("DEMO-ACT-010", "Partner Coordination", "Meeting", "DEMO-CUS-005", "Andi Wijaya", 10, "Open", "Coordinated system integrator opportunity, project scope, and next commercial action."),
-]
-
-
 async def seed_demo_data():
     # Users: add exactly these three demo users if they do not already exist.
     for base in DEMO_USERS:
@@ -152,38 +138,6 @@ async def seed_demo_data():
             "updated_at": now(),
         }
         await db.opportunities.insert_one(doc)
-
-
-    # Activities: ten stable demo records for Activities module verification.
-    for index, (activity_id, subject, activity_type, customer_id, sales_name, day_offset, status, description) in enumerate(DEMO_ACTIVITIES):
-        if await db.activities.find_one({"activity_id": activity_id}):
-            continue
-
-        customer = await db.customers.find_one({"customer_id": customer_id})
-        sales = await db.users.find_one({"name": sales_name, "is_demo": True})
-        opportunity = await db.opportunities.find_one({"customer_id": customer["id"]}) if customer else None
-
-        activity_date = date.today() - timedelta(days=day_offset)
-        doc = {
-            "id": new_id(),
-            "activity_id": activity_id,
-            "customer_id": customer["id"] if customer else None,
-            "customer_name": customer["name"] if customer else customer_id,
-            "opportunity_id": opportunity["id"] if opportunity else None,
-            "sales_id": sales["id"] if sales else None,
-            "sales_name": sales_name,
-            "subject": subject,
-            "activity_type": activity_type,
-            "date": activity_date,
-            "description": description,
-            "status": status,
-            "next_follow_up": activity_date + timedelta(days=7) if status == "Open" else None,
-            "is_demo": True,
-            "demo_label": "CRM UI demo data",
-            "created_at": now() - timedelta(days=day_offset),
-            "updated_at": now(),
-        }
-        await db.activities.insert_one(doc)
 
     print("CRM demo data ready: 5 customers, 5 pipeline opportunities, 3 users")
 
