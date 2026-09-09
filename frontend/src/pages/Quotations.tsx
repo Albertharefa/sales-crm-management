@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { Options, Paginated, Quotation } from "@/lib/types";
@@ -668,7 +669,7 @@ function QuotationFormModal({
 }: {
   title: string;
   form: QuotationForm;
-  setForm: React.Dispatch<React.SetStateAction<QuotationForm>>;
+  setForm: Dispatch<SetStateAction<QuotationForm>>;
   options?: Options;
   salesOptions: { id: string; name: string }[];
   subtotal: number;
