@@ -303,10 +303,10 @@ export default function Customers() {
         >
           <option value="">Semua sales</option>
           {salesOptionsQuery.data?.map((sales) => (
-                    <option key={sales.id} value={sales.id}>
-                      {sales.name}
-                    </option>
-                  ))}
+            <option key={sales.id} value={sales.id}>
+              {sales.name}
+            </option>
+          ))}
         </select>
 
       </div>
@@ -946,10 +946,10 @@ export default function Customers() {
                 >
                   <option value="">— Pilih sales —</option>
                   {salesOptionsQuery.data?.map((sales) => (
-                    <option key={sales.id} value={sales.id}>
-                      {sales.name}
-                    </option>
-                  ))}
+            <option key={sales.id} value={sales.id}>
+              {sales.name}
+            </option>
+          ))}
                 </select>
               </Field>
 
@@ -1149,10 +1149,10 @@ export default function Customers() {
               >
                 <option value="">— Pilih sales —</option>
                 {salesOptionsQuery.data?.map((sales) => (
-                    <option key={sales.id} value={sales.id}>
-                      {sales.name}
-                    </option>
-                  ))}
+            <option key={sales.id} value={sales.id}>
+              {sales.name}
+            </option>
+          ))}
               </select>
             </Field>
 
@@ -1216,3 +1216,15 @@ function DetailItem({
 }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
+
+      <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </div>
+
+      <div className="text-sm text-slate-800">
+        {value || "—"}
+      </div>
+
+    </div>
+  );
+}
