@@ -80,7 +80,7 @@ export default function QuotationPrint() {
     .join(", ");
 
   return (
-    <div className="min-h-screen bg-slate-100 py-4 sm:py-6">
+    <div className="quotation-print-root min-h-screen bg-slate-100 py-4 sm:py-6">
       <div className="no-print mx-auto mb-4 flex max-w-[210mm] items-center justify-between gap-2 px-2">
         <Button variant="outline" onClick={() => navigate("/quotations")}>
           <ArrowLeft className="mr-2 size-4" />
@@ -92,7 +92,7 @@ export default function QuotationPrint() {
         </Button>
       </div>
 
-      <main className="quotation-paper mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col bg-white px-7 py-6 text-[11px] text-slate-800 shadow-sm sm:px-8">
+      <main className="quotation-paper relative mx-auto flex min-h-[297mm] w-full max-w-[210mm] flex-col bg-white px-7 py-6 text-[11px] text-slate-800 shadow-sm sm:px-8">
         <header className="border-b-2 border-slate-900 pb-3">
           <div className="flex items-start gap-3">
             <div
@@ -261,21 +261,38 @@ export default function QuotationPrint() {
             size: A4;
             margin: 0;
           }
-          html, body {
+          html, body, #root {
             background: #fff !important;
-          }
-          body {
             margin: 0 !important;
+            padding: 0 !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            overflow: hidden !important;
           }
           .no-print {
             display: none !important;
           }
+          .quotation-print-root {
+            box-sizing: border-box !important;
+            width: 210mm !important;
+            height: 297mm !important;
+            min-height: 297mm !important;
+            max-height: 297mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            page-break-after: avoid !important;
+            break-after: avoid-page !important;
+          }
           .quotation-paper {
             box-sizing: border-box !important;
+            position: relative !important;
             max-width: none !important;
             width: 210mm !important;
             height: 297mm !important;
-            min-height: 0 !important;
+            min-height: 297mm !important;
             max-height: 297mm !important;
             margin: 0 !important;
             padding: 9mm !important;
@@ -292,6 +309,11 @@ export default function QuotationPrint() {
             break-inside: avoid-page !important;
           }
           .quotation-paper footer {
+            position: absolute !important;
+            left: 9mm !important;
+            right: 9mm !important;
+            bottom: 9mm !important;
+            margin-top: 0 !important;
             page-break-inside: avoid !important;
             break-inside: avoid-page !important;
           }
