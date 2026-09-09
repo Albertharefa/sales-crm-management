@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPatch, apiPost } from "@/lib/api";
-import type { Activity, Options, Paginated, Task } from "@/lib/types";
+import type { Activity, Paginated, Task } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -97,9 +97,11 @@ export default function Activities() {
       ),
   });
 
-  const options = useQuery({
-    queryKey: ["options"],
-    queryFn: () => apiGet<Options>("/options"),
+  const customerOptions = useQuery({
+    queryKey: ["activities-customer-options"],
+    queryFn: () =>
+      apiGet<{ id: string; name: string }[]>("/activities/customer-options"),
+    staleTime: 60_000,
   });
 
   const salesOptions = useQuery({
@@ -138,7 +140,7 @@ export default function Activities() {
         activities.refetch(),
         activitySummary.refetch(),
         salesOptions.refetch(),
-        options.refetch(),
+        customerOptions.refetch(),
       ]);
       toast.success("Aktivitas Sales berhasil diperbarui");
     } else {
@@ -494,7 +496,7 @@ export default function Activities() {
                 data-testid="activity-customer-input"
               >
                 <option value="">— Pilih customer —</option>
-                {options.data?.customers.map((customer) => (
+                {(customerOptions.data ?? []).map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
                   </option>
