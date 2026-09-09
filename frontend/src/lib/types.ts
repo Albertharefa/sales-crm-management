@@ -76,6 +76,7 @@ export interface Activity {
   activity_type: string;
   date: string;
   customer_name?: string;
+  sales_id?: string;
   sales_name?: string;
   next_follow_up?: string;
   status: string;
