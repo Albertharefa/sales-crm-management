@@ -125,6 +125,46 @@ async def activity_sales_options(
     return await get_sales_options()
 
 
+@router.get("/customer-options")
+async def activity_customer_options(
+    user: dict = Depends(current_user),
+):
+    """
+    Return the live Customer master for the Tambah Aktivitas form.
+
+    This endpoint reads directly from the customers collection so the
+    customer selector always stays synchronized with the Customers menu
+    and other CRM modules.
+    """
+    customers = await db.customers.find(
+        {},
+        {"_id": 0, "id": 1, "customer_id": 1, "name": 1, "company_name": 1},
+    ).sort("name", 1).to_list(1000)
+
+    result = []
+    seen_ids = set()
+
+    for customer in customers:
+        customer_id = customer.get("id") or customer.get("customer_id")
+        if not customer_id or customer_id in seen_ids:
+            continue
+
+        display_name = (
+            customer.get("name")
+            or customer.get("company_name")
+            or customer.get("customer_id")
+            or str(customer_id)
+        )
+
+        result.append({
+            "id": str(customer_id),
+            "name": str(display_name),
+        })
+        seen_ids.add(customer_id)
+
+    return result
+
+
 # ============================================================
 # CREATE ACTIVITY
 # ============================================================
