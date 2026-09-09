@@ -37,6 +37,9 @@ export default function Pipeline() {
   const [stage, setStage] = useState("");
   const [salesId, setSalesId] = useState("");
   const [customerId, setCustomerId] = useState("");
+  const [lossModal, setLossModal] = useState(false);
+  const [lossReason, setLossReason] = useState("");
+  const [pendingLostOpportunity, setPendingLostOpportunity] = useState<Opportunity | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [form, setForm] = useState({
@@ -130,14 +133,56 @@ export default function Pipeline() {
   });
 
   const changeStage = useMutation({
-    mutationFn: ({ id, nextStage }: { id: string; nextStage: string }) =>
-      apiPatch<Opportunity>(`/pipeline/${id}/stage?stage=${encodeURIComponent(nextStage)}`),
+    mutationFn: ({
+      id,
+      nextStage,
+      lossReason,
+    }: {
+      id: string;
+      nextStage: string;
+      lossReason?: string;
+    }) => {
+      const params = new URLSearchParams({ stage: nextStage });
+      if (nextStage === "Lost" && lossReason?.trim()) {
+        params.set("loss_reason", lossReason.trim());
+      }
+      return apiPatch<Opportunity>(`/pipeline/${id}/stage?${params.toString()}`);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pipeline"] });
+      setLossModal(false);
+      setLossReason("");
+      setPendingLostOpportunity(null);
       toast.success("Stage opportunity diperbarui");
     },
     onError: () => toast.error("Stage gagal diperbarui"),
   });
+
+  const handleStageChange = (item: Opportunity, nextStage: string) => {
+    if (nextStage === "Lost") {
+      setPendingLostOpportunity(item);
+      setLossReason("");
+      setLossModal(true);
+      return;
+    }
+
+    changeStage.mutate({ id: item.id, nextStage });
+  };
+
+  const confirmLostStage = () => {
+    if (!pendingLostOpportunity) return;
+
+    if (!lossReason.trim()) {
+      toast.error("Alasan Lost wajib diisi");
+      return;
+    }
+
+    changeStage.mutate({
+      id: pendingLostOpportunity.id,
+      nextStage: "Lost",
+      lossReason,
+    });
+  };
 
   const items = list.data?.items ?? [];
 
@@ -262,7 +307,7 @@ export default function Pipeline() {
                     <td className="px-4 py-3">{item.probability}%</td>
                     <td className="px-4 py-3 font-mono text-xs font-semibold text-slate-800">{money(item.value * item.probability / 100)}</td>
                     <td className="px-4 py-3">
-                      <select className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs" value={item.stage} onChange={(e) => changeStage.mutate({ id: item.id, nextStage: e.target.value })} disabled={changeStage.isPending} aria-label={`Stage ${item.name}`}>
+                      <select className="h-8 rounded-md border border-slate-200 bg-white px-2 text-xs" value={item.stage} onChange={(e) => handleStageChange(item, e.target.value)} disabled={changeStage.isPending} aria-label={`Stage ${item.name}`}>
                         {stages.map((itemStage) => <option key={itemStage}>{itemStage}</option>)}
                       </select>
                     </td>
@@ -314,7 +359,7 @@ export default function Pipeline() {
                         <select
                           className="mt-3 h-9 w-full rounded-md border border-slate-200 bg-white px-3 text-xs text-slate-700"
                           value={item.stage}
-                          onChange={(e) => changeStage.mutate({ id: item.id, nextStage: e.target.value })}
+                          onChange={(e) => handleStageChange(item, e.target.value)}
                           disabled={changeStage.isPending}
                           aria-label={"Pindahkan " + item.name}
                         >
@@ -332,6 +377,62 @@ export default function Pipeline() {
             );
           })}
         </div>
+      )}
+
+      {lossModal && (
+        <Modal
+          title="Pindahkan Opportunity ke Lost"
+          onClose={() => {
+            if (changeStage.isPending) return;
+            setLossModal(false);
+            setLossReason("");
+            setPendingLostOpportunity(null);
+          }}
+        >
+          <div className="grid gap-4">
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              <div className="font-semibold">{pendingLostOpportunity?.name}</div>
+              <div className="mt-1">
+                Customer: {pendingLostOpportunity?.customer_name ?? "—"}
+              </div>
+            </div>
+
+            <Field label="Alasan Lost" required>
+              <Textarea
+                value={lossReason}
+                onChange={(e) => setLossReason(e.target.value)}
+                placeholder="Contoh: Customer memilih vendor lain karena harga..."
+                rows={4}
+                disabled={changeStage.isPending}
+                data-testid="pipeline-loss-reason-input"
+              />
+            </Field>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={changeStage.isPending}
+                onClick={() => {
+                  setLossModal(false);
+                  setLossReason("");
+                  setPendingLostOpportunity(null);
+                }}
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={changeStage.isPending || !lossReason.trim()}
+                onClick={confirmLostStage}
+                data-testid="pipeline-confirm-lost-button"
+              >
+                {changeStage.isPending ? "Menyimpan..." : "Pindahkan ke Lost"}
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
 
       {modal && (
