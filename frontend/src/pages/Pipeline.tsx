@@ -337,7 +337,7 @@ export default function Pipeline() {
           {stages.map((stageName) => {
             const stageItems = items.filter((item) => item.stage === stageName);
             return (
-              <div key={stageName} className="w-80 shrink-0 rounded-xl border border-slate-200 bg-slate-100/80 p-3" data-testid={`pipeline-kanban-column-${stageName.toLowerCase()}`}>
+              <div key={stageName} className="min-w-[220px] flex-1 rounded-xl border border-slate-200 bg-slate-100/80 p-3" data-testid={`pipeline-kanban-column-${stageName.toLowerCase()}`}>
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="text-sm font-semibold">{stageName}</h3>
                   <Badge variant="default" className="min-w-5 bg-blue-600 text-white">{stageItems.length}</Badge>
