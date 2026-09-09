@@ -161,6 +161,7 @@ class QuotationItem(CRMBaseModel):
 
 class QuotationCreate(CRMBaseModel):
     customer_id: str
+    sales_id: Optional[str] = None
     opportunity_id: Optional[str] = None
     date: date
     valid_until: Optional[date] = None
@@ -175,6 +176,7 @@ class Quotation(QuotationCreate):
     number: str
     customer_name: str = ""
     sales_name: Optional[str] = None
+    customer_po_number: Optional[str] = None
     subtotal: float = 0
     discount_total: float = 0
     tax_total: float = 0
@@ -185,6 +187,7 @@ class Quotation(QuotationCreate):
 
 
 class QuotationUpdate(CRMBaseModel):
+    sales_id: Optional[str] = None
     items: Optional[list[QuotationItem]] = None
     status: Optional[str] = None
     valid_until: Optional[date] = None
