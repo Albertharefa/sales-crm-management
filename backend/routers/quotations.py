@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 from lib.db import db
-from models.crm import Paginated, Quotation, QuotationCreate
+from models.crm import Paginated, Quotation, QuotationCreate, QuotationUpdate
 from routers.common import audit, new_id, next_number, now, page_collection
 from routers.deps import current_user
+from services.sales import get_sales_options
 
 router = APIRouter(prefix="/quotations", tags=["quotations"])
 
@@ -31,12 +32,100 @@ async def create_quotation(payload: QuotationCreate, user: dict = Depends(curren
     customer = await db.customers.find_one({"id": payload.customer_id})
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
+    sales_name = user["name"]
+    if payload.sales_id:
+        sales_user = await db.users.find_one({"id": payload.sales_id}, {"name": 1})
+        if not sales_user:
+            raise HTTPException(status_code=400, detail="Sales tidak valid")
+        sales_name = sales_user["name"]
     subtotal, discount, tax, grand = totals(payload.items)
-    doc = {"id": new_id(), "number": await next_number("quotations", "QT"), "customer_name": customer["name"], "sales_name": user["name"], "status": "Draft", "subtotal": subtotal, "discount_total": discount, "tax_total": tax, "grand_total": grand, **payload.model_dump(mode="json"), "created_at": now()}
+    doc = {"id": new_id(), "number": await next_number("quotations", "QT"), "customer_name": customer["name"], "sales_name": sales_name, "status": "Draft", "subtotal": subtotal, "discount_total": discount, "tax_total": tax, "grand_total": grand, **payload.model_dump(mode="json"), "created_at": now()}
     await db.quotations.insert_one(doc)
     await audit(user, "Create", "Quotations", doc["id"], {"number": doc["number"], "grand_total": grand})
     return Quotation(**doc)
 
+
+
+@router.get("/{quotation_id}", response_model=Quotation)
+async def get_quotation(quotation_id: str, user: dict = Depends(current_user)):
+    doc = await db.quotations.find_one({"id": quotation_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Quotation tidak ditemukan")
+    doc.pop("_id", None)
+    return Quotation(**doc)
+
+
+@router.put("/{quotation_id}", response_model=Quotation)
+async def update_quotation(quotation_id: str, payload: QuotationUpdate, user: dict = Depends(current_user)):
+    doc = await db.quotations.find_one({"id": quotation_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Quotation tidak ditemukan")
+    updates = payload.model_dump(exclude_unset=True, mode="json")
+    allowed = ["Draft", "Sent", "Negotiation", "Approved", "Rejected", "Expired", "Converted"]
+    if "status" in updates and updates["status"] not in allowed:
+        raise HTTPException(status_code=422, detail="Status quotation tidak valid")
+    if "sales_id" in updates:
+        if updates["sales_id"]:
+            sales_user = await db.users.find_one({"id": updates["sales_id"]}, {"name": 1})
+            if not sales_user:
+                raise HTTPException(status_code=400, detail="Sales tidak valid")
+            updates["sales_name"] = sales_user["name"]
+        else:
+            updates["sales_name"] = None
+    if "items" in updates:
+        subtotal, discount, tax, grand = totals([type("Item", (), item)() for item in updates["items"]])
+        updates.update({"subtotal": subtotal, "discount_total": discount, "tax_total": tax, "grand_total": grand})
+    updates["updated_at"] = now()
+    await db.quotations.update_one({"id": quotation_id}, {"$set": updates})
+    await audit(user, "Update", "Quotations", quotation_id, updates)
+    fresh = await db.quotations.find_one({"id": quotation_id})
+    fresh.pop("_id", None)
+    return Quotation(**fresh)
+
+
+@router.delete("/{quotation_id}")
+async def delete_quotation(quotation_id: str, user: dict = Depends(current_user)):
+    result = await db.quotations.delete_one({"id": quotation_id})
+    if not result.deleted_count:
+        raise HTTPException(status_code=404, detail="Quotation tidak ditemukan")
+    await audit(user, "Delete", "Quotations", quotation_id)
+    return {"message": "Quotation dihapus"}
+
+
+@router.post("/{quotation_id}/duplicate", response_model=Quotation)
+async def duplicate_quotation(quotation_id: str, user: dict = Depends(current_user)):
+    source = await db.quotations.find_one({"id": quotation_id})
+    if not source:
+        raise HTTPException(status_code=404, detail="Quotation tidak ditemukan")
+    source.pop("_id", None)
+    source["id"] = new_id()
+    source["number"] = await next_number("quotations", "QT")
+    source["status"] = "Draft"
+    source["customer_po_number"] = None
+    source["date"] = now().date().isoformat()
+    source["created_at"] = now()
+    source["updated_at"] = now()
+    await db.quotations.insert_one(source)
+    await audit(user, "Duplicate", "Quotations", source["id"], {"number": source["number"]})
+    return Quotation(**source)
+
+
+@router.post("/{quotation_id}/customer-po", response_model=Quotation)
+async def note_customer_po(quotation_id: str, po_number: str, user: dict = Depends(current_user)):
+    po_number = po_number.strip()
+    if not po_number:
+        raise HTTPException(status_code=422, detail="Nomor PO customer wajib diisi")
+    from pymongo import ReturnDocument
+    result = await db.quotations.find_one_and_update(
+        {"id": quotation_id},
+        {"$set": {"customer_po_number": po_number, "updated_at": now()}},
+        return_document=ReturnDocument.AFTER,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Quotation tidak ditemukan")
+    result.pop("_id", None)
+    await audit(user, "Customer PO", "Quotations", quotation_id, {"po_number": po_number})
+    return Quotation(**result)
 
 @router.get("/{quotation_id}/pdf")
 async def quotation_pdf(quotation_id: str, user: dict = Depends(current_user)):
