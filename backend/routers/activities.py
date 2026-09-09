@@ -235,114 +235,6 @@ async def create_activity(
 
 
 # ============================================================
-# ACTIVITY DETAIL
-# ============================================================
-
-@router.get("/{activity_id}", response_model=Activity)
-async def get_activity(
-    activity_id: str,
-    user: dict = Depends(current_user),
-):
-    doc = await db.activities.find_one({"id": activity_id}, {"_id": 0})
-
-    if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Aktivitas tidak ditemukan",
-        )
-
-    return Activity(**doc)
-
-
-# ============================================================
-# UPDATE ACTIVITY
-# ============================================================
-
-@router.put("/{activity_id}", response_model=Activity)
-async def update_activity(
-    activity_id: str,
-    payload: ActivityUpdate,
-    user: dict = Depends(current_user),
-):
-    doc = await db.activities.find_one({"id": activity_id})
-
-    if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Aktivitas tidak ditemukan",
-        )
-
-    update_data = payload.model_dump(exclude_unset=True)
-
-    if not update_data:
-        doc.pop("_id", None)
-        return Activity(**doc)
-
-    updated_at = now()
-    update_data["updated_at"] = updated_at
-
-    await db.activities.update_one(
-        {"id": activity_id},
-        {"$set": update_data},
-    )
-
-    updated_doc = {
-        **doc,
-        **update_data,
-    }
-    updated_doc.pop("_id", None)
-
-    await audit(
-        user,
-        "Update",
-        "Aktivitas",
-        activity_id,
-        {
-            "subject": updated_doc.get("subject"),
-            "activity_type": updated_doc.get("activity_type"),
-            "status": updated_doc.get("status"),
-        },
-    )
-
-    return Activity(**updated_doc)
-
-
-# ============================================================
-# DELETE ACTIVITY
-# ============================================================
-
-@router.delete("/{activity_id}")
-async def delete_activity(
-    activity_id: str,
-    user: dict = Depends(current_user),
-):
-    doc = await db.activities.find_one({"id": activity_id})
-
-    if not doc:
-        raise HTTPException(
-            status_code=404,
-            detail="Aktivitas tidak ditemukan",
-        )
-
-    await db.activities.delete_one({"id": activity_id})
-
-    await audit(
-        user,
-        "Delete",
-        "Aktivitas",
-        activity_id,
-        {
-            "subject": doc.get("subject"),
-            "activity_type": doc.get("activity_type"),
-        },
-    )
-
-    return {"message": "Aktivitas berhasil dihapus"}
-
-
-
-
-# ============================================================
 # LIST ACTIVITIES BY CUSTOMER
 # ============================================================
 
@@ -495,3 +387,108 @@ async def update_task(
     )
 
     return Task(**updated_doc)
+
+# ============================================================
+# ACTIVITY DETAIL
+# ============================================================
+
+@router.get("/{activity_id}", response_model=Activity)
+async def get_activity(
+    activity_id: str,
+    user: dict = Depends(current_user),
+):
+    doc = await db.activities.find_one({"id": activity_id}, {"_id": 0})
+
+    if not doc:
+        raise HTTPException(
+            status_code=404,
+            detail="Aktivitas tidak ditemukan",
+        )
+
+    return Activity(**doc)
+
+
+# ============================================================
+# UPDATE ACTIVITY
+# ============================================================
+
+@router.put("/{activity_id}", response_model=Activity)
+async def update_activity(
+    activity_id: str,
+    payload: ActivityUpdate,
+    user: dict = Depends(current_user),
+):
+    doc = await db.activities.find_one({"id": activity_id})
+
+    if not doc:
+        raise HTTPException(
+            status_code=404,
+            detail="Aktivitas tidak ditemukan",
+        )
+
+    update_data = payload.model_dump(exclude_unset=True)
+
+    if not update_data:
+        doc.pop("_id", None)
+        return Activity(**doc)
+
+    updated_at = now()
+    update_data["updated_at"] = updated_at
+
+    await db.activities.update_one(
+        {"id": activity_id},
+        {"$set": update_data},
+    )
+
+    updated_doc = {
+        **doc,
+        **update_data,
+    }
+    updated_doc.pop("_id", None)
+
+    await audit(
+        user,
+        "Update",
+        "Aktivitas",
+        activity_id,
+        {
+            "subject": updated_doc.get("subject"),
+            "activity_type": updated_doc.get("activity_type"),
+            "status": updated_doc.get("status"),
+        },
+    )
+
+    return Activity(**updated_doc)
+
+
+# ============================================================
+# DELETE ACTIVITY
+# ============================================================
+
+@router.delete("/{activity_id}")
+async def delete_activity(
+    activity_id: str,
+    user: dict = Depends(current_user),
+):
+    doc = await db.activities.find_one({"id": activity_id})
+
+    if not doc:
+        raise HTTPException(
+            status_code=404,
+            detail="Aktivitas tidak ditemukan",
+        )
+
+    await db.activities.delete_one({"id": activity_id})
+
+    await audit(
+        user,
+        "Delete",
+        "Aktivitas",
+        activity_id,
+        {
+            "subject": doc.get("subject"),
+            "activity_type": doc.get("activity_type"),
+        },
+    )
+
+    return {"message": "Aktivitas berhasil dihapus"}
