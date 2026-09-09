@@ -16,6 +16,7 @@ from pydantic import BaseModel, ConfigDict
 
 from lib.db import db
 from routers.deps import current_user
+from services.sales import get_sales_options
 
 
 # ============================================================
@@ -523,6 +524,7 @@ async def list_customers(
     search: str = Query(""),
     status: str = Query(""),
     industry: str = Query(""),
+    sales_id: str = Query(""),
     sales_name: str = Query(""),
 ):
     try:
@@ -545,7 +547,22 @@ async def list_customers(
         if industry.strip() and industry.strip().lower() != "semua industri":
             filters["industry"] = industry.strip()
 
-        if sales_name.strip() and sales_name.strip().lower() != "semua sales":
+        if sales_id.strip():
+            # Prefer the canonical Sales ID, while keeping legacy
+            # sales_name-only records filterable during migration.
+            selected_sales_id = sales_id.strip()
+            sales_user = await db.users.find_one(
+                {"id": selected_sales_id},
+                {"_id": 0, "id": 1, "name": 1},
+            )
+            if sales_user:
+                filters["$or"] = [
+                    {"sales_id": selected_sales_id},
+                    {"sales_name": sales_user.get("name", "")},
+                ]
+            else:
+                filters["sales_id"] = selected_sales_id
+        elif sales_name.strip() and sales_name.strip().lower() != "semua sales":
             filters["sales_name"] = sales_name.strip()
 
         total = await db.customers.count_documents(filters)
@@ -586,19 +603,12 @@ async def list_customers(
 
 @router.get(
     "/sales-options",
-    response_model=List[str],
-    summary="List Sales Assigned to Customers",
+    summary="List Sales from Shared Sales Master",
 )
-async def customer_sales_options():
-    sales = await db.customers.distinct("sales_name")
-    return sorted(
-        {
-            str(name).strip()
-            for name in sales
-            if name is not None and str(name).strip()
-        },
-        key=str.casefold,
-    )
+async def customer_sales_options(
+    user: dict = Depends(current_user),
+):
+    return await get_sales_options()
 
 
 # ============================================================
@@ -898,408 +908,3 @@ async def delete_customer(
         print(
             f"ERROR: DELETE /customers/{customer_id} failed: {exc}"
         )
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete customer: {str(exc)}",
-        )
-
-
-# ============================================================
-# GET /customers/{customer_id}/contacts
-# LIST CUSTOMER CONTACTS
-# ============================================================
-
-@router.get(
-    "/{customer_id}/contacts",
-    response_model=List[Contact],
-    summary="List Customer Contacts",
-)
-async def list_customer_contacts(
-    customer_id: str,
-):
-
-    try:
-
-        customer = await find_customer(
-            customer_id
-        )
-
-        if not customer:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer {customer_id} not found.",
-            )
-
-        actual_customer_id = (
-            customer.get("customer_id")
-            or customer_id
-        )
-
-        contacts = await db.contacts.find(
-            {
-                "customer_id": actual_customer_id
-            },
-            {
-                "_id": 0
-            },
-        ).sort(
-            [
-                ("created_at", -1)
-            ]
-        ).to_list(
-            length=1000
-        )
-
-        result = []
-
-        for contact in contacts:
-
-            result.append(
-                Contact.model_validate(
-                    contact
-                )
-            )
-
-        return result
-
-    except HTTPException:
-        raise
-
-    except Exception as exc:
-
-        print(
-            f"ERROR: GET customer contacts failed: {exc}"
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to list customer contacts: {str(exc)}",
-        )
-
-
-# ============================================================
-# GET /customers/{customer_id}/contacts/{contact_id}
-# GET CUSTOMER CONTACT DETAIL
-# ============================================================
-
-@router.get(
-    "/{customer_id}/contacts/{contact_id}",
-    response_model=Contact,
-    summary="Get Customer Contact",
-)
-async def get_customer_contact(
-    customer_id: str,
-    contact_id: str,
-):
-
-    try:
-
-        contact = await find_contact(
-            customer_id=customer_id,
-            contact_id=contact_id,
-        )
-
-        if not contact:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Contact {contact_id} not found.",
-            )
-
-        return Contact.model_validate(
-            contact
-        )
-
-    except HTTPException:
-        raise
-
-    except Exception as exc:
-
-        print(
-            f"ERROR: GET contact failed: {exc}"
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get contact: {str(exc)}",
-        )
-
-
-# ============================================================
-# POST /customers/{customer_id}/contacts
-# CREATE CUSTOMER CONTACT
-# ============================================================
-
-@router.post(
-    "/{customer_id}/contacts",
-    response_model=Contact,
-    summary="Create Customer Contact",
-)
-async def create_customer_contact(
-    customer_id: str,
-    payload: ContactCreate,
-):
-
-    try:
-
-        customer = await find_customer(
-            customer_id
-        )
-
-        if not customer:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer {customer_id} not found.",
-            )
-
-        actual_customer_id = (
-            customer.get("customer_id")
-            or customer_id
-        )
-
-        now = utc_now()
-
-        contact_id = (
-            f"CON-{now.strftime('%Y%m%d%H%M%S')}"
-            f"-{secrets.token_hex(3).upper()}"
-        )
-
-        contact = {
-
-            "id": contact_id,
-
-            "contact_id": contact_id,
-
-            "customer_id": actual_customer_id,
-
-            "first_name": payload.first_name,
-
-            "last_name": payload.last_name,
-
-            "position": payload.position,
-
-            "department": payload.department,
-
-            "email": payload.email,
-
-            "mobile": payload.mobile,
-
-            "contact_type": payload.contact_type,
-
-            "is_decision_maker": (
-                payload.is_decision_maker
-            ),
-
-            "status": payload.status,
-
-            "notes": payload.notes,
-
-            "created_at": now,
-
-            "updated_at": now,
-        }
-
-        await db.contacts.insert_one(
-            contact
-        )
-
-        return Contact.model_validate(
-            contact
-        )
-
-    except HTTPException:
-        raise
-
-    except Exception as exc:
-
-        print(
-            f"ERROR: POST customer contact failed: {exc}"
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create customer contact: {str(exc)}",
-        )
-
-
-# ============================================================
-# PUT /customers/{customer_id}/contacts/{contact_id}
-# UPDATE CUSTOMER CONTACT
-# ============================================================
-
-@router.put(
-    "/{customer_id}/contacts/{contact_id}",
-    response_model=Contact,
-    summary="Update Customer Contact",
-)
-async def update_customer_contact(
-    customer_id: str,
-    contact_id: str,
-    payload: ContactCreate,
-):
-
-    try:
-
-        customer = await find_customer(
-            customer_id
-        )
-
-        if not customer:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer {customer_id} not found.",
-            )
-
-        actual_customer_id = (
-            customer.get("customer_id")
-            or customer_id
-        )
-
-        contact = await db.contacts.find_one(
-            {
-                "$or": [
-                    {
-                        "id": contact_id
-                    },
-                    {
-                        "contact_id": contact_id
-                    },
-                ],
-                "customer_id": actual_customer_id,
-            }
-        )
-
-        if not contact:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Contact {contact_id} not found.",
-            )
-
-        update_data = payload.model_dump()
-
-        update_data["updated_at"] = utc_now()
-
-        await db.contacts.update_one(
-            {
-                "_id": contact["_id"]
-            },
-            {
-                "$set": update_data
-            }
-        )
-
-        updated = await db.contacts.find_one(
-            {
-                "_id": contact["_id"]
-            },
-            {
-                "_id": 0
-            },
-        )
-
-        return Contact.model_validate(
-            updated
-        )
-
-    except HTTPException:
-        raise
-
-    except Exception as exc:
-
-        print(
-            f"ERROR: PUT contact failed: {exc}"
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update contact: {str(exc)}",
-        )
-
-
-# ============================================================
-# DELETE /customers/{customer_id}/contacts/{contact_id}
-# DELETE CUSTOMER CONTACT
-# ============================================================
-
-@router.delete(
-    "/{customer_id}/contacts/{contact_id}",
-    summary="Delete Customer Contact",
-)
-async def delete_customer_contact(
-    customer_id: str,
-    contact_id: str,
-):
-
-    try:
-
-        customer = await find_customer(
-            customer_id
-        )
-
-        if not customer:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Customer {customer_id} not found.",
-            )
-
-        actual_customer_id = (
-            customer.get("customer_id")
-            or customer_id
-        )
-
-        result = await db.contacts.delete_one(
-            {
-                "$or": [
-                    {
-                        "id": contact_id
-                    },
-                    {
-                        "contact_id": contact_id
-                    },
-                ],
-                "customer_id": actual_customer_id,
-            }
-        )
-
-        if result.deleted_count == 0:
-
-            raise HTTPException(
-                status_code=404,
-                detail=f"Contact {contact_id} not found.",
-            )
-
-        return {
-            "status": "success",
-            "message": "Contact deleted successfully",
-            "contact_id": contact_id,
-            "customer_id": actual_customer_id,
-        }
-
-    except HTTPException:
-        raise
-
-    except Exception as exc:
-
-        print(
-            f"ERROR: DELETE contact failed: {exc}"
-        )
-
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete contact: {str(exc)}",
-        )
-
-
-# ============================================================
-# ROUTER READY
-# ============================================================
-
-print(
-    "INFO: ✓ routers.customers"
-)
