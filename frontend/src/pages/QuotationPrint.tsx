@@ -129,35 +129,18 @@ export default function QuotationPrint() {
           </div>
         </header>
 
-        <section className="mt-5 grid grid-cols-[1fr_175px] gap-6">
-          <div>
-            <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
-              {q.status}
-            </span>
+        <section className="mt-5">
+          <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
+            {q.status}
+          </span>
 
-            <div className="mt-7 text-[10px] leading-relaxed">
-              <div className="font-semibold uppercase text-slate-500">TO:</div>
-              <div className="mt-1 font-semibold text-slate-900">{customerName}</div>
-              <div>ATTN: {pic}</div>
-              <div>EMAIL: {email}</div>
-              <div>PHONE: {phone}</div>
-              {address && <div>{address}</div>}
-            </div>
-          </div>
-
-          <div className="border border-slate-700 text-[10px]">
-            <div className="grid grid-cols-[1fr_1fr] border-b border-slate-700">
-              <div className="bg-slate-100 px-2 py-1 font-semibold">DATE</div>
-              <div className="px-2 py-1">{dateId(q.date)}</div>
-            </div>
-            <div className="grid grid-cols-[1fr_1fr] border-b border-slate-700">
-              <div className="bg-slate-100 px-2 py-1 font-semibold">QUOTE NO</div>
-              <div className="px-2 py-1 font-mono">{q.number}</div>
-            </div>
-            <div className="grid grid-cols-[1fr_1fr]">
-              <div className="bg-slate-100 px-2 py-1 font-semibold">EXPIRATION DATE</div>
-              <div className="px-2 py-1">{dateId(q.valid_until)}</div>
-            </div>
+          <div className="mt-5 text-[10px] leading-relaxed">
+            <div className="font-semibold uppercase text-slate-500">TO:</div>
+            <div className="mt-1 font-semibold text-slate-900">{customerName}</div>
+            <div>ATTN: {pic}</div>
+            <div>EMAIL: {email}</div>
+            <div>PHONE: {phone}</div>
+            {address && <div>{address}</div>}
           </div>
         </section>
 
