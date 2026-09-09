@@ -1,9 +1,11 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from lib.db import db
 from models.crm import Activity, ActivityCreate, Paginated, Task
-from routers.common import audit, new_id, now, page_collection
+from routers.common import audit, new_id, now
 from routers.deps import current_user
+from services.sales import get_sales_options
 
 
 router = APIRouter(
@@ -21,21 +23,106 @@ async def list_activities(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
     search: str = "",
+    activity_filter: str | None = None,
+    activity_type: str | None = None,
     status: str | None = None,
+    sales_id: str | None = None,
     user: dict = Depends(current_user),
 ):
-    filters = {}
+    query: dict = {}
+
+    if search.strip():
+        query["$or"] = [
+            {"subject": {"$regex": search.strip(), "$options": "i"}},
+            {"customer_name": {"$regex": search.strip(), "$options": "i"}},
+            {"sales_name": {"$regex": search.strip(), "$options": "i"}},
+            {"activity_id": {"$regex": search.strip(), "$options": "i"}},
+        ]
+
+    if activity_type:
+        query["activity_type"] = activity_type
 
     if status:
-        filters["status"] = status
+        query["status"] = status
 
-    return await page_collection(
-        "activities",
-        page,
-        page_size,
-        search,
-        filters,
+    if sales_id:
+        query["sales_id"] = sales_id
+
+    today = date.today().isoformat()
+
+    if activity_filter == "today":
+        query["date"] = today
+    elif activity_filter == "upcoming":
+        query["next_follow_up"] = {"$gte": today}
+        query["status"] = status or "Open"
+    elif activity_filter == "overdue":
+        query["next_follow_up"] = {"$lt": today}
+        query["status"] = status or "Open"
+    elif activity_filter == "completed":
+        query["status"] = "Completed"
+
+    total = await db.activities.count_documents(query)
+
+    cursor = (
+        db.activities
+        .find(query, {"_id": 0})
+        .sort([("date", -1), ("created_at", -1)])
+        .skip((page - 1) * page_size)
+        .limit(page_size)
     )
+
+    items = await cursor.to_list(page_size)
+
+    return Paginated(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
+    )
+
+
+# ============================================================
+# ACTIVITY SUMMARY
+# ============================================================
+
+@router.get("/summary")
+async def activity_summary(
+    user: dict = Depends(current_user),
+):
+    today = date.today().isoformat()
+
+    today_count = await db.activities.count_documents({"date": today})
+    upcoming_count = await db.activities.count_documents({
+        "next_follow_up": {"$gte": today},
+        "status": "Open",
+    })
+    overdue_count = await db.activities.count_documents({
+        "next_follow_up": {"$lt": today},
+        "status": "Open",
+    })
+    completed_count = await db.activities.count_documents({
+        "status": "Completed",
+    })
+
+    return {
+        "today": today_count,
+        "upcoming": upcoming_count,
+        "overdue": overdue_count,
+        "completed": completed_count,
+    }
+
+
+# ============================================================
+# SALES OPTIONS
+# ============================================================
+
+@router.get("/sales-options")
+async def activity_sales_options(
+    user: dict = Depends(current_user),
+):
+    # Uses the same centralized Users-based Sales master as Customers
+    # and Sales Pipeline, keeping all Sales dropdowns synchronized.
+    return await get_sales_options()
 
 
 # ============================================================
@@ -147,6 +234,7 @@ async def list_customer_activities(
     items = []
 
     async for doc in cursor:
+        doc.pop("_id", None)
         items.append(Activity(**doc))
 
     return Paginated(
@@ -177,12 +265,31 @@ async def list_tasks(
     if status:
         filters["status"] = status
 
-    return await page_collection(
-        "tasks",
-        page,
-        page_size,
-        search,
-        filters,
+    query: dict = filters.copy()
+
+    if search.strip():
+        query["$or"] = [
+            {"title": {"$regex": search.strip(), "$options": "i"}},
+            {"customer_name": {"$regex": search.strip(), "$options": "i"}},
+            {"assigned_user": {"$regex": search.strip(), "$options": "i"}},
+        ]
+
+    total = await db.tasks.count_documents(query)
+
+    items = await (
+        db.tasks
+        .find(query, {"_id": 0})
+        .sort("created_at", -1)
+        .skip((page - 1) * page_size)
+        .limit(page_size)
+        .to_list(page_size)
+    )
+
+    return Paginated(
+        items=items,
+        page=page,
+        page_size=page_size,
+        total=total,
     )
 
 
@@ -209,12 +316,14 @@ async def update_task(
             detail="Task tidak ditemukan",
         )
 
+    updated_at = now()
+
     await db.tasks.update_one(
         {"id": task_id},
         {
             "$set": {
                 "status": status,
-                "updated_at": now(),
+                "updated_at": updated_at,
             }
         },
     )
@@ -222,8 +331,9 @@ async def update_task(
     updated_doc = {
         **doc,
         "status": status,
-        "updated_at": now(),
+        "updated_at": updated_at,
     }
+    updated_doc.pop("_id", None)
 
     await audit(
         user,
