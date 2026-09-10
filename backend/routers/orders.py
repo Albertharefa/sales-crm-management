@@ -6,7 +6,7 @@ from routers.common import audit, new_id, now, page_collection
 from routers.deps import current_user
 
 router = APIRouter(prefix="/purchase-orders", tags=["orders"])
-ORDER_STAGES = ["Received", "Processing", "Indent", "Ready Stock", "Delivery", "Completed"]
+ORDER_STAGES = ["Received", "Confirmed", "Processing", "Completed"]
 
 
 @router.get("", response_model=Paginated)
