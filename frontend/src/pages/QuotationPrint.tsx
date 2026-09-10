@@ -353,7 +353,7 @@ export default function QuotationPrint() {
 
           .quotation-print-root .quotation-paper > header {
             position: fixed !important;
-            top: 0 !important;
+            top: 9mm !important;
             left: 0 !important;
             right: 0 !important;
             width: 100% !important;
@@ -368,7 +368,7 @@ export default function QuotationPrint() {
             position: fixed !important;
             left: 0 !important;
             right: 0 !important;
-            bottom: -20mm !important;
+            bottom: 0 !important;
             width: 100% !important;
             box-sizing: border-box !important;
             z-index: 100 !important;
@@ -395,7 +395,7 @@ export default function QuotationPrint() {
           }
 
           .quotation-paging-table > thead > tr > td {
-            height: 18mm !important;
+            height: 23mm !important;
             padding: 0 !important;
             border: 0 !important;
           }
