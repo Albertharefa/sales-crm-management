@@ -271,12 +271,29 @@
 
   .po-print-table-wrap th:nth-child(5),
   .po-print-table-wrap td:nth-child(5) {
-    width: 16% !important;
+    width: 14% !important;
   }
 
   .po-print-table-wrap th:nth-child(6),
   .po-print-table-wrap td:nth-child(6) {
-    width: 16% !important;
+    width: 18% !important;
+  }
+
+  .po-print-table-wrap th:nth-child(6),
+  .po-print-table-wrap td:nth-child(6) {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow: visible !important;
+    font-size: 7pt !important;
+    letter-spacing: -0.1pt !important;
+  }
+
+  .po-print-table-wrap tfoot td:last-child {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow: visible !important;
+    font-size: 7pt !important;
+    letter-spacing: -0.1pt !important;
   }
 
   .po-print-table-wrap thead {
