@@ -269,9 +269,11 @@ export default function QuotationPrint() {
 
       <style>{`
         @media print {
+          /* A4 printable area: the margins reserve space for the repeating
+             company header and address footer on every page. */
           @page {
             size: A4 portrait;
-            margin: 0;
+            margin: 29mm 9mm 27mm 9mm;
           }
 
           html,
@@ -324,21 +326,46 @@ export default function QuotationPrint() {
           .quotation-paper {
             box-sizing: border-box !important;
             position: relative !important;
-            width: 210mm !important;
-            max-width: 210mm !important;
-            min-height: 277mm !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            min-height: 0 !important;
             height: auto !important;
             max-height: none !important;
-            margin: 0 auto !important;
-            padding: 9mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
             box-shadow: none !important;
             overflow: visible !important;
             page-break-after: auto !important;
             break-after: auto !important;
           }
 
-          .quotation-paper header {
-            padding-bottom: 2.5mm !important;
+          /* Fixed header repeats on every printed page. */
+          .quotation-paper > header {
+            position: fixed !important;
+            top: -22mm !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            z-index: 20 !important;
+            margin: 0 !important;
+            padding: 0 0 2.5mm !important;
+            background: #fff !important;
+          }
+
+          /* Fixed footer repeats at the bottom of every printed page. */
+          .quotation-paper > footer {
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: -20mm !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            z-index: 20 !important;
+            margin: 0 !important;
+            padding: 3mm 0 0 !important;
+            background: #fff !important;
           }
 
           .quotation-paper section {
@@ -369,16 +396,6 @@ export default function QuotationPrint() {
           .quotation-paper td {
             overflow-wrap: anywhere !important;
             word-break: normal !important;
-          }
-
-          .quotation-paper footer {
-            position: static !important;
-            left: auto !important;
-            right: auto !important;
-            bottom: auto !important;
-            margin-top: 8mm !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid-page !important;
           }
         }
       `}</style>
