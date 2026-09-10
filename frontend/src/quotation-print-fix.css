@@ -1,6 +1,7 @@
-/* Quotation print visibility fix.
- * index.css contains a generic PO print rule that hides body content.
- * Explicitly re-enable the quotation print sheet for browser printing.
+/* Quotation print layout.
+ * Keep A4 as the default page size while allowing long quotations to flow
+ * naturally onto additional pages. Header and footer are fixed so Chrome
+ * repeats them on every printed page.
  */
 @media print {
   .quotation-print-root,
@@ -8,12 +9,124 @@
     visibility: visible !important;
   }
 
-  .quotation-print-root {
-    position: relative !important;
-  }
-
   .quotation-print-root .no-print,
   .quotation-print-root .no-print * {
     visibility: hidden !important;
+  }
+
+  .quotation-print-root {
+    position: relative !important;
+    box-sizing: border-box !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .quotation-paper {
+    box-sizing: border-box !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: 210mm !important;
+    max-width: none !important;
+    min-height: 297mm !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 35mm 9mm 31mm 9mm !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
+  /* Repeat the company header on every printed page. */
+  .quotation-paper > header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 9mm !important;
+    right: 9mm !important;
+    width: auto !important;
+    box-sizing: border-box !important;
+    z-index: 20 !important;
+    margin: 0 !important;
+    padding-top: 9mm !important;
+    padding-bottom: 2.5mm !important;
+    background: #fff !important;
+  }
+
+  /* Repeat the address footer at the bottom of every printed page. */
+  .quotation-paper > footer {
+    position: fixed !important;
+    left: 9mm !important;
+    right: 9mm !important;
+    bottom: 0 !important;
+    width: auto !important;
+    box-sizing: border-box !important;
+    z-index: 20 !important;
+    margin: 0 !important;
+    padding-top: 3mm !important;
+    padding-bottom: 9mm !important;
+    background: #fff !important;
+  }
+
+  /* Let the item table split naturally across pages. */
+  .quotation-paper table {
+    width: 100% !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  .quotation-paper thead {
+    display: table-header-group !important;
+  }
+
+  .quotation-paper tbody {
+    display: table-row-group !important;
+  }
+
+  .quotation-paper tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  .quotation-paper > section:first-of-type,
+  .quotation-paper > section:last-of-type {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  .quotation-paper footer + * {
+    page-break-before: auto !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body,
+  #root {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+  }
+
+  body > *:not(#root) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  #root {
+    position: relative !important;
+    z-index: 0 !important;
+    isolation: isolate !important;
   }
 }
