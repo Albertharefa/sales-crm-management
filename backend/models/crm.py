@@ -216,6 +216,7 @@ class PurchaseOrderCreate(CRMBaseModel):
     quotation_number: Optional[str] = None
     items: list[PurchaseOrderItem] = Field(min_length=1)
     eta: Optional[date] = None
+    payment_term: Optional[str] = None
     supplier: Optional[str] = None
     shipping_address: Optional[str] = None
     document_name: Optional[str] = None
