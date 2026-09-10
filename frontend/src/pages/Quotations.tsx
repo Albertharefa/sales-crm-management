@@ -18,6 +18,7 @@ import {
   Eye,
   FileCheck2,
   Pencil,
+  Plus,
   Trash2,
   X,
 } from "lucide-react";
@@ -90,6 +91,7 @@ export default function Quotations() {
   const [pageSize, setPageSize] = useState(25);
   const [poNumber, setPoNumber] = useState("");
   const [form, setForm] = useState<QuotationForm>(emptyForm());
+  const [quotationItems, setQuotationItems] = useState<QuotationForm[]>([emptyForm()]);
 
   const qc = useQueryClient();
 
@@ -127,35 +129,53 @@ export default function Quotations() {
   useEffect(() => {
     if (!editModal || !detail.data) return;
     const q = detail.data;
-    const item = q.items?.[0];
+    const items = q.items?.length ? q.items : [emptyForm()];
     setForm({
+      ...emptyForm(),
       customer_id: q.customer_id ?? "",
       sales_id: q.sales_id ?? "",
-      product_brand: "",
-      custom_brand: "",
       date: q.date ?? new Date().toISOString().slice(0, 10),
       valid_until: q.valid_until ?? "",
       payment_term: q.payment_term ?? "30 hari setelah invoice",
       delivery_term: q.delivery_term ?? "4–6 minggu setelah PO",
-      product_id: item?.product_id ?? "",
-      description: item?.description ?? "",
-      quantity: String(item?.quantity ?? 1),
-      unit_price: String(item?.unit_price ?? 0),
-      discount: String(item?.discount ?? 0),
-      tax: String(item?.tax ?? 11),
       notes: q.notes ?? "",
     });
+    setQuotationItems(
+      items.map((item) => ({
+        ...emptyForm(),
+        product_id: item.product_id ?? "",
+        description: item.description ?? "",
+        quantity: String(item.quantity ?? 1),
+        unit_price: String(item.unit_price ?? 0),
+        discount: String(item.discount ?? 0),
+        tax: String(item.tax ?? 11),
+      })),
+    );
   }, [editModal, detail.data]);
 
   const subtotal = useMemo(
     () =>
-      Math.max(0, Number(form.quantity || 0) * Number(form.unit_price || 0)),
-    [form.quantity, form.unit_price],
+      quotationItems.reduce(
+        (sum, item) =>
+          sum + Math.max(0, Number(item.quantity || 0) * Number(item.unit_price || 0)),
+        0,
+      ),
+    [quotationItems],
   );
-  const discount = Math.max(0, Number(form.discount || 0));
-  const taxable = Math.max(0, subtotal - discount);
-  const taxValue = taxable * (Number(form.tax || 0) / 100);
-  const grandTotal = taxable + taxValue;
+  const discount = useMemo(
+    () => quotationItems.reduce((sum, item) => sum + Math.max(0, Number(item.discount || 0)), 0),
+    [quotationItems],
+  );
+  const taxValue = useMemo(
+    () =>
+      quotationItems.reduce((sum, item) => {
+        const itemSubtotal = Math.max(0, Number(item.quantity || 0) * Number(item.unit_price || 0));
+        const itemDiscount = Math.max(0, Number(item.discount || 0));
+        return sum + Math.max(0, itemSubtotal - itemDiscount) * (Number(item.tax || 0) / 100);
+      }, 0),
+    [quotationItems],
+  );
+  const grandTotal = Math.max(0, subtotal - discount) + taxValue;
 
   const closeAll = () => {
     setCreateModal(false);
@@ -175,21 +195,20 @@ export default function Quotations() {
         payment_term: form.payment_term,
         delivery_term: form.delivery_term,
         notes: form.notes,
-        items: [
-          {
-            product_id: form.product_id || null,
-            description: form.description,
-            quantity: Number(form.quantity),
-            unit_price: Number(form.unit_price),
-            discount,
-            tax: Number(form.tax),
-          },
-        ],
+        items: quotationItems.map((item) => ({
+          product_id: item.product_id || null,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          discount: Number(item.discount || 0),
+          tax: Number(item.tax || 0),
+        })),
       }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["quotations"] });
       setCreateModal(false);
       setForm(emptyForm());
+      setQuotationItems([emptyForm()]);
       toast.success(`${data.number} berhasil dibuat`);
     },
     onError: () => toast.error("Quotation gagal disimpan"),
@@ -204,16 +223,14 @@ export default function Quotations() {
         payment_term: form.payment_term,
         delivery_term: form.delivery_term,
         notes: form.notes,
-        items: [
-          {
-            product_id: form.product_id || null,
-            description: form.description,
-            quantity: Number(form.quantity),
-            unit_price: Number(form.unit_price),
-            discount,
-            tax: Number(form.tax),
-          },
-        ],
+        items: quotationItems.map((item) => ({
+          product_id: item.product_id || null,
+          description: item.description,
+          quantity: Number(item.quantity),
+          unit_price: Number(item.unit_price),
+          discount: Number(item.discount || 0),
+          tax: Number(item.tax || 0),
+        })),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["quotations"] });
@@ -303,6 +320,7 @@ export default function Quotations() {
 
   const resetCreate = () => {
     setForm(emptyForm());
+    setQuotationItems([emptyForm()]);
     setCreateModal(true);
   };
 
@@ -489,6 +507,8 @@ export default function Quotations() {
           title="Buat Quotation"
           form={form}
           setForm={setForm}
+          items={quotationItems}
+          setItems={setQuotationItems}
           options={options.data}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
@@ -506,6 +526,8 @@ export default function Quotations() {
           title="Edit Quotation"
           form={form}
           setForm={setForm}
+          items={quotationItems}
+          setItems={setQuotationItems}
           options={options.data}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
@@ -671,6 +693,8 @@ function QuotationFormModal({
   title,
   form,
   setForm,
+  items,
+  setItems,
   options,
   salesOptions,
   subtotal,
@@ -686,6 +710,8 @@ function QuotationFormModal({
   title: string;
   form: QuotationForm;
   setForm: Dispatch<SetStateAction<QuotationForm>>;
+  items: QuotationForm[];
+  setItems: Dispatch<SetStateAction<QuotationForm[]>>;
   options?: Options;
   salesOptions: { id: string; name: string }[];
   subtotal: number;
@@ -800,127 +826,174 @@ function QuotationFormModal({
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Item Quotation
             </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setItems((current) => [...current, emptyForm()])}
+              data-testid="quotation-add-item-button"
+            >
+              <Plus className="mr-2 size-4" />
+              Tambah Item
+            </Button>
           </div>
 
-          <div className="grid gap-4">
-            <Field label="Brand Produk" required>
-              <select
-                className={selectClass}
-                value={form.product_brand}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setForm((current) => ({
-                    ...current,
-                    product_brand: value,
-                    custom_brand: value === "Any Brand" ? current.custom_brand : "",
-                    description:
-                      value && value !== "Any Brand"
-                        ? current.description === "" || [
-                            "Axiomtek",
-                            "ICPDAS",
-                            "WATLOW",
-                            "HOLYSIS",
-                          ].includes(current.description)
-                          ? value
-                          : current.description
-                        : current.description,
-                  }));
-                }}
-                data-testid="quotation-brand-input"
-              >
-                <option value="">— Pilih brand —</option>
-                <option value="Axiomtek">Axiomtek</option>
-                <option value="ICPDAS">ICPDAS</option>
-                <option value="WATLOW">WATLOW</option>
-                <option value="HOLYSIS">HOLYSIS</option>
-                <option value="Any Brand">Any Brand</option>
-              </select>
-            </Field>
+          <div className="space-y-3">
+            {items.map((item, index) => {
+              const itemTotal =
+                Math.max(0, Number(item.quantity || 0)) *
+                Math.max(0, Number(item.unit_price || 0));
 
-            {form.product_brand === "Any Brand" && (
-              <Field label="Nama Brand / Produk" required>
-                <Input
-                  value={form.custom_brand}
-                  onChange={(e) => update("custom_brand", e.target.value)}
-                  placeholder="Ketik nama brand / produk secara manual"
-                  data-testid="quotation-custom-brand-input"
-                />
-              </Field>
-            )}
+              const updateItem = (key: keyof QuotationForm, value: string) =>
+                setItems((current) =>
+                  current.map((entry, itemIndex) =>
+                    itemIndex === index ? { ...entry, [key]: value } : entry,
+                  ),
+                );
 
-            <Field label="Produk / Deskripsi" required>
-              <select
-                className={selectClass}
-                value={form.product_id}
-                onChange={(e) => {
-                  const product = options?.products.find(
-                    (item) => item.id === e.target.value,
-                  );
-                  setForm((current) => ({
-                    ...current,
-                    product_id: e.target.value,
-                    description: product?.name ?? current.description,
-                    unit_price: product?.default_price
-                      ? String(product.default_price)
-                      : current.unit_price,
-                  }));
-                }}
-                data-testid="quotation-product-input"
-              >
-                <option value="">— Pilih produk —</option>
-                {(options?.products ?? []).map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-              </select>
-              <Textarea
-                className="mt-2 min-h-28"
-                value={form.description}
-                onChange={(e) => update("description", e.target.value)}
-                placeholder={"Deskripsi / spesifikasi item — tekan ENTER untuk baris baru\nIndustrial PC Axiomtek\nIntel Core i5\nRAM 16GB"}
-                data-testid="quotation-description-input"
-              />
-            </Field>
+              return (
+                <div
+                  key={index}
+                  className="rounded-lg border border-slate-200 bg-slate-50/60 p-3"
+                  data-testid={`quotation-item-${index}`}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      Item {index + 1}
+                    </div>
+                    {items.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-sm"
+                        title="Hapus item"
+                        onClick={() =>
+                          setItems((current) =>
+                            current.filter((_, itemIndex) => itemIndex !== index),
+                          )
+                        }
+                        data-testid={`quotation-remove-item-${index}`}
+                      >
+                        <Trash2 className="size-4 text-red-500" />
+                      </Button>
+                    )}
+                  </div>
 
-            <div className="grid gap-4 sm:grid-cols-4">
-              <Field label="Qty">
-                <Input
-                  type="number"
-                  min="1"
-                  value={form.quantity}
-                  onChange={(e) => update("quantity", e.target.value)}
-                  data-testid="quotation-qty-input"
-                />
-              </Field>
-              <Field label="Harga Satuan">
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.unit_price}
-                  onChange={(e) => update("unit_price", e.target.value)}
-                  data-testid="quotation-price-input"
-                />
-              </Field>
-              <Field label="Diskon Total (Rp)">
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.discount}
-                  onChange={(e) => update("discount", e.target.value)}
-                  data-testid="quotation-discount-input"
-                />
-              </Field>
-              <Field label="Pajak (%)">
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.tax}
-                  onChange={(e) => update("tax", e.target.value)}
-                  data-testid="quotation-tax-input"
-                />
-              </Field>
-            </div>
+                  <div className="grid gap-4 lg:grid-cols-[1fr_1.8fr_120px_180px_150px]">
+                    <Field label="Brand Produk" required>
+                      <select
+                        className={selectClass}
+                        value={item.product_brand}
+                        onChange={(e) => updateItem("product_brand", e.target.value)}
+                        data-testid={`quotation-brand-input-${index}`}
+                      >
+                        <option value="">— Pilih brand —</option>
+                        <option value="Axiomtek">Axiomtek</option>
+                        <option value="ICPDAS">ICPDAS</option>
+                        <option value="WATLOW">WATLOW</option>
+                        <option value="HOLYSIS">HOLYSIS</option>
+                        <option value="Any Brand">Any Brand</option>
+                      </select>
+                    </Field>
+
+                    <Field label="Produk / Deskripsi" required>
+                      <select
+                        className={selectClass}
+                        value={item.product_id}
+                        onChange={(e) => {
+                          const product = options?.products.find(
+                            (entry) => entry.id === e.target.value,
+                          );
+                          setItems((current) =>
+                            current.map((entry, itemIndex) =>
+                              itemIndex === index
+                                ? {
+                                    ...entry,
+                                    product_id: e.target.value,
+                                    description: product?.name ?? entry.description,
+                                    unit_price: product?.default_price
+                                      ? String(product.default_price)
+                                      : entry.unit_price,
+                                  }
+                                : entry,
+                            ),
+                          );
+                        }}
+                        data-testid={`quotation-product-input-${index}`}
+                      >
+                        <option value="">— Pilih produk —</option>
+                        {(options?.products ?? []).map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                      </select>
+                      {item.product_brand === "Any Brand" && (
+                        <Input
+                          className="mt-2"
+                          value={item.custom_brand}
+                          onChange={(e) => updateItem("custom_brand", e.target.value)}
+                          placeholder="Ketik brand / produk manual"
+                          data-testid={`quotation-custom-brand-input-${index}`}
+                        />
+                      )}
+                      <Textarea
+                        className="mt-2 min-h-24"
+                        value={item.description}
+                        onChange={(e) => updateItem("description", e.target.value)}
+                        placeholder={"Deskripsi / spesifikasi item — tekan ENTER untuk baris baru\nIndustrial PC Axiomtek\nIntel Core i5\nRAM 16GB"}
+                        data-testid={`quotation-description-input-${index}`}
+                      />
+                    </Field>
+
+                    <Field label="Qty">
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => updateItem("quantity", e.target.value)}
+                        data-testid={`quotation-qty-input-${index}`}
+                      />
+                    </Field>
+
+                    <Field label="Harga Satuan">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.unit_price}
+                        onChange={(e) => updateItem("unit_price", e.target.value)}
+                        data-testid={`quotation-price-input-${index}`}
+                      />
+                    </Field>
+
+                    <div className="flex items-end justify-end pb-2 font-mono text-xs font-semibold text-slate-700">
+                      {money(itemTotal)}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                    <Field label="Diskon Item (Rp)">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.discount}
+                        onChange={(e) => updateItem("discount", e.target.value)}
+                        data-testid={`quotation-discount-input-${index}`}
+                      />
+                    </Field>
+                    <Field label="Pajak (%)">
+                      <Input
+                        type="number"
+                        min="0"
+                        value={item.tax}
+                        onChange={(e) => updateItem("tax", e.target.value)}
+                        data-testid={`quotation-tax-input-${index}`}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -966,10 +1039,17 @@ function QuotationFormModal({
               !form.customer_id ||
               !form.sales_id ||
               !form.date ||
-              !form.description.trim() ||
-              (form.product_brand === "Any Brand" && !form.custom_brand.trim()) ||
-              !form.product_brand ||
-              Number(form.quantity) < 1
+              !form.customer_id ||
+              !form.sales_id ||
+              !form.date ||
+              items.length === 0 ||
+              items.some(
+                (item) =>
+                  !item.description.trim() ||
+                  !item.product_brand ||
+                  (item.product_brand === "Any Brand" && !item.custom_brand.trim()) ||
+                  Number(item.quantity) < 1,
+              )
             }
             data-testid="quotation-save-button"
           >
