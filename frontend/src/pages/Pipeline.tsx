@@ -431,7 +431,7 @@ export default function Pipeline() {
       )}
 
       {modal && (
-        <Modal title="Tambah Opportunity" onClose={() => setModal(false)}>
+        <Modal title="Tambah Opportunity" onClose={() => setModal(false)} size="landscape">
           <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); create.mutate(); }} data-testid="opportunity-create-form">
             <div className="sm:col-span-2">
               <Field label="Opportunity" required>
