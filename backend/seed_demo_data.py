@@ -220,12 +220,20 @@ async def seed_demo_data():
         }
         await db.quotations.insert_one(doc)
 
-    # Purchase Orders: add five stable demo records for PO module verification.
+    # Purchase Orders: add five stable demo records and link each PO
+    # to the quotation belonging to the same demo customer.
+    # The quotation number is resolved from the actual quotation document
+    # so the PO list shows a real QT-... number instead of "Manual order".
+    quotation_numbers_by_customer = {}
+    for quotation_id, customer_id, customer_name, sales_name, description, status, total_value, quantity, unit_price in DEMO_QUOTATIONS:
+        quotation = await db.quotations.find_one({"id": quotation_id}, {"_id": 0, "number": 1})
+        if quotation and quotation.get("number"):
+            quotation_numbers_by_customer[customer_id] = quotation["number"]
+
     for po_id, po_number, customer_id, customer_name, sales_name, description, quantity, unit_price, status, supplier, eta in DEMO_PURCHASE_ORDERS:
-        if await db.purchase_orders.find_one({"id": po_id}):
-            continue
         sales = await db.users.find_one({"name": sales_name})
         customer_ref = customer_ids.get(customer_id)
+        quotation_number = quotation_numbers_by_customer.get(customer_id)
         total = quantity * unit_price
         doc = {
             "id": po_id,
@@ -233,7 +241,7 @@ async def seed_demo_data():
             "date": date.today().isoformat(),
             "customer_id": customer_ref or customer_id,
             "customer_name": customer_name,
-            "quotation_number": None,
+            "quotation_number": quotation_number,
             "sales_id": sales["id"] if sales else None,
             "sales_name": sales_name,
             "items": [{
@@ -253,7 +261,23 @@ async def seed_demo_data():
             "created_at": now(),
             "updated_at": now(),
         }
-        await db.purchase_orders.insert_one(doc)
+
+        existing_po = await db.purchase_orders.find_one({"id": po_id})
+        if existing_po:
+            # Synchronize existing demo POs that were previously created
+            # without a quotation relationship.
+            await db.purchase_orders.update_one(
+                {"id": po_id},
+                {"$set": {
+                    "customer_id": doc["customer_id"],
+                    "customer_name": doc["customer_name"],
+                    "quotation_number": quotation_number,
+                    "sales_id": doc["sales_id"],
+                    "sales_name": doc["sales_name"],
+                }},
+            )
+        else:
+            await db.purchase_orders.insert_one(doc)
 
     # Activities: add ten stable demo records covering today, upcoming,
     # overdue, completed, and cancelled states. Sales are resolved from
