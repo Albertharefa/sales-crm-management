@@ -122,6 +122,19 @@ export default function PurchaseOrders() {
     enabled: !!editing?.quotation_number,
   });
 
+  const viewQuotationDetail = useQuery({
+    queryKey: ["purchase-order-view-source-quotation", viewOrder?.id, viewOrder?.quotation_number],
+    queryFn: async () => {
+      const quotationNumber = viewOrder?.quotation_number?.trim();
+      if (!quotationNumber) return null;
+      const result = await apiGet<Paginated<Quotation>>(
+        `/quotations?search=${encodeURIComponent(quotationNumber)}&page=1&page_size=10`,
+      );
+      return result.items?.find((quotation) => quotation.number === quotationNumber) ?? null;
+    },
+    enabled: !!viewOrder?.quotation_number,
+  });
+
   const customers = customerOptions.data?.items ?? [];
   const products = productOptions.data?.items ?? [];
   const sales = salesOptions.data ?? [];
@@ -135,6 +148,11 @@ export default function PurchaseOrders() {
   const discount = editing && editQuotationDetail.data ? Number(editQuotationDetail.data.discount_total ?? 0) : 0;
   const tax = editing && editQuotationDetail.data ? Number(editQuotationDetail.data.tax_total ?? 0) : 0;
   const grandTotal = Math.max(0, subtotal - discount) + tax;
+
+  const viewSubtotal = viewQuotationDetail.data?.subtotal ?? viewOrder?.items?.reduce((sum, item) => sum + Math.max(0, item.quantity * item.unit_price), 0) ?? 0;
+  const viewDiscount = viewQuotationDetail.data?.discount_total ?? 0;
+  const viewTax = viewQuotationDetail.data?.tax_total ?? 0;
+  const viewGrandTotal = viewQuotationDetail.data?.grand_total ?? Math.max(0, viewSubtotal - viewDiscount) + viewTax;
 
   useEffect(() => {
     if (!quotationId || !quotationDetail.data || prefilledQuotationId === quotationId) return;
@@ -208,6 +226,7 @@ export default function PurchaseOrders() {
       qc.invalidateQueries({ queryKey: ["purchase-orders"] });
       qc.invalidateQueries({ queryKey: ["purchase-order-source-quotation", quotationId] });
       qc.invalidateQueries({ queryKey: ["purchase-order-edit-source-quotation", editing?.id, editing?.quotation_number] });
+      qc.invalidateQueries({ queryKey: ["purchase-order-view-source-quotation", viewOrder?.id, viewOrder?.quotation_number] });
       qc.invalidateQueries({ queryKey: ["quotations"] });
       closeForm();
       toast.success(editing ? "Purchase Order berhasil diperbarui" : "Purchase Order berhasil disimpan");
@@ -400,7 +419,7 @@ export default function PurchaseOrders() {
             </div>
             <div className="space-y-3 rounded-lg border border-slate-200 p-5">
               <div><span className="text-xs text-slate-500">STATUS</span><div><Badge>{viewOrder.status}</Badge></div></div>
-              <div><span className="text-xs text-slate-500">NILAI PO</span><div className="font-mono font-semibold">{money(viewOrder.total)}</div></div>
+              <div><span className="text-xs text-slate-500">NILAI PO</span><div className="font-mono font-semibold">{money(viewGrandTotal)}</div></div>
               <div><span className="text-xs text-slate-500">ETA</span><div>{viewOrder.eta ?? "—"}</div></div>
               <div><span className="text-xs text-slate-500">SUPPLIER</span><div>{viewOrder.supplier ?? "—"}</div></div>
             </div>
@@ -414,6 +433,26 @@ export default function PurchaseOrders() {
                 <div>{money(item.quantity * item.unit_price)}</div>
               </div>
             ))}
+            <div className="mt-2 border-t border-slate-200 pt-4">
+              <div className="ml-auto max-w-sm space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-slate-600">Subtotal</span>
+                  <span className="font-mono font-medium">{money(viewSubtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-slate-600">Diskon</span>
+                  <span className="font-mono font-medium">{money(viewDiscount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-slate-600">PPN 11%</span>
+                  <span className="font-mono font-medium">{money(viewTax)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6 border-t border-slate-200 pt-3 text-base font-semibold">
+                  <span>Grand Total</span>
+                  <span className="font-mono text-blue-600">{money(viewGrandTotal)}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </Modal>
       )}
