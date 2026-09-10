@@ -151,28 +151,6 @@ export default function Home() {
     "Paulus",
   ];
 
-  const dummyCustomers = [
-    "PT Anugerah Teknik Nusantara",
-    "PT Baja Mandiri Sejahtera",
-    "PT Cakrawala Energi",
-    "PT Delta Mesin Presisi",
-    "PT Elsicom Engineering",
-    "PT Emerald Industrial",
-    "PT Fajar Otomasi Indonesia",
-    "PT Garuda Metalindo Jaya",
-    "PT Harapan Sentosa Kimia",
-    "PT Indo Prima Kabel",
-    "PT Jaya Konstruksi Utama",
-    "PT Karya Logam Perkasa",
-    "PT Lintas Nusa Telekom",
-    "PT Mega Sarana Pangan",
-    "PT Nusantara Mining Tools",
-    "PT Optima Daya Listrik",
-    "PT Pertiwi Agro Industri",
-    "PT Quantum Elektronika",
-    "PT Rajawali Truck Parts",
-  ];
-
   const salesOptions = useMemo(
     () => [
       "Semua sales",
@@ -189,12 +167,9 @@ export default function Home() {
   const customerOptions = useMemo(
     () => [
       "Semua customer",
-      ...Array.from(
-        new Set([
-          ...dummyCustomers,
-          ...(customersQuery.data?.items?.map((item) => item.name || item.company_name || item.company || "") ?? []),
-        ]),
-      ).filter(Boolean),
+      ...(customersQuery.data?.items
+        ?.map((item) => item.name || item.company_name || item.company || "")
+        .filter(Boolean) ?? []),
     ],
     [customersQuery.data],
   );
