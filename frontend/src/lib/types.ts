@@ -154,6 +154,7 @@ export interface PurchaseOrder {
   date: string;
   customer_id: string;
   customer_name: string;
+  sales_id?: string;
   quotation_number?: string;
   sales_name?: string;
   items: PurchaseOrderItem[];
