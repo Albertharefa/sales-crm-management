@@ -269,7 +269,7 @@ export default function PurchaseOrders() {
         loading={list.isLoading}
         total={list.data?.total}
         columns={[
-          { key: "number", label: "No PO Customer", render: (item) => <span className="font-mono text-xs text-blue-600">{item.po_number}</span> },
+          { key: "number", label: "No PO Customer", render: (item) => <a href={`/purchase-orders/${item.id}`} className="font-mono text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline">{item.po_number}</a> },
           { key: "date", label: "Tanggal", render: (item) => item.date },
           { key: "customer", label: "Customer", render: (item) => <span className="font-medium">{item.customer_name}</span> },
           { key: "quotation", label: "Quotation", render: (item) => item.quotation_number ?? "Manual order" },
