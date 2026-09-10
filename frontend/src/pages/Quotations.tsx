@@ -1039,9 +1039,6 @@ function QuotationFormModal({
               !form.customer_id ||
               !form.sales_id ||
               !form.date ||
-              !form.customer_id ||
-              !form.sales_id ||
-              !form.date ||
               items.length === 0 ||
               items.some(
                 (item) =>
