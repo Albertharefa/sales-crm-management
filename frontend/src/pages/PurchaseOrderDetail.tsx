@@ -60,6 +60,34 @@ export default function PurchaseOrderDetail() {
 
   return (
     <div className="po-print-sheet min-h-full space-y-6 pb-10" data-testid="purchase-order-detail-page">
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm 9mm 15mm 9mm;
+          }
+
+          .po-print-sheet {
+            transform: none !important;
+            width: 100% !important;
+            min-height: 0 !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+          }
+
+          .po-print-sheet .po-print-items {
+            margin-top: 6mm !important;
+          }
+
+          .po-print-sheet .po-print-table-wrap th,
+          .po-print-sheet .po-print-table-wrap td {
+            line-height: 1.3 !important;
+          }
+        }
+      `}</style>
+
       <div className="po-print-actions flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
