@@ -8,7 +8,24 @@ router = APIRouter(prefix="/purchase-orders", tags=["orders"])
 ORDER_STAGES = ["Received", "Confirmed", "Processing", "Completed"]
 
 def calculate_total(payload):
-    return sum(i.quantity * i.unit_price for i in payload.items)
+    total = 0.0
+    for item in payload.items:
+        gross = max(0.0, float(item.quantity) * float(item.unit_price))
+        discount = max(0.0, float(getattr(item, "discount", 0) or 0))
+        net = max(0.0, gross - discount)
+        tax = max(0.0, float(getattr(item, "tax", 0) or 0))
+        total += net + (net * tax / 100.0)
+    return total
+
+def calculate_items_total(items):
+    total = 0.0
+    for item in items or []:
+        gross = max(0.0, float(item.get("quantity") or 0) * float(item.get("unit_price") or 0))
+        discount = max(0.0, float(item.get("discount") or 0))
+        net = max(0.0, gross - discount)
+        tax = max(0.0, float(item.get("tax") or 0))
+        total += net + (net * tax / 100.0)
+    return total
 
 async def quotation_total(quotation_number: str | None, fallback: float):
     if quotation_number:
@@ -29,7 +46,9 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
     customer = await db.customers.find_one({"id": payload.customer_id})
     if not customer: raise HTTPException(status_code=400, detail="Customer tidak valid")
     raw_total = calculate_total(payload)
-    total = await quotation_total(payload.quotation_number, raw_total)
+    total = raw_total
+    if payload.quotation_number and all(("discount" not in item or "tax" not in item) for item in payload.items):
+        total = await quotation_total(payload.quotation_number, raw_total)
     sales_name = user["name"]
     if payload.sales_id:
         sales_user = await db.users.find_one({"id": payload.sales_id}, {"_id": 0, "id": 1, "name": 1})
@@ -49,12 +68,14 @@ async def get_order(order_id: str, user: dict = Depends(current_user)):
     customer = None
     if stored_customer_id:
         customer = await db.customers.find_one({"id": stored_customer_id}, {"_id": 0, "customer_id": 1, "id": 1, "name": 1})
-        if not customer: customer = await db.customers.find_one({"customer_id": stored_customer_id}, {"_id": 0, "customer_id": 1, "id": 1, "name": 1})
+        if not customer: customer = await db.customers.find_one({"customer_id": stored_customer_id}, {"_id": 0, "customer_id": 1, "name": 1})
     if not customer and doc.get("customer_name"):
         customer = await db.customers.find_one({"name": doc["customer_name"]}, {"_id": 0, "customer_id": 1, "id": 1, "name": 1})
     if customer: doc["customer_id"] = str(customer.get("customer_id") or customer.get("id") or stored_customer_id)
-    if doc.get("quotation_number"):
+    if doc.get("quotation_number") and not all(("discount" in item and "tax" in item) for item in (doc.get("items") or [])):
         doc["total"] = await quotation_total(doc.get("quotation_number"), float(doc.get("total") or 0))
+    elif doc.get("items"):
+        doc["total"] = calculate_items_total(doc["items"])
     return PurchaseOrder(**doc)
 
 @router.put("/{order_id}", response_model=PurchaseOrder)
@@ -63,7 +84,7 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
     if not customer: raise HTTPException(status_code=400, detail="Customer tidak valid")
     old = await db.purchase_orders.find_one({"id": order_id})
     if not old: raise HTTPException(status_code=404, detail="PO tidak ditemukan")
-    total = await quotation_total(payload.quotation_number, calculate_total(payload))
+    total = calculate_total(payload)
     sales_name = old.get("sales_name", user["name"])
     if payload.sales_id:
         sales_user = await db.users.find_one({"id": payload.sales_id}, {"_id": 0, "id": 1, "name": 1})
