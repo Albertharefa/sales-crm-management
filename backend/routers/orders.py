@@ -43,6 +43,38 @@ async def get_order(order_id: str, user: dict = Depends(current_user)):
     if not doc:
         raise HTTPException(status_code=404, detail="PO tidak ditemukan")
     doc.pop("_id", None)
+
+    # Gunakan Customer ID resmi dari master customer untuk tampilan detail PO.
+    # PO lama bisa saja menyimpan UUID/internal ID, jadi kita resolve kembali
+    # ke data customer berdasarkan id, customer_id, atau nama customer.
+    stored_customer_id = str(doc.get("customer_id") or "").strip()
+    customer = None
+
+    if stored_customer_id:
+        customer = await db.customers.find_one(
+            {"id": stored_customer_id},
+            {"_id": 0, "customer_id": 1, "id": 1, "name": 1},
+        )
+
+        if not customer:
+            customer = await db.customers.find_one(
+                {"customer_id": stored_customer_id},
+                {"_id": 0, "customer_id": 1, "id": 1, "name": 1},
+            )
+
+    if not customer and doc.get("customer_name"):
+        customer = await db.customers.find_one(
+            {"name": doc["customer_name"]},
+            {"_id": 0, "customer_id": 1, "id": 1, "name": 1},
+        )
+
+    if customer:
+        doc["customer_id"] = str(
+            customer.get("customer_id")
+            or customer.get("id")
+            or stored_customer_id
+        )
+
     return PurchaseOrder(**doc)
 
 
