@@ -145,3 +145,182 @@
 [data-testid="ai-copilot-drawer"] footer {
   flex-shrink: 0;
 }
+
+/* Purchase Order Customer - A4 print layout */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html,
+  body {
+    width: 210mm;
+    min-width: 210mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .po-print-sheet,
+  .po-print-sheet * {
+    visibility: visible !important;
+  }
+
+  .po-print-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 12mm 14mm 14mm !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+  }
+
+  .po-print-actions {
+    margin-bottom: 7mm !important;
+  }
+
+  .po-print-actions > button:first-child,
+  .po-print-actions .po-print-hide,
+  .po-print-actions button:last-child {
+    display: none !important;
+  }
+
+  .po-print-sheet h1 {
+    font-size: 22pt !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  .po-print-sheet section {
+    break-inside: auto;
+    page-break-inside: auto;
+    box-shadow: none !important;
+  }
+
+  .po-print-items {
+    margin-top: 7mm !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .po-print-table-wrap {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  .po-print-table-wrap table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+
+  .po-print-table-wrap th,
+  .po-print-table-wrap td {
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    word-break: normal !important;
+  }
+
+  .po-print-table-wrap th:nth-child(1),
+  .po-print-table-wrap td:nth-child(1) {
+    width: 8% !important;
+  }
+
+  .po-print-table-wrap th:nth-child(2),
+  .po-print-table-wrap td:nth-child(2) {
+    width: 38% !important;
+  }
+
+  .po-print-table-wrap th:nth-child(3),
+  .po-print-table-wrap td:nth-child(3) {
+    width: 10% !important;
+  }
+
+  .po-print-table-wrap th:nth-child(4),
+  .po-print-table-wrap td:nth-child(4) {
+    width: 12% !important;
+  }
+
+  .po-print-table-wrap th:nth-child(5),
+  .po-print-table-wrap td:nth-child(5) {
+    width: 16% !important;
+  }
+
+  .po-print-table-wrap th:nth-child(6),
+  .po-print-table-wrap td:nth-child(6) {
+    width: 16% !important;
+  }
+
+  .po-print-table-wrap thead {
+    display: table-header-group !important;
+  }
+
+  .po-print-table-wrap tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .po-print-sheet .text-4xl {
+    font-size: 22pt !important;
+  }
+
+  .po-print-sheet .text-sm {
+    font-size: 9.5pt !important;
+  }
+
+  .po-print-sheet .text-xs {
+    font-size: 8pt !important;
+  }
+
+  .po-print-sheet .p-6 {
+    padding: 5mm !important;
+  }
+
+  .po-print-sheet .px-6 {
+    padding-left: 5mm !important;
+    padding-right: 5mm !important;
+  }
+
+  .po-print-sheet .py-4 {
+    padding-top: 3mm !important;
+    padding-bottom: 3mm !important;
+  }
+
+  .po-print-sheet .px-6.py-3 {
+    padding-top: 2.5mm !important;
+    padding-bottom: 2.5mm !important;
+  }
+
+  .po-print-sheet .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 5mm !important;
+  }
+
+  .po-print-sheet .grid {
+    gap: 3.5mm 8mm !important;
+  }
+
+  .po-print-sheet .mt-5 {
+    margin-top: 4mm !important;
+  }
+
+  .po-print-sheet .pb-5 {
+    padding-bottom: 4mm !important;
+  }
+
+  .po-print-sheet .text-slate-400 {
+    color: #64748b !important;
+  }
+}
