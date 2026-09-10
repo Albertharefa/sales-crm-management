@@ -521,7 +521,8 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
-
+          customerOptions={customerOptions}
+          productOptions={productOptions}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
@@ -540,6 +541,8 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
+          customerOptions={customerOptions}
+          productOptions={productOptions}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
@@ -723,7 +726,8 @@ function QuotationFormModal({
   setForm: Dispatch<SetStateAction<QuotationForm>>;
   items: QuotationForm[];
   setItems: Dispatch<SetStateAction<QuotationForm[]>>;
-: { id: string; name: string }[];
+  customerOptions: { data?: { items?: { id: string; name: string }[] } };
+  productOptions: { data?: { items?: { id: string; name: string; default_price?: number }[] } };
   subtotal: number;
   discount: number;
   taxValue: number;
