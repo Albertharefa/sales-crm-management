@@ -210,6 +210,7 @@ class PurchaseOrderItem(CRMBaseModel):
 class PurchaseOrderCreate(CRMBaseModel):
     po_number: str
     customer_id: str
+    sales_id: Optional[str] = None
     date: date
     status: str = "Received"
     quotation_number: Optional[str] = None
