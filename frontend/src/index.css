@@ -223,15 +223,30 @@
   .po-print-table-wrap table {
     width: 100% !important;
     min-width: 0 !important;
+    max-width: 100% !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
+    box-sizing: border-box !important;
   }
 
   .po-print-table-wrap th,
   .po-print-table-wrap td {
+    box-sizing: border-box !important;
     white-space: normal !important;
     overflow-wrap: anywhere !important;
     word-break: normal !important;
+    padding-left: 2.5mm !important;
+    padding-right: 2.5mm !important;
+  }
+
+  .po-print-table-wrap th:nth-child(5),
+  .po-print-table-wrap td:nth-child(5),
+  .po-print-table-wrap th:nth-child(6),
+  .po-print-table-wrap td:nth-child(6) {
+    font-size: 7.5pt !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: clip !important;
   }
 
   .po-print-table-wrap th:nth-child(1),
