@@ -728,7 +728,7 @@ function QuotationFormModal({
     setForm((current) => ({ ...current, [key]: value }));
 
   return (
-    <Modal title={title} onClose={onClose}>
+    <Modal title={title} onClose={onClose} size="landscape">
       <form
         className="space-y-5"
         onSubmit={(e) => {
