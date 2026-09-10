@@ -161,7 +161,9 @@ export interface PurchaseOrder {
   total: number;
   status: string;
   eta?: string;
+  payment_term?: string;
   supplier?: string;
+  shipping_address?: string;
   document_name?: string;
   created_at: string;
 }
