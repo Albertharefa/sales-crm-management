@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Dispatch, SetStateAction } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
-import type { Options, Paginated, Quotation } from "@/lib/types";
+import type { Customer, Options, Paginated, Product, Quotation } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
