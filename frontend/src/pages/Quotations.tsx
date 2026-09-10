@@ -530,7 +530,7 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
-          options={options.data}
+          options={options}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
@@ -549,7 +549,7 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
-          options={options.data}
+          options={options}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
