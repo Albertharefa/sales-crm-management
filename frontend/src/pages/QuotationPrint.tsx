@@ -99,20 +99,11 @@ export default function QuotationPrint() {
               aria-label="Wellracom"
               className="size-[54px] shrink-0 overflow-hidden"
             >
-              <svg
-                viewBox="0 0 220 220"
-                xmlns="http://www.w3.org/2000/svg"
-                className="size-full"
-                role="img"
-                aria-label="Wellracom logo"
-              >
-                <circle cx="110" cy="110" r="102" fill="#fff" stroke="#111" strokeWidth="7" />
-                <path d="M39 54 L74 126 L99 78 L110 101 L121 78 L146 126 L181 54 L161 54 L146 91 L132 64 L110 109 L88 64 L74 91 L59 54 Z" fill="#f59d00" />
-                <path d="M86 51 L99 51 L110 76 L121 51 L134 51 L124 75 L110 93 L96 75 Z" fill="#111" />
-                <path d="M110 93 L110 150" stroke="#111" strokeWidth="7" />
-                <path d="M86 151 H134 L127 161 H93 Z" fill="#111" />
-                <path d="M101 166 H119 L110 184 Z" fill="#111" />
-              </svg>
+              <img
+                src="/wellracom-logo.svg"
+                alt="Wellracom logo"
+                className="size-full object-contain"
+              />
             </div>
             <div className="pt-0.5">
               <div className="text-[17px] font-bold tracking-tight text-slate-900">
