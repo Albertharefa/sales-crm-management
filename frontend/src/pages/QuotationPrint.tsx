@@ -368,7 +368,7 @@ export default function QuotationPrint() {
             position: fixed !important;
             left: 0 !important;
             right: 0 !important;
-            bottom: 0 !important;
+            bottom: -20mm !important;
             width: 100% !important;
             box-sizing: border-box !important;
             z-index: 100 !important;
