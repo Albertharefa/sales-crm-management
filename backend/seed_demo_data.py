@@ -74,6 +74,15 @@ DEMO_QUOTATIONS = [
 ]
 
 
+DEMO_PURCHASE_ORDERS = [
+    ("DEMO-PO-001", "PO/CUST/DEMO/0001", "DEMO-CUS-001", "PT Nusantara Petro Energy", "Andi Wijaya", "Fuel Gas Heater Package", 1, 850_000_000, "Received", "Watlow", "2026-09-25"),
+    ("DEMO-PO-002", "PO/CUST/DEMO/0002", "DEMO-CUS-002", "PT Garuda Industrial Systems", "Sari Lestari", "Industrial PC Modernization", 2, 212_500_000, "Processing", "Axiomtek", "2026-10-05"),
+    ("DEMO-PO-003", "PO/CUST/DEMO/0003", "DEMO-CUS-003", "PT Prima Power Generation", "Andi Wijaya", "Epack Power Controller", 3, 120_000_000, "Ready Stock", "Eurotherm", "2026-09-20"),
+    ("DEMO-PO-004", "PO/CUST/DEMO/0004", "DEMO-CUS-004", "PT Samudra Petrochemical", "Sari Lestari", "Temperature Controller Upgrade", 4, 55_000_000, "Delivery", "Watlow", "2026-10-12"),
+    ("DEMO-PO-005", "PO/CUST/DEMO/0005", "DEMO-CUS-005", "PT Mitra Automation Integrasi", "Andi Wijaya", "Remote I/O Solution Package", 5, 90_000_000, "Completed", "ICP DAS", "2026-09-18"),
+]
+
+
 DEMO_ACTIVITIES = [
     ("DEMO-ACT-001", "Customer Visit - PT Nusantara Petro Energy", "Call", 0, 5, "DEMO-CUS-001", "Andi Wijaya", "Open"),
     ("DEMO-ACT-002", "Technical Discussion - Industrial PC Requirement", "Meeting", 0, 7, "DEMO-CUS-002", "Sari Lestari", "Open"),
@@ -211,6 +220,41 @@ async def seed_demo_data():
         }
         await db.quotations.insert_one(doc)
 
+    # Purchase Orders: add five stable demo records for PO module verification.
+    for po_id, po_number, customer_id, customer_name, sales_name, description, quantity, unit_price, status, supplier, eta in DEMO_PURCHASE_ORDERS:
+        if await db.purchase_orders.find_one({"id": po_id}):
+            continue
+        sales = await db.users.find_one({"name": sales_name})
+        customer_ref = customer_ids.get(customer_id)
+        total = quantity * unit_price
+        doc = {
+            "id": po_id,
+            "po_number": po_number,
+            "date": date.today().isoformat(),
+            "customer_id": customer_ref or customer_id,
+            "customer_name": customer_name,
+            "quotation_number": None,
+            "sales_id": sales["id"] if sales else None,
+            "sales_name": sales_name,
+            "items": [{
+                "product_id": None,
+                "description": description,
+                "quantity": quantity,
+                "unit_price": unit_price,
+            }],
+            "total": total,
+            "status": status,
+            "eta": eta,
+            "supplier": supplier,
+            "shipping_address": customer_name,
+            "document_name": None,
+            "is_demo": True,
+            "demo_label": "CRM UI demo data",
+            "created_at": now(),
+            "updated_at": now(),
+        }
+        await db.purchase_orders.insert_one(doc)
+
     # Activities: add ten stable demo records covering today, upcoming,
     # overdue, completed, and cancelled states. Sales are resolved from
     # the same Users collection used by Customers and Sales Pipeline.
@@ -251,7 +295,7 @@ async def seed_demo_data():
         }
         await db.activities.insert_one(doc)
 
-    print("CRM demo data ready: 5 customers, 5 pipeline opportunities, 10 activities, 10 quotations, 3 users")
+    print("CRM demo data ready: 5 customers, 5 pipeline opportunities, 10 activities, 10 quotations, 5 purchase orders, 3 users")
 
 
 if __name__ == "__main__":
