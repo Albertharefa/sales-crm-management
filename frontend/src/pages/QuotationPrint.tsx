@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Printer, FileText } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { apiGet } from "@/lib/api";
 import type { Customer, Quotation } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,6 @@ export default function QuotationPrint() {
   });
 
   const q = quotation.data;
-
   const itemRows = useMemo(() => q?.items ?? [], [q?.items]);
 
   if (quotation.isLoading) {
@@ -132,115 +131,133 @@ export default function QuotationPrint() {
           </div>
         </header>
 
-        <section className="mt-5">
-          <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
-            {q.status}
-          </span>
+        <table className="quotation-paging-table w-full border-collapse">
+          <thead>
+            <tr>
+              <td aria-hidden="true" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="quotation-paging-content">
+                <section className="mt-5">
+                  <span className="inline-flex rounded-full border border-slate-300 px-2 py-0.5 text-[9px] font-medium text-slate-600">
+                    {q.status}
+                  </span>
 
-          <div className="mt-5 grid grid-cols-[1fr_230px] items-start gap-6 text-[10px] leading-relaxed">
-            <div>
-              <div className="font-semibold uppercase text-slate-500">TO:</div>
-              <div className="mt-1 font-semibold text-slate-900">{customerName}</div>
-              <div>ATTN: {pic}</div>
-              <div>EMAIL: {email}</div>
-              <div>PHONE: {phone}</div>
-              {address && <div>{address}</div>}
-            </div>
+                  <div className="mt-5 grid grid-cols-[1fr_230px] items-start gap-6 text-[10px] leading-relaxed">
+                    <div>
+                      <div className="font-semibold uppercase text-slate-500">TO:</div>
+                      <div className="mt-1 font-semibold text-slate-900">{customerName}</div>
+                      <div>ATTN: {pic}</div>
+                      <div>EMAIL: {email}</div>
+                      <div>PHONE: {phone}</div>
+                      {address && <div>{address}</div>}
+                    </div>
 
-            <div className="pt-1 text-right">
-              <div className="text-[22px] font-bold tracking-[0.08em] text-slate-900">
-                QUOTATION
-              </div>
-              <div className="mt-1 text-[10px] text-slate-700">
-                No: <span className="font-mono font-semibold">{q.number}</span>
-              </div>
-              <div className="text-[10px] text-slate-700">
-                Date: <span className="font-semibold">{dateId(q.date)}</span>
-              </div>
-              <div className="text-[10px] text-slate-700">
-                Valid Until: <span className="font-semibold">{dateId(q.valid_until)}</span>
-              </div>
-            </div>
-          </div>
-        </section>
+                    <div className="pt-1 text-right">
+                      <div className="text-[22px] font-bold tracking-[0.08em] text-slate-900">
+                        QUOTATION
+                      </div>
+                      <div className="mt-1 text-[10px] text-slate-700">
+                        No: <span className="font-mono font-semibold">{q.number}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-700">
+                        Date: <span className="font-semibold">{dateId(q.date)}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-700">
+                        Valid Until: <span className="font-semibold">{dateId(q.valid_until)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
-        <section className="mt-7">
-          <table className="w-full border-collapse text-[9px]">
-            <thead>
-              <tr className="bg-slate-900 text-white">
-                <th className="w-9 border border-slate-900 px-2 py-2 text-center">NO</th>
-                <th className="border border-slate-900 px-2 py-2 text-left">ITEMS / SPECIFICATION</th>
-                <th className="w-28 border border-slate-900 px-2 py-2 text-right">UNIT PRICE</th>
-                <th className="w-16 border border-slate-900 px-2 py-2 text-center">QTY</th>
-                <th className="w-28 border border-slate-900 px-2 py-2 text-right">AMOUNT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {itemRows.map((item, index) => (
-                <tr key={index}>
-                  <td className="border border-slate-300 px-2 py-2 text-center">{index + 1}</td>
-                  <td className="whitespace-pre-line border border-slate-300 px-2 py-2 align-top">
-                    {item.description}
-                  </td>
-                  <td className="border border-slate-300 px-2 py-2 text-right font-mono">
-                    {money(item.unit_price)}
-                  </td>
-                  <td className="border border-slate-300 px-2 py-2 text-center">
-                    {item.quantity} Unit
-                  </td>
-                  <td className="border border-slate-300 px-2 py-2 text-right font-mono">
-                    {money(item.quantity * item.unit_price)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+                <section className="mt-7">
+                  <table className="w-full border-collapse text-[9px]">
+                    <thead>
+                      <tr className="bg-slate-900 text-white">
+                        <th className="w-9 border border-slate-900 px-2 py-2 text-center">NO</th>
+                        <th className="border border-slate-900 px-2 py-2 text-left">ITEMS / SPECIFICATION</th>
+                        <th className="w-28 border border-slate-900 px-2 py-2 text-right">UNIT PRICE</th>
+                        <th className="w-16 border border-slate-900 px-2 py-2 text-center">QTY</th>
+                        <th className="w-28 border border-slate-900 px-2 py-2 text-right">AMOUNT</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {itemRows.map((item, index) => (
+                        <tr key={index}>
+                          <td className="border border-slate-300 px-2 py-2 text-center">{index + 1}</td>
+                          <td className="whitespace-pre-line border border-slate-300 px-2 py-2 align-top">
+                            {item.description}
+                          </td>
+                          <td className="border border-slate-300 px-2 py-2 text-right font-mono">
+                            {money(item.unit_price)}
+                          </td>
+                          <td className="border border-slate-300 px-2 py-2 text-center">
+                            {item.quantity} Unit
+                          </td>
+                          <td className="border border-slate-300 px-2 py-2 text-right font-mono">
+                            {money(item.quantity * item.unit_price)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </section>
 
-        <section className="mt-5 ml-auto w-[280px] text-[10px]">
-          <div className="flex justify-between py-1">
-            <span>SUBTOTAL</span>
-            <span className="font-mono">{money(q.subtotal)}</span>
-          </div>
-          <div className="flex justify-between py-1">
-            <span>DISKON</span>
-            <span className="font-mono">- {money(q.discount_total)}</span>
-          </div>
-          <div className="flex justify-between py-1">
-            <span>PPN {q.tax_total && q.subtotal - q.discount_total > 0 ? "11%" : ""}</span>
-            <span className="font-mono">{money(q.tax_total)}</span>
-          </div>
-          <div className="mt-1 flex justify-between bg-slate-900 px-2 py-2 font-bold text-white">
-            <span>GRAND TOTAL</span>
-            <span className="font-mono">{money(q.grand_total)}</span>
-          </div>
-        </section>
+                <section className="quotation-totals mt-5 ml-auto w-[280px] text-[10px]">
+                  <div className="flex justify-between py-1">
+                    <span>SUBTOTAL</span>
+                    <span className="font-mono">{money(q.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>DISKON</span>
+                    <span className="font-mono">- {money(q.discount_total)}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span>PPN {q.tax_total && q.subtotal - q.discount_total > 0 ? "11%" : ""}</span>
+                    <span className="font-mono">{money(q.tax_total)}</span>
+                  </div>
+                  <div className="mt-1 flex justify-between bg-slate-900 px-2 py-2 font-bold text-white">
+                    <span>GRAND TOTAL</span>
+                    <span className="font-mono">{money(q.grand_total)}</span>
+                  </div>
+                </section>
 
-        <section className="mt-8 grid grid-cols-[1fr_190px] gap-8 text-[9px]">
-          <div>
-            <div className="font-semibold uppercase tracking-wide">TERMS AND CONDITIONS:</div>
-            <ol className="mt-2 list-decimal space-y-1 pl-4 leading-relaxed">
-              <li>Payment: {q.payment_term || "30 hari setelah invoice"}</li>
-              <li>Pengiriman: {q.delivery_term || "4–6 minggu setelah PO"}</li>
-              <li>Harga FOB Jakarta</li>
-              <li>Validitas: s/d {dateId(q.valid_until)}</li>
-            </ol>
-            {q.notes && (
-              <div className="mt-4">
-                <div className="font-semibold uppercase tracking-wide">CATATAN:</div>
-                <div className="mt-1 whitespace-pre-line leading-relaxed">{q.notes}</div>
-              </div>
-            )}
-          </div>
+                <section className="quotation-terms mt-8 grid grid-cols-[1fr_190px] gap-8 text-[9px]">
+                  <div>
+                    <div className="font-semibold uppercase tracking-wide">TERMS AND CONDITIONS:</div>
+                    <ol className="mt-2 list-decimal space-y-1 pl-4 leading-relaxed">
+                      <li>Payment: {q.payment_term || "30 hari setelah invoice"}</li>
+                      <li>Pengiriman: {q.delivery_term || "4–6 minggu setelah PO"}</li>
+                      <li>Harga FOB Jakarta</li>
+                      <li>Validitas: s/d {dateId(q.valid_until)}</li>
+                    </ol>
+                    {q.notes && (
+                      <div className="mt-4">
+                        <div className="font-semibold uppercase tracking-wide">CATATAN:</div>
+                        <div className="mt-1 whitespace-pre-line leading-relaxed">{q.notes}</div>
+                      </div>
+                    )}
+                  </div>
 
-          <div className="text-center">
-            <div className="mb-16">Hormat kami, PT WELLRACOM INDUSTRI KOMPUTINDO</div>
-            <div className="border-t border-slate-500 pt-1 font-semibold">
-              {q.sales_name || "Sales"}
-            </div>
-            <div className="text-slate-500">Sales Representative</div>
-          </div>
-        </section>
+                  <div className="text-center">
+                    <div className="mb-16">Hormat kami, PT WELLRACOM INDUSTRI KOMPUTINDO</div>
+                    <div className="border-t border-slate-500 pt-1 font-semibold">
+                      {q.sales_name || "Sales"}
+                    </div>
+                    <div className="text-slate-500">Sales Representative</div>
+                  </div>
+                </section>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td aria-hidden="true" />
+            </tr>
+          </tfoot>
+        </table>
 
         <footer className="mt-auto border-t-2 border-slate-900 pt-3 text-[8px] text-slate-500">
           <div className="flex items-start justify-between gap-8">
@@ -269,11 +286,9 @@ export default function QuotationPrint() {
 
       <style>{`
         @media print {
-          /* A4 printable area: the margins reserve space for the repeating
-             company header and address footer on every page. */
           @page {
             size: A4 portrait;
-            margin: 29mm 9mm 27mm 9mm;
+            margin: 20mm 9mm 27mm 9mm;
           }
 
           html,
@@ -319,8 +334,6 @@ export default function QuotationPrint() {
             padding: 0 !important;
             overflow: visible !important;
             background: #fff !important;
-            page-break-after: auto !important;
-            break-after: auto !important;
           }
 
           .quotation-paper {
@@ -336,64 +349,120 @@ export default function QuotationPrint() {
             padding: 0 !important;
             box-shadow: none !important;
             overflow: visible !important;
-            page-break-after: auto !important;
-            break-after: auto !important;
           }
 
-          /* Fixed header repeats on every printed page. */
-          .quotation-paper > header {
+          /* Header/footer stay fixed, while the paging table below reserves
+             their space on every physical page. */
+          .quotation-print-root .quotation-paper > header {
             position: fixed !important;
-            top: -22mm !important;
+            top: 9mm !important;
             left: 0 !important;
             right: 0 !important;
             width: 100% !important;
             box-sizing: border-box !important;
-            z-index: 20 !important;
+            z-index: 100 !important;
             margin: 0 !important;
             padding: 0 0 2.5mm !important;
             background: #fff !important;
           }
 
-          /* Fixed footer repeats at the bottom of every printed page. */
-          .quotation-paper > footer {
+          .quotation-print-root .quotation-paper > footer {
             position: fixed !important;
             left: 0 !important;
             right: 0 !important;
-            bottom: -20mm !important;
+            bottom: 0 !important;
             width: 100% !important;
             box-sizing: border-box !important;
-            z-index: 20 !important;
+            z-index: 100 !important;
             margin: 0 !important;
             padding: 3mm 0 0 !important;
             background: #fff !important;
           }
 
-          .quotation-paper section {
+          .quotation-paging-table {
+            display: table !important;
+            width: 100% !important;
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
+            border-spacing: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            page-break-after: auto !important;
+            break-after: auto !important;
+          }
+
+          .quotation-paging-table > thead {
+            display: table-header-group !important;
+            break-inside: avoid !important;
+          }
+
+          .quotation-paging-table > thead > tr > td {
+            height: 23mm !important;
+            padding: 0 !important;
+            border: 0 !important;
+          }
+
+          .quotation-paging-table > tbody {
+            display: table-row-group !important;
+          }
+
+          .quotation-paging-table > tbody > tr {
             page-break-inside: auto !important;
             break-inside: auto !important;
           }
 
-          .quotation-paper table {
-            width: 100% !important;
-            border-collapse: collapse !important;
+          .quotation-paging-table > tbody > tr > td {
             page-break-inside: auto !important;
+            break-inside: auto !important;
+            vertical-align: top !important;
+            padding: 0 !important;
+            border: 0 !important;
           }
 
-          .quotation-paper thead {
-            display: table-header-group !important;
+          .quotation-paging-table > tfoot {
+            display: table-footer-group !important;
+            break-inside: avoid !important;
           }
 
-          .quotation-paper tbody {
-            display: table-row-group !important;
+          .quotation-paging-table > tfoot > tr > td {
+            height: 22mm !important;
+            padding: 0 !important;
+            border: 0 !important;
           }
 
-          .quotation-paper tr {
+          .quotation-paging-content section {
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+          }
+
+          .quotation-paging-content .quotation-totals,
+          .quotation-paging-content .quotation-terms {
             page-break-inside: avoid !important;
             break-inside: avoid-page !important;
           }
 
-          .quotation-paper th,
-          .quotation-paper td {
+          .quotation-paging-content table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+          }
+
+          .quotation-paging-content table thead {
+            display: table-header-group !important;
+          }
+
+          .quotation-paging-content table tbody {
+            display: table-row-group !important;
+          }
+
+          .quotation-paging-content table tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid-page !important;
+          }
+
+          .quotation-paging-content th,
+          .quotation-paging-content td {
             overflow-wrap: anywhere !important;
             word-break: normal !important;
           }
