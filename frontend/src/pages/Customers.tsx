@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { Customer, Paginated, Contact } from "@/lib/types";
@@ -14,6 +15,7 @@ import { Search, Trash2, Eye, X, Pencil } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 
 export default function Customers() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [industry, setIndustry] = useState("");
@@ -98,8 +100,7 @@ export default function Customers() {
   ========================= */
 
   const openDetail = (customerId: string) => {
-    setSelectedCustomerId(customerId);
-    setDetailModal(true);
+    navigate(`/customers/${customerId}`);
   };
 
   const closeDetail = () => {
