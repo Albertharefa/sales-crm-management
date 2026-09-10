@@ -288,7 +288,7 @@ export default function QuotationPrint() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 20mm 9mm 27mm 9mm;
+            margin: 10mm 9mm 27mm 9mm;
           }
 
           html,
@@ -351,11 +351,9 @@ export default function QuotationPrint() {
             overflow: visible !important;
           }
 
-          /* Header/footer stay fixed, while the paging table below reserves
-             their space on every physical page. */
           .quotation-print-root .quotation-paper > header {
             position: fixed !important;
-            top: 9mm !important;
+            top: 0 !important;
             left: 0 !important;
             right: 0 !important;
             width: 100% !important;
@@ -397,7 +395,7 @@ export default function QuotationPrint() {
           }
 
           .quotation-paging-table > thead > tr > td {
-            height: 23mm !important;
+            height: 18mm !important;
             padding: 0 !important;
             border: 0 !important;
           }
