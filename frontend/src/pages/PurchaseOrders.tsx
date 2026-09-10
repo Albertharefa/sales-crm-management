@@ -109,6 +109,19 @@ export default function PurchaseOrders() {
     enabled: !!quotationId,
   });
 
+  const editQuotationDetail = useQuery({
+    queryKey: ["purchase-order-edit-source-quotation", editing?.id, editing?.quotation_number],
+    queryFn: async () => {
+      const quotationNumber = editing?.quotation_number?.trim();
+      if (!quotationNumber) return null;
+      const result = await apiGet<Paginated<Quotation>>(
+        `/quotations?search=${encodeURIComponent(quotationNumber)}&page=1&page_size=10`,
+      );
+      return result.items?.find((quotation) => quotation.number === quotationNumber) ?? null;
+    },
+    enabled: !!editing?.quotation_number,
+  });
+
   const customers = customerOptions.data?.items ?? [];
   const products = productOptions.data?.items ?? [];
   const sales = salesOptions.data ?? [];
@@ -117,6 +130,11 @@ export default function PurchaseOrders() {
     (sum, item) => sum + Math.max(0, Number(item.quantity || 0) * Number(item.unit_price || 0)),
     0,
   );
+
+  const subtotal = total;
+  const discount = editing && editQuotationDetail.data ? Number(editQuotationDetail.data.discount_total ?? 0) : 0;
+  const tax = editing && editQuotationDetail.data ? Number(editQuotationDetail.data.tax_total ?? 0) : 0;
+  const grandTotal = Math.max(0, subtotal - discount) + tax;
 
   useEffect(() => {
     if (!quotationId || !quotationDetail.data || prefilledQuotationId === quotationId) return;
@@ -189,6 +207,7 @@ export default function PurchaseOrders() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["purchase-orders"] });
       qc.invalidateQueries({ queryKey: ["purchase-order-source-quotation", quotationId] });
+      qc.invalidateQueries({ queryKey: ["purchase-order-edit-source-quotation", editing?.id, editing?.quotation_number] });
       qc.invalidateQueries({ queryKey: ["quotations"] });
       closeForm();
       toast.success(editing ? "Purchase Order berhasil diperbarui" : "Purchase Order berhasil disimpan");
@@ -529,9 +548,25 @@ export default function PurchaseOrders() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg bg-slate-900 p-4 text-white">
-              <span>Total PO</span>
-              <span className="font-mono text-blue-300">{money(total)}</span>
+            <div className="rounded-lg border border-slate-200 bg-white p-4">
+              <div className="ml-auto max-w-md space-y-2 text-sm">
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-slate-600">Subtotal</span>
+                  <span className="font-mono font-medium">{money(subtotal)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-slate-600">Diskon</span>
+                  <span className="font-mono font-medium">{money(discount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6">
+                  <span className="text-slate-600">PPN{editQuotationDetail.data ? " 11%" : ""}</span>
+                  <span className="font-mono font-medium">{money(tax)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-6 border-t border-slate-200 pt-3 text-base font-semibold">
+                  <span>Grand Total</span>
+                  <span className="font-mono text-blue-600">{money(grandTotal)}</span>
+                </div>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 border-t border-slate-200 pt-4">
