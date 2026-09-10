@@ -28,6 +28,7 @@ interface POForm {
   date: string;
   status: string;
   eta: string;
+  payment_term: string;
   supplier: string;
   shipping_address: string;
 }
@@ -56,6 +57,7 @@ const emptyForm = (): POForm => ({
   date: new Date().toISOString().slice(0, 10),
   status: "Received",
   eta: "",
+  payment_term: "30 hari setelah invoice",
   supplier: "",
   shipping_address: "",
 });
@@ -116,6 +118,7 @@ export default function PurchaseOrders() {
         date: form.date,
         status: form.status,
         eta: form.eta || null,
+        payment_term: form.payment_term.trim() || null,
         supplier: form.supplier || null,
         shipping_address: form.shipping_address || null,
         document_name: editing?.document_name ?? null,
@@ -183,8 +186,9 @@ export default function PurchaseOrders() {
       date: order.date,
       status: order.status,
       eta: order.eta ?? "",
+      payment_term: order.payment_term ?? "30 hari setelah invoice",
       supplier: order.supplier ?? "",
-      shipping_address: "",
+      shipping_address: order.shipping_address ?? "",
     });
     setItems(
       order.items?.length
@@ -403,7 +407,12 @@ export default function PurchaseOrders() {
                 <Input type="date" value={form.eta} onChange={(e) => setForm({ ...form, eta: e.target.value })} data-testid="purchase-order-eta-input" />
               </Field>
               <Field label="Payment Term">
-                <Input value="" readOnly placeholder="30 hari setelah invoice" />
+                <Input
+                  value={form.payment_term}
+                  onChange={(e) => setForm({ ...form, payment_term: e.target.value })}
+                  placeholder="30 hari setelah invoice"
+                  data-testid="purchase-order-payment-term-input"
+                />
               </Field>
               <Field label="Dokumen PO">
                 <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx" data-testid="purchase-order-file-input" />
