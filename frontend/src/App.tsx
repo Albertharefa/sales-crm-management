@@ -10,6 +10,7 @@ import Pipeline from './pages/Pipeline';
 import Quotations from './pages/Quotations';
 import QuotationPrint from './pages/QuotationPrint';
 import PurchaseOrders from './pages/PurchaseOrders';
+import PurchaseOrderDetail from './pages/PurchaseOrderDetail';
 import OrderMonitoring from './pages/OrderMonitoring';
 import Activities from './pages/Activities';
 import Products from './pages/Products';
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/quotations" element={<Protected><Quotations /></Protected>} />
         <Route path="/quotations/:quotationId/print" element={<QuotationPrint />} />
         <Route path="/purchase-orders" element={<Protected><PurchaseOrders /></Protected>} />
+        <Route path="/purchase-orders/:orderId" element={<Protected><PurchaseOrderDetail /></Protected>} />
         <Route path="/order-monitoring" element={<Protected><OrderMonitoring /></Protected>} />
         <Route path="/activities" element={<Protected><Activities /></Protected>} />
         <Route path="/products" element={<Protected><Products /></Protected>} />
