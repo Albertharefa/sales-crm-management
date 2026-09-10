@@ -22,6 +22,7 @@ interface POItemForm {
 
 interface POForm {
   po_number: string;
+  quotation_number: string;
   customer_id: string;
   sales_id: string;
   date: string;
@@ -49,6 +50,7 @@ const emptyItem = (): POItemForm => ({
 
 const emptyForm = (): POForm => ({
   po_number: "",
+  quotation_number: "",
   customer_id: "",
   sales_id: "",
   date: new Date().toISOString().slice(0, 10),
@@ -108,6 +110,7 @@ export default function PurchaseOrders() {
     mutationFn: async () => {
       const payload = {
         po_number: form.po_number,
+        quotation_number: form.quotation_number.trim() || null,
         customer_id: form.customer_id,
         sales_id: form.sales_id || null,
         date: form.date,
@@ -174,6 +177,7 @@ export default function PurchaseOrders() {
     setEditing(order);
     setForm({
       po_number: order.po_number,
+      quotation_number: order.quotation_number ?? "",
       customer_id: order.customer_id,
       sales_id: "",
       date: order.date,
@@ -362,6 +366,14 @@ export default function PurchaseOrders() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="No PO Customer" required>
                 <Input value={form.po_number} onChange={(e) => setForm({ ...form, po_number: e.target.value })} placeholder="PO/ELSI/2026/0088" data-testid="purchase-order-number-input" />
+              </Field>
+              <Field label="No Quotation">
+                <Input
+                  value={form.quotation_number}
+                  onChange={(e) => setForm({ ...form, quotation_number: e.target.value })}
+                  placeholder="QT-2026-0018"
+                  data-testid="purchase-order-quotation-input"
+                />
               </Field>
               <Field label="Customer" required>
                 <select className={selectClass} value={form.customer_id} onChange={(e) => setForm({ ...form, customer_id: e.target.value })} data-testid="purchase-order-customer-input">
