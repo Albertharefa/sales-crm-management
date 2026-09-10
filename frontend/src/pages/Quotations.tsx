@@ -34,6 +34,8 @@ const STATUS_OPTIONS = [
   "Converted",
 ];
 
+const QUOTATION_STATUS_OPTIONS = [...STATUS_OPTIONS, "PO"];
+
 const money = (value: number) =>
   new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -453,12 +455,17 @@ export default function Quotations() {
                 className={`${selectClass} min-w-[118px] py-1.5 text-xs`}
                 value={item.status}
                 disabled={changeStatus.isPending}
-                onChange={(e) =>
-                  changeStatus.mutate({ id: item.id, value: e.target.value })
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "PO") {
+                    navigate("/purchase-orders");
+                    return;
+                  }
+                  changeStatus.mutate({ id: item.id, value });
+                }}
                 data-testid={`quotation-status-${item.id}`}
               >
-                {STATUS_OPTIONS.map((value) => (
+                {QUOTATION_STATUS_OPTIONS.map((value) => (
                   <option key={value}>{value}</option>
                 ))}
               </select>
