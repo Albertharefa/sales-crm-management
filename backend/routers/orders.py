@@ -10,8 +10,13 @@ ORDER_STAGES = ["Received", "Confirmed", "Processing", "Completed"]
 
 
 @router.get("", response_model=Paginated)
-async def list_orders(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", status: str | None = None, user: dict = Depends(current_user)):
-    return await page_collection("purchase_orders", page, page_size, search, {"status": status} if status else {})
+async def list_orders(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", status: str | None = None, sales: str | None = None, user: dict = Depends(current_user)):
+    filters = {}
+    if status:
+        filters["status"] = status
+    if sales:
+        filters["sales_name"] = sales
+    return await page_collection("purchase_orders", page, page_size, search, filters)
 
 
 @router.post("", response_model=PurchaseOrder)
