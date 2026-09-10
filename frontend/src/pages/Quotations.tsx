@@ -43,6 +43,8 @@ const money = (value: number) =>
 type QuotationForm = {
   customer_id: string;
   sales_id: string;
+  product_brand: string;
+  custom_brand: string;
   date: string;
   valid_until: string;
   payment_term: string;
@@ -59,6 +61,8 @@ type QuotationForm = {
 const emptyForm = (): QuotationForm => ({
   customer_id: "",
   sales_id: "",
+  product_brand: "",
+  custom_brand: "",
   date: new Date().toISOString().slice(0, 10),
   valid_until: "",
   payment_term: "30 hari setelah invoice",
@@ -127,6 +131,8 @@ export default function Quotations() {
     setForm({
       customer_id: q.customer_id ?? "",
       sales_id: q.sales_id ?? "",
+      product_brand: "",
+      custom_brand: "",
       date: q.date ?? new Date().toISOString().slice(0, 10),
       valid_until: q.valid_until ?? "",
       payment_term: q.payment_term ?? "30 hari setelah invoice",
@@ -797,32 +803,55 @@ function QuotationFormModal({
           </div>
 
           <div className="grid gap-4">
+            <Field label="Brand Produk" required>
+              <select
+                className={selectClass}
+                value={form.product_brand}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setForm((current) => ({
+                    ...current,
+                    product_brand: value,
+                    custom_brand: value === "Any Brand" ? current.custom_brand : "",
+                    description:
+                      value && value !== "Any Brand"
+                        ? current.description === "" || [
+                            "Axiomtek",
+                            "ICPDAS",
+                            "WATLOW",
+                            "HOLYSIS",
+                          ].includes(current.description)
+                          ? value
+                          : current.description
+                        : current.description,
+                  }));
+                }}
+                data-testid="quotation-brand-input"
+              >
+                <option value="">— Pilih brand —</option>
+                <option value="Axiomtek">Axiomtek</option>
+                <option value="ICPDAS">ICPDAS</option>
+                <option value="WATLOW">WATLOW</option>
+                <option value="HOLYSIS">HOLYSIS</option>
+                <option value="Any Brand">Any Brand</option>
+              </select>
+            </Field>
+
+            {form.product_brand === "Any Brand" && (
+              <Field label="Nama Brand / Produk" required>
+                <Input
+                  value={form.custom_brand}
+                  onChange={(e) => update("custom_brand", e.target.value)}
+                  placeholder="Ketik nama brand / produk secara manual"
+                  data-testid="quotation-custom-brand-input"
+                />
+              </Field>
+            )}
+
             <Field label="Produk / Deskripsi" required>
               <select
                 className={selectClass}
                 value={form.product_id}
-                onChange={(e) => {
-                  const product = options?.products.find(
-                    (item) => item.id === e.target.value,
-                  );
-                  setForm((current) => ({
-                    ...current,
-                    product_id: e.target.value,
-                    description: product?.name ?? current.description,
-                    unit_price: product?.default_price
-                      ? String(product.default_price)
-                      : current.unit_price,
-                  }));
-                }}
-                data-testid="quotation-product-input"
-              >
-                <option value="">— Pilih produk —</option>
-                {(options?.products ?? []).map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name}
-                  </option>
-                ))}
-              </select>
               <Textarea
                 className="mt-2 min-h-28"
                 value={form.description}
@@ -916,6 +945,8 @@ function QuotationFormModal({
               !form.sales_id ||
               !form.date ||
               !form.description.trim() ||
+              (form.product_brand === "Any Brand" && !form.custom_brand.trim()) ||
+              !form.product_brand ||
               Number(form.quantity) < 1
             }
             data-testid="quotation-save-button"
