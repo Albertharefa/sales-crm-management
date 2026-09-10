@@ -852,6 +852,28 @@ function QuotationFormModal({
               <select
                 className={selectClass}
                 value={form.product_id}
+                onChange={(e) => {
+                  const product = options?.products.find(
+                    (item) => item.id === e.target.value,
+                  );
+                  setForm((current) => ({
+                    ...current,
+                    product_id: e.target.value,
+                    description: product?.name ?? current.description,
+                    unit_price: product?.default_price
+                      ? String(product.default_price)
+                      : current.unit_price,
+                  }));
+                }}
+                data-testid="quotation-product-input"
+              >
+                <option value="">— Pilih produk —</option>
+                {(options?.products ?? []).map((product) => (
+                  <option key={product.id} value={product.id}>
+                    {product.name}
+                  </option>
+                ))}
+              </select>
               <Textarea
                 className="mt-2 min-h-28"
                 value={form.description}
