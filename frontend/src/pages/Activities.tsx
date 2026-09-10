@@ -560,7 +560,7 @@ export default function Activities() {
       )}
 
       {editModal && (
-        <Modal title="Edit Aktivitas" onClose={closeEdit}>
+        <Modal title="Edit Aktivitas" onClose={closeEdit} size="landscape">
           {activityDetail.isLoading ? (
             <div className="py-10 text-center text-slate-500">
               Memuat aktivitas...
