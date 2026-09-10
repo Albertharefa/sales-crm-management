@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost, apiPut, apiDelete, apiUpload } from "@/lib/api";
+import { apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload } from "@/lib/api";
 import type { Options, Paginated, PurchaseOrder } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
 interface UploadResponse { id: string; file_name: string; content_type: string; size: number; url: string }
 const STATUS_OPTIONS = ["Draft", "Received", "Confirmed", "Processing", "Completed", "Cancelled"];
@@ -48,9 +49,9 @@ export default function PurchaseOrders() { const [modal, setModal] = useState(fa
 
   return <div data-testid="purchase-orders-page"><PageHeader title="Purchase Order Customer" description="Nomor PO berasal dari customer dan tersimpan bersama dokumen pendukung" action={{ label: "Input PO Customer", onClick: () => { setEditing(null); setModal(true); } }} onRefresh={() => void list.refetch()} onExport={() => window.open("/api/v1/exports/purchase-orders", "_blank")} /><DataTable testId="purchase-orders-table" items={list.data?.items ?? []} loading={list.isLoading} total={list.data?.total} columns={[{ key: "number", label: "No PO Customer", render: i => <span className="font-mono text-xs text-blue-600">{i.po_number}</span> }, { key: "date", label: "Tanggal", render: i => i.date }, { key: "customer", label: "Customer", render: i => <span className="font-medium">{i.customer_name}</span> }, { key: "quotation", label: "Quotation", render: i => i.quotation_number ?? "Manual order" }, { key: "sales", label: "Sales", render: i => i.sales_name ?? "—" }, { key: "value", label: "Nilai PO", render: i => <span className="font-mono text-xs">{money(i.total)}</span> }, { key: "status", label: "Status", render: i => <select className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm" value={i.status} onChange={e => updateStatus.mutate({ id: i.id, status: e.target.value })}>{STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}</select> },
         { key: "actions", label: "Aksi", render: i => <div className="flex items-center justify-end gap-4 whitespace-nowrap">
-          <button type="button" title="View" className="text-slate-600 hover:text-blue-600 text-lg" onClick={() => setViewOrder(i)}>◉</button>
-          <button type="button" title="Edit" className="text-slate-700 hover:text-blue-600 text-sm font-medium" onClick={() => openEdit(i)}>Edit</button>
-          <button type="button" title="Delete" className="text-red-500 hover:text-red-700 text-lg" onClick={() => { if (window.confirm("Hapus PO " + i.po_number + "?")) remove.mutate(i.id); }}>✕</button>
+          <button type="button" title="View" className="text-slate-600 hover:text-blue-600" onClick={() => setViewOrder(i)}><Eye className="h-4 w-4" /></button>
+          <button type="button" title="Edit" className="text-slate-700 hover:text-blue-600 text-sm font-medium inline-flex items-center gap-1" onClick={() => openEdit(i)}><Pencil className="h-4 w-4" />Edit</button>
+          <button type="button" title="Delete" className="text-red-500 hover:text-red-700" onClick={() => { if (window.confirm("Hapus PO " + i.po_number + "?")) remove.mutate(i.id); }}><Trash2 className="h-4 w-4" /></button>
         </div> }]} />{viewOrder && <Modal title={"Detail PO " + viewOrder.po_number} onClose={() => setViewOrder(null)} size="landscape">
       <div className="grid gap-5 sm:grid-cols-2">
         <div className="rounded-lg border border-slate-200 p-5 space-y-3"><div><span className="text-xs text-slate-500">NO PO CUSTOMER</span><div className="font-mono font-semibold">{viewOrder.po_number}</div></div><div><span className="text-xs text-slate-500">CUSTOMER</span><div>{viewOrder.customer_name}</div></div><div><span className="text-xs text-slate-500">TANGGAL</span><div>{viewOrder.date}</div></div><div><span className="text-xs text-slate-500">SALES</span><div>{viewOrder.sales_name ?? "—"}</div></div></div>
