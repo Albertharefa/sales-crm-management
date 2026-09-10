@@ -26,6 +26,40 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
     return PurchaseOrder(**doc)
 
 
+@router.get("/{order_id}", response_model=PurchaseOrder)
+async def get_order(order_id: str, user: dict = Depends(current_user)):
+    doc = await db.purchase_orders.find_one({"id": order_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="PO tidak ditemukan")
+    doc.pop("_id", None)
+    return PurchaseOrder(**doc)
+
+
+@router.put("/{order_id}", response_model=PurchaseOrder)
+async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict = Depends(current_user)):
+    customer = await db.customers.find_one({"id": payload.customer_id})
+    if not customer:
+        raise HTTPException(status_code=400, detail="Customer tidak valid")
+    old = await db.purchase_orders.find_one({"id": order_id})
+    if not old:
+        raise HTTPException(status_code=404, detail="PO tidak ditemukan")
+    total = sum(i.quantity * i.unit_price for i in payload.items)
+    doc = {"id": order_id, "customer_name": customer["name"], "sales_name": old.get("sales_name", user["name"]), "total": total, **payload.model_dump(mode="json"), "created_at": old.get("created_at", now())}
+    await db.purchase_orders.replace_one({"id": order_id}, doc)
+    await audit(user, "Update", "Purchase Orders", order_id, {"po_number": doc["po_number"]})
+    return PurchaseOrder(**doc)
+
+
+@router.delete("/{order_id}")
+async def delete_order(order_id: str, user: dict = Depends(current_user)):
+    doc = await db.purchase_orders.find_one({"id": order_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="PO tidak ditemukan")
+    await db.purchase_orders.delete_one({"id": order_id})
+    await audit(user, "Delete", "Purchase Orders", order_id, {"po_number": doc.get("po_number")})
+    return {"ok": True}
+
+
 @router.get("/monitoring", response_model=Paginated)
 async def monitoring(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", status: str | None = None, user: dict = Depends(current_user)):
     return await page_collection("purchase_orders", page, page_size, search, {"status": status} if status else {})
