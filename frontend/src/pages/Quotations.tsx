@@ -458,7 +458,7 @@ export default function Quotations() {
                 onChange={(e) => {
                   const value = e.target.value;
                   if (value === "PO") {
-                    navigate("/purchase-orders");
+                    navigate(`/purchase-orders?quotation_id=${encodeURIComponent(item.id)}`);
                     return;
                   }
                   changeStatus.mutate({ id: item.id, value });
