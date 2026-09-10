@@ -141,7 +141,7 @@ export default function PurchaseOrderDetail() {
         </div>
 
         {order.items?.length ? (
-          <div className="overflow-x-auto">
+          <div className="po-print-table-wrap w-full overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
                 <tr>
