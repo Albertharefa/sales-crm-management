@@ -43,21 +43,21 @@ export default function CustomerDetail() {
   });
 
   const quotationsQuery = useQuery({
-    queryKey: ["customer-detail-page-quotations", customerId],
-    queryFn: () => apiGet<Paginated<Quotation>>(`/quotations?page=1&page_size=100&search=${encodeURIComponent(customerId || "")}`),
-    enabled: !!customerId,
+    queryKey: ["customer-detail-page-quotations", customerId, customerQuery.data?.name],
+    queryFn: () => apiGet<Paginated<Quotation>>(`/quotations?page=1&page_size=100&search=${encodeURIComponent(customerQuery.data?.name || "")}`),
+    enabled: !!customerQuery.data?.name,
   });
 
   const ordersQuery = useQuery({
-    queryKey: ["customer-detail-page-orders", customerId],
-    queryFn: () => apiGet<Paginated<PurchaseOrder>>(`/purchase-orders?page=1&page_size=100&search=${encodeURIComponent(customerId || "")}`),
-    enabled: !!customerId,
+    queryKey: ["customer-detail-page-orders", customerId, customerQuery.data?.name],
+    queryFn: () => apiGet<Paginated<PurchaseOrder>>(`/purchase-orders?page=1&page_size=100&search=${encodeURIComponent(customerQuery.data?.name || "")}`),
+    enabled: !!customerQuery.data?.name,
   });
 
   const activitiesQuery = useQuery({
-    queryKey: ["customer-detail-page-activities", customerId],
-    queryFn: () => apiGet<Paginated<CustomerActivity>>(`/activities?page=1&page_size=100&search=${encodeURIComponent(customerId || "")}`),
-    enabled: !!customerId,
+    queryKey: ["customer-detail-page-activities", customerId, customerQuery.data?.name],
+    queryFn: () => apiGet<Paginated<CustomerActivity>>(`/activities?page=1&page_size=100&search=${encodeURIComponent(customerQuery.data?.name || "")}`),
+    enabled: !!customerQuery.data?.name,
   });
 
   const customer = customerQuery.data;
