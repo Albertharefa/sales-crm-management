@@ -5,6 +5,7 @@ import AppShell from './components/AppShell';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import Customers from './pages/Customers';
+import CustomerDetail from './pages/CustomerDetail';
 import Pipeline from './pages/Pipeline';
 import Quotations from './pages/Quotations';
 import QuotationPrint from './pages/QuotationPrint';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Protected><Home /></Protected>} />
         <Route path="/customers" element={<Protected><Customers /></Protected>} />
+        <Route path="/customers/:customerId" element={<Protected><CustomerDetail /></Protected>} />
         <Route path="/pipeline" element={<Protected><Pipeline /></Protected>} />
         <Route path="/quotations" element={<Protected><Quotations /></Protected>} />
         <Route path="/quotations/:quotationId/print" element={<QuotationPrint />} />
