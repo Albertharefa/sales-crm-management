@@ -108,12 +108,18 @@
     break-inside: auto !important;
   }
 
-  /* Totals must stay together. The terms/signature block should start cleanly
-     on the next page when the remaining space is not sufficient. */
+  /* Totals must never be split at the page boundary. Start the complete
+     totals block on the next page when the item table has filled the page. */
   .quotation-paper > section:nth-of-type(3),
-  .quotation-paper > section:nth-of-type(4) {
+  .quotation-paper > section:nth-of-type(4),
+  .quotation-paging-content .quotation-totals {
     page-break-inside: avoid !important;
     break-inside: avoid-page !important;
+  }
+
+  .quotation-paging-content .quotation-totals {
+    page-break-before: always !important;
+    break-before: page !important;
   }
 
   html,
