@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { Dispatch, SetStateAction } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
-import type { Paginated, Quotation } from "@/lib/types";
+import type { Options, Paginated, Quotation } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -114,21 +114,9 @@ export default function Quotations() {
     staleTime: 60_000,
   });
 
-  const customerOptions = useQuery({
-    queryKey: ["quotation-customer-options"],
-    queryFn: () =>
-      apiGet<Paginated<{ id: string; name: string }>>(
-        "/customers?page=1&page_size=100",
-      ),
-    staleTime: 60_000,
-  });
-
-  const productOptions = useQuery({
-    queryKey: ["quotation-product-options"],
-    queryFn: () =>
-      apiGet<Paginated<{ id: string; name: string; default_price?: number }>>(
-        "/products?page=1&page_size=100",
-      ),
+  const options = useQuery({
+    queryKey: ["options"],
+    queryFn: () => apiGet<Options>("/options"),
     staleTime: 60_000,
   });
 
@@ -326,7 +314,7 @@ export default function Quotations() {
   };
 
   const refresh = async () => {
-    await Promise.all([list.refetch(), salesOptions.refetch(), customerOptions.refetch(), productOptions.refetch()]);
+    await Promise.all([list.refetch(), salesOptions.refetch(), options.refetch()]);
     toast.success("Quotations berhasil diperbarui");
   };
 
@@ -521,8 +509,7 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
-          customerOptions={customerOptions}
-          productOptions={productOptions}
+          options={options.data}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
@@ -541,8 +528,7 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
-          customerOptions={customerOptions}
-          productOptions={productOptions}
+          options={options.data}
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
@@ -709,7 +695,7 @@ function QuotationFormModal({
   setForm,
   items,
   setItems,
-
+  options,
   salesOptions,
   subtotal,
   discount,
@@ -726,8 +712,8 @@ function QuotationFormModal({
   setForm: Dispatch<SetStateAction<QuotationForm>>;
   items: QuotationForm[];
   setItems: Dispatch<SetStateAction<QuotationForm[]>>;
-  customerOptions: { data?: { items?: { id: string; name: string }[] } };
-  productOptions: { data?: { items?: { id: string; name: string; default_price?: number }[] } };
+  options?: Options;
+  salesOptions: { id: string; name: string }[];
   subtotal: number;
   discount: number;
   taxValue: number;
@@ -761,7 +747,7 @@ function QuotationFormModal({
               data-testid="quotation-customer-input"
             >
               <option value="">— Pilih customer —</option>
-              {(customerOptions.data?.items ?? []).map((customer) => (
+              {(options?.customers ?? []).map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.name}
                 </option>
@@ -915,7 +901,7 @@ function QuotationFormModal({
                         className={selectClass}
                         value={item.product_id}
                         onChange={(e) => {
-                          const product = productOptions.data?.items.find(
+                          const product = options?.products.find(
                             (entry) => entry.id === e.target.value,
                           );
                           setItems((current) =>
@@ -936,7 +922,7 @@ function QuotationFormModal({
                         data-testid={`quotation-product-input-${index}`}
                       >
                         <option value="">— Pilih produk —</option>
-                        {(productOptions.data?.items ?? []).map((product) => (
+                        {(options?.products ?? []).map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name}
                           </option>
