@@ -113,8 +113,8 @@ export default function PurchaseOrderDetail() {
         </div>
       </div>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="grid gap-x-10 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="grid grid-cols-4 gap-x-8 gap-y-4">
           <Info label="No PO Customer" value={order.po_number} mono />
           <Info label="Tanggal PO" value={dateText(order.date)} />
           <Info label="Quotation" value={order.quotation_number} mono />
@@ -125,7 +125,7 @@ export default function PurchaseOrderDetail() {
           <Info label="Nilai PO" value={money(order.total)} strong />
         </div>
 
-        <div className="mt-5 border-t border-slate-200 pt-5">
+        <div className="mt-4 border-t border-slate-200 pt-4">
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             Status Purchase Order
           </div>
