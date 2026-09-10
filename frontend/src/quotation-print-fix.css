@@ -42,8 +42,8 @@
     break-after: auto !important;
   }
 
-  /* Chrome uses these page-specific rules for every physical page.
-     They override the generic @page rule inside QuotationPrint.tsx. */
+  /* Reserve a top and bottom print margin on every physical page.
+     These override the generic @page rule inside QuotationPrint.tsx. */
   @page :first {
     size: A4 portrait;
     margin: 29mm 9mm 27mm 9mm;
@@ -83,7 +83,7 @@
     background: #fff !important;
   }
 
-  /* Let the item table flow naturally between the reserved page margins. */
+  /* The table may continue across pages. Chrome repeats its table header. */
   .quotation-paper table {
     width: 100% !important;
     page-break-inside: auto !important;
@@ -108,9 +108,10 @@
     break-inside: auto !important;
   }
 
-  /* Keep totals together and keep the terms/signature block together when it fits. */
-  .quotation-paper > section:nth-of-type(2),
-  .quotation-paper > section:nth-of-type(3) {
+  /* Totals must stay together. The terms/signature block should start cleanly
+     on the next page when the remaining space is not sufficient. */
+  .quotation-paper > section:nth-of-type(3),
+  .quotation-paper > section:nth-of-type(4) {
     page-break-inside: avoid !important;
     break-inside: avoid-page !important;
   }
