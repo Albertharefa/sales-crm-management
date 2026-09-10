@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { apiGet } from "@/lib/api";
-import type { Customer, DashboardMetrics } from "@/lib/types";
+import type { Customer, DashboardMetrics, Paginated } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
 const money = (value: number) =>
@@ -135,7 +135,7 @@ export default function Home() {
 
   const customersQuery = useQuery({
     queryKey: ["dashboard-customers"],
-    queryFn: () => apiGet<Customer[]>("/customers?page=1&page_size=100"),
+    queryFn: () => apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"),
     retry: 1,
     staleTime: 60_000,
   });
@@ -192,7 +192,7 @@ export default function Home() {
       ...Array.from(
         new Set([
           ...dummyCustomers,
-          ...(customersQuery.data?.map((item) => item.name || item.company_name || item.company || "") ?? []),
+          ...(customersQuery.data?.items?.map((item) => item.name || item.company_name || item.company || "") ?? []),
         ]),
       ).filter(Boolean),
     ],
