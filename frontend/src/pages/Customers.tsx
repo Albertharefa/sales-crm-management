@@ -786,6 +786,7 @@ export default function Customers() {
       {editModal && (
         <Modal
           title="Edit Customer"
+          size="landscape"
           onClose={() => {
             setEditModal(false);
             setSelectedCustomerId(null);
