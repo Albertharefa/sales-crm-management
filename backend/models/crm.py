@@ -6,24 +6,14 @@ from bson import ObjectId
 
 T = TypeVar("T")
 
-
 class CRMBaseModel(BaseModel):
-    model_config = ConfigDict(
-        extra="ignore",
-        json_encoders={ObjectId: str},
-    )
-
+    model_config = ConfigDict(extra="ignore", json_encoders={ObjectId: str})
 
 class Paginated(BaseModel, Generic[T]):
     items: list[T]
     total: int
     page: int
     page_size: int
-
-
-# ============================================================
-# CUSTOMER
-# ============================================================
 
 class CustomerBase(CRMBaseModel):
     name: str
@@ -43,10 +33,7 @@ class CustomerBase(CRMBaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
 
-
-class CustomerCreate(CustomerBase):
-    pass
-
+class CustomerCreate(CustomerBase): pass
 
 class CustomerUpdate(CRMBaseModel):
     name: Optional[str] = None
@@ -66,17 +53,11 @@ class CustomerUpdate(CRMBaseModel):
     address: Optional[str] = None
     notes: Optional[str] = None
 
-
 class Customer(CustomerBase):
     id: str
     customer_id: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
-
-# ============================================================
-# PIPELINE
-# ============================================================
 
 class OpportunityBase(CRMBaseModel):
     name: str
@@ -92,10 +73,7 @@ class OpportunityBase(CRMBaseModel):
     description: Optional[str] = None
     loss_reason: Optional[str] = None
 
-
-class OpportunityCreate(OpportunityBase):
-    pass
-
+class OpportunityCreate(OpportunityBase): pass
 
 class OpportunityUpdate(CRMBaseModel):
     name: Optional[str] = None
@@ -109,7 +87,6 @@ class OpportunityUpdate(CRMBaseModel):
     description: Optional[str] = None
     loss_reason: Optional[str] = None
 
-
 class Opportunity(OpportunityBase):
     id: str
     opportunity_id: str
@@ -117,11 +94,6 @@ class Opportunity(OpportunityBase):
     sales_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
-
-# ============================================================
-# PRODUCTS
-# ============================================================
 
 class ProductBase(CRMBaseModel):
     code: str
@@ -134,20 +106,12 @@ class ProductBase(CRMBaseModel):
     status: str = "Active"
     description: Optional[str] = None
 
-
-class ProductCreate(ProductBase):
-    pass
-
+class ProductCreate(ProductBase): pass
 
 class Product(ProductBase):
     id: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
-
-# ============================================================
-# QUOTATIONS
-# ============================================================
 
 class QuotationItem(CRMBaseModel):
     product_id: Optional[str] = None
@@ -157,7 +121,6 @@ class QuotationItem(CRMBaseModel):
     discount: float = Field(default=0, ge=0)
     tax: float = Field(default=0, ge=0)
     total: Optional[float] = None
-
 
 class QuotationCreate(CRMBaseModel):
     customer_id: str
@@ -169,7 +132,6 @@ class QuotationCreate(CRMBaseModel):
     delivery_term: Optional[str] = None
     notes: Optional[str] = None
     items: list[QuotationItem] = Field(min_length=1)
-
 
 class Quotation(QuotationCreate):
     id: str
@@ -185,7 +147,6 @@ class Quotation(QuotationCreate):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-
 class QuotationUpdate(CRMBaseModel):
     sales_id: Optional[str] = None
     items: Optional[list[QuotationItem]] = None
@@ -195,17 +156,13 @@ class QuotationUpdate(CRMBaseModel):
     delivery_term: Optional[str] = None
     notes: Optional[str] = None
 
-
-# ============================================================
-# PURCHASE ORDERS
-# ============================================================
-
 class PurchaseOrderItem(CRMBaseModel):
     product_id: Optional[str] = None
     description: str
     quantity: int = Field(ge=1)
     unit_price: float = Field(ge=0)
-
+    discount: float = Field(default=0, ge=0)
+    tax: float = Field(default=11, ge=0)
 
 class PurchaseOrderCreate(CRMBaseModel):
     po_number: str
@@ -221,7 +178,6 @@ class PurchaseOrderCreate(CRMBaseModel):
     shipping_address: Optional[str] = None
     document_name: Optional[str] = None
 
-
 class PurchaseOrder(PurchaseOrderCreate):
     id: str
     customer_name: str = ""
@@ -230,7 +186,6 @@ class PurchaseOrder(PurchaseOrderCreate):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-
 class PurchaseOrderUpdate(CRMBaseModel):
     status: Optional[str] = None
     eta: Optional[date] = None
@@ -238,27 +193,10 @@ class PurchaseOrderUpdate(CRMBaseModel):
     shipping_address: Optional[str] = None
     document_name: Optional[str] = None
 
-
-# Backward-compatible order names
-class OrderBase(PurchaseOrderCreate):
-    pass
-
-
-class OrderCreate(PurchaseOrderCreate):
-    pass
-
-
-class OrderUpdate(PurchaseOrderUpdate):
-    pass
-
-
-class Order(PurchaseOrder):
-    pass
-
-
-# ============================================================
-# ACTIVITIES / TASKS
-# ============================================================
+class OrderBase(PurchaseOrderCreate): pass
+class OrderCreate(PurchaseOrderCreate): pass
+class OrderUpdate(PurchaseOrderUpdate): pass
+class Order(PurchaseOrder): pass
 
 class ActivityCreate(CRMBaseModel):
     subject: str
@@ -270,7 +208,6 @@ class ActivityCreate(CRMBaseModel):
     status: str = "Open"
     description: Optional[str] = None
 
-
 class Activity(ActivityCreate):
     id: str
     activity_id: str
@@ -280,7 +217,6 @@ class Activity(ActivityCreate):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-
 class ActivityUpdate(CRMBaseModel):
     subject: Optional[str] = None
     activity_type: Optional[str] = None
@@ -288,7 +224,6 @@ class ActivityUpdate(CRMBaseModel):
     next_follow_up: Optional[date] = None
     status: Optional[str] = None
     description: Optional[str] = None
-
 
 class Task(CRMBaseModel):
     id: str
@@ -302,14 +237,8 @@ class Task(CRMBaseModel):
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
-
 TaskCreate = Task
 TaskUpdate = ActivityUpdate
-
-
-# ============================================================
-# AUTH / USERS
-# ============================================================
 
 class UserBase(CRMBaseModel):
     email: str
@@ -319,44 +248,23 @@ class UserBase(CRMBaseModel):
     phone: Optional[str] = None
     status: str = "Active"
 
-
-class UserCreate(UserBase):
-    password: str = Field(min_length=8)
-
-
+class UserCreate(UserBase): password: str = Field(min_length=8)
 class UserInDB(UserBase):
     id: str
     user_id: str
     password_hash: str
     created_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
-
-
 class UserPublic(UserBase):
     id: str
     user_id: str
     last_login: Optional[datetime] = None
     created_at: Optional[datetime] = None
-
-
 class Token(CRMBaseModel):
     access_token: str
     token_type: str = "bearer"
-
-
-class TokenData(CRMBaseModel):
-    email: Optional[str] = None
-    role: Optional[str] = None
-
-
-class LoginRequest(CRMBaseModel):
-    email: str
-    password: str
-
-
-# ============================================================
-# DASHBOARD / ADMIN
-# ============================================================
+class TokenData(CRMBaseModel): email: Optional[str] = None; role: Optional[str] = None
+class LoginRequest(CRMBaseModel): email: str; password: str
 
 class SalesTeamMetric(CRMBaseModel):
     sales: str
@@ -370,7 +278,6 @@ class SalesTeamMetric(CRMBaseModel):
     activities: int = 0
     indent: int = 0
     overdue: int = 0
-
 
 class DashboardMetrics(CRMBaseModel):
     total_customer: int = 0
@@ -401,12 +308,10 @@ class DashboardMetrics(CRMBaseModel):
     deal_risks: list[dict[str, Any]] = []
     generated_at: datetime
 
-
 class OptionsResponse(CRMBaseModel):
     customers: list[dict[str, Any]] = []
     products: list[dict[str, Any]] = []
     users: list[dict[str, Any]] = []
-
 
 class UploadResponse(CRMBaseModel):
     id: str
