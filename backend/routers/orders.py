@@ -25,7 +25,13 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
     total = sum(i.quantity * i.unit_price for i in payload.items)
-    doc = {"id": new_id(), "customer_name": customer["name"], "sales_name": user["name"], "total": total, **payload.model_dump(mode="json"), "created_at": now()}
+    sales_name = user["name"]
+    if payload.sales_id:
+        sales_user = await db.users.find_one({"id": payload.sales_id}, {"_id": 0, "id": 1, "name": 1})
+        if not sales_user:
+            raise HTTPException(status_code=400, detail="Sales tidak valid")
+        sales_name = sales_user["name"]
+    doc = {"id": new_id(), "customer_name": customer["name"], "sales_name": sales_name, "total": total, **payload.model_dump(mode="json"), "created_at": now()}
     await db.purchase_orders.insert_one(doc)
     await audit(user, "Create", "Purchase Orders", doc["id"], {"po_number": doc["po_number"]})
     return PurchaseOrder(**doc)
@@ -49,7 +55,13 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
     if not old:
         raise HTTPException(status_code=404, detail="PO tidak ditemukan")
     total = sum(i.quantity * i.unit_price for i in payload.items)
-    doc = {"id": order_id, "customer_name": customer["name"], "sales_name": old.get("sales_name", user["name"]), "total": total, **payload.model_dump(mode="json"), "created_at": old.get("created_at", now())}
+    sales_name = old.get("sales_name", user["name"])
+    if payload.sales_id:
+        sales_user = await db.users.find_one({"id": payload.sales_id}, {"_id": 0, "id": 1, "name": 1})
+        if not sales_user:
+            raise HTTPException(status_code=400, detail="Sales tidak valid")
+        sales_name = sales_user["name"]
+    doc = {"id": order_id, "customer_name": customer["name"], "sales_name": sales_name, "total": total, **payload.model_dump(mode="json"), "created_at": old.get("created_at", now())}
     await db.purchase_orders.replace_one({"id": order_id}, doc)
     await audit(user, "Update", "Purchase Orders", order_id, {"po_number": doc["po_number"]})
     return PurchaseOrder(**doc)
