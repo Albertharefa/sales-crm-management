@@ -114,11 +114,32 @@ export default function Quotations() {
     staleTime: 60_000,
   });
 
-  const options = useQuery({
-    queryKey: ["options"],
-    queryFn: () => apiGet<Options>("/options"),
+  const customerOptions = useQuery({
+    queryKey: ["quotation-customers"],
+    queryFn: () =>
+      apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"),
     staleTime: 60_000,
   });
+
+  const productOptions = useQuery({
+    queryKey: ["quotation-products"],
+    queryFn: () =>
+      apiGet<Paginated<Product>>("/products?page=1&page_size=100"),
+    staleTime: 60_000,
+  });
+
+  const options: Options = {
+    customers: (customerOptions.data?.items ?? []).map((customer) => ({
+      id: customer.id,
+      name: customer.company_name || customer.name || customer.customer_id,
+    })),
+    products: (productOptions.data?.items ?? []).map((product) => ({
+      id: product.id,
+      name: product.name,
+      default_price: product.default_price,
+    })),
+    users: [],
+  };
 
   const detail = useQuery({
     queryKey: ["quotation-detail", selectedId],
@@ -314,7 +335,7 @@ export default function Quotations() {
   };
 
   const refresh = async () => {
-    await Promise.all([list.refetch(), salesOptions.refetch(), options.refetch()]);
+    await Promise.all([list.refetch(), salesOptions.refetch(), customerOptions.refetch(), productOptions.refetch()]);
     toast.success("Quotations berhasil diperbarui");
   };
 
