@@ -119,8 +119,8 @@ export default function PurchaseOrderDetail() {
           <Info label="Tanggal PO" value={dateText(order.date)} />
           <Info label="Quotation" value={order.quotation_number} mono />
           <Info label="Sales" value={order.sales_name} />
-          <Info label="Payment Term" value="30 hari setelah invoice" />
-          <Info label="Alamat Kirim" value="—" />
+          <Info label="Payment Term" value={order.payment_term} />
+          <Info label="Alamat Kirim" value={order.shipping_address} />
           <Info label="Customer ID" value={order.customer_id} mono />
           <Info label="Nilai PO" value={money(order.total)} strong />
         </div>
