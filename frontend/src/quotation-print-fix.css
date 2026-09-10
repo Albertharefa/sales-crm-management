@@ -1,0 +1,19 @@
+/* Quotation print visibility fix.
+ * index.css contains a generic PO print rule that hides body content.
+ * Explicitly re-enable the quotation print sheet for browser printing.
+ */
+@media print {
+  .quotation-print-root,
+  .quotation-print-root * {
+    visibility: visible !important;
+  }
+
+  .quotation-print-root {
+    position: relative !important;
+  }
+
+  .quotation-print-root .no-print,
+  .quotation-print-root .no-print * {
+    visibility: hidden !important;
+  }
+}
