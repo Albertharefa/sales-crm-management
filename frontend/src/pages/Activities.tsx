@@ -584,6 +584,7 @@ export default function Activities() {
         <Modal
           title="Tambah Aktivitas"
           onClose={() => setModal(false)}
+          size="landscape"
         >
           <form
             className="grid gap-4 sm:grid-cols-2"
