@@ -54,8 +54,6 @@
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: #2563eb;
-    --primary-foreground: #ffffff;
     --secondary: oklch(0.97 0 0);
     --secondary-foreground: oklch(0.205 0 0);
     --muted: oklch(0.97 0 0);
@@ -195,6 +193,7 @@
     overflow: visible !important;
     page-break-after: auto !important;
     break-after: auto !important;
+    transform: translateY(-20mm) !important;
   }
 
   /* Screen controls never enter the printed document. */
@@ -231,7 +230,6 @@
     break-inside: auto !important;
   }
 
-  /* Repeat column headings when the PO item table flows to another page. */
   .po-print-table-wrap thead {
     display: table-header-group !important;
   }
@@ -240,13 +238,11 @@
     display: table-row-group !important;
   }
 
-  /* Keep each item row intact; let the table itself flow naturally. */
   .po-print-table-wrap tr {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Do not repeat the total row as a page footer. */
   .po-print-table-wrap tfoot {
     display: table-row-group !important;
   }
