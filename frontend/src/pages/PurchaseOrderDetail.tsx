@@ -59,8 +59,8 @@ export default function PurchaseOrderDetail() {
   }
 
   return (
-    <div className="min-h-full space-y-6 pb-10" data-testid="purchase-order-detail-page">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="po-print-sheet min-h-full space-y-6 pb-10" data-testid="purchase-order-detail-page">
+      <div className="po-print-actions flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => navigate("/purchase-orders")}
@@ -135,7 +135,7 @@ export default function PurchaseOrderDetail() {
         </div>
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="po-print-items overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-200 px-6 py-4">
           <h2 className="text-base font-semibold text-slate-900">Item PO</h2>
         </div>
