@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, apiPut, apiPatch, apiDelete } from "@/lib/api";
-import type { Customer, Paginated, Product, PurchaseOrder } from "@/lib/types";
+import type { Customer, Paginated, Product, PurchaseOrder, Quotation } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -63,6 +64,8 @@ const emptyForm = (): POForm => ({
 });
 
 export default function PurchaseOrders() {
+  const [searchParams] = useSearchParams();
+  const quotationId = searchParams.get("quotation_id");
   const [modal, setModal] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -71,6 +74,7 @@ export default function PurchaseOrders() {
   const [editing, setEditing] = useState<PurchaseOrder | null>(null);
   const [form, setForm] = useState<POForm>(emptyForm());
   const [items, setItems] = useState<POItemForm[]>([emptyItem()]);
+  const [prefilledQuotationId, setPrefilledQuotationId] = useState<string | null>(null);
   const qc = useQueryClient();
 
   const list = useQuery({
@@ -99,6 +103,12 @@ export default function PurchaseOrders() {
     staleTime: 60_000,
   });
 
+  const quotationDetail = useQuery({
+    queryKey: ["purchase-order-source-quotation", quotationId],
+    queryFn: () => apiGet<Quotation>(`/quotations/${quotationId}`),
+    enabled: !!quotationId,
+  });
+
   const customers = customerOptions.data?.items ?? [];
   const products = productOptions.data?.items ?? [];
   const sales = salesOptions.data ?? [];
@@ -107,6 +117,38 @@ export default function PurchaseOrders() {
     (sum, item) => sum + Math.max(0, Number(item.quantity || 0) * Number(item.unit_price || 0)),
     0,
   );
+
+  useEffect(() => {
+    if (!quotationId || !quotationDetail.data || prefilledQuotationId === quotationId) return;
+
+    const quotation = quotationDetail.data;
+    setEditing(null);
+    setForm({
+      po_number: quotation.customer_po_number ?? "",
+      quotation_number: quotation.number,
+      customer_id: quotation.customer_id,
+      sales_id: quotation.sales_id ?? "",
+      date: quotation.date,
+      status: "Received",
+      eta: "",
+      payment_term: quotation.payment_term ?? "30 hari setelah invoice",
+      supplier: "",
+      shipping_address: "",
+    });
+    setItems(
+      quotation.items?.length
+        ? quotation.items.map((item) => ({
+            product_id: item.product_id ?? "",
+            description: item.description ?? "",
+            quantity: String(item.quantity ?? 1),
+            unit_price: String(item.unit_price ?? 0),
+          }))
+        : [emptyItem()],
+    );
+    setPrefilledQuotationId(quotationId);
+    setModal(true);
+    toast.success(`Data ${quotation.number} berhasil dibawa ke Purchase Order Customer`);
+  }, [quotationId, quotationDetail.data, prefilledQuotationId]);
 
   const saveOrder = useMutation({
     mutationFn: async () => {
@@ -130,12 +172,24 @@ export default function PurchaseOrders() {
         })),
       };
 
-      return editing
-        ? apiPut<PurchaseOrder>(`/purchase-orders/${editing.id}`, payload)
-        : apiPost<PurchaseOrder>("/purchase-orders", payload);
+      const order = editing
+        ? await apiPut<PurchaseOrder>(`/purchase-orders/${editing.id}`, payload)
+        : await apiPost<PurchaseOrder>("/purchase-orders", payload);
+
+      if (!editing && quotationId) {
+        try {
+          await apiPut<Quotation>(`/quotations/${quotationId}`, { status: "Converted" });
+        } catch {
+          toast.warning("PO berhasil dibuat, tetapi status quotation belum berubah menjadi Converted");
+        }
+      }
+
+      return order;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["purchase-orders"] });
+      qc.invalidateQueries({ queryKey: ["purchase-order-source-quotation", quotationId] });
+      qc.invalidateQueries({ queryKey: ["quotations"] });
       closeForm();
       toast.success(editing ? "Purchase Order berhasil diperbarui" : "Purchase Order berhasil disimpan");
     },
@@ -347,7 +401,7 @@ export default function PurchaseOrders() {
 
       {modal && (
         <Modal
-          title={editing ? "Edit Purchase Order Customer" : "Input Purchase Order dari Customer"}
+          title={editing ? "Edit Purchase Order Customer" : quotationId ? "Convert Quotation ke Purchase Order Customer" : "Input Purchase Order dari Customer"}
           onClose={closeForm}
           size="landscape"
         >
@@ -367,6 +421,12 @@ export default function PurchaseOrders() {
             }}
             data-testid="purchase-order-create-form"
           >
+            {quotationId && quotationDetail.data && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                Data quotation <strong>{quotationDetail.data.number}</strong> sudah dipindahkan ke form PO Customer. Silakan lengkapi No PO Customer dan data proses PO lainnya sebelum disimpan.
+              </div>
+            )}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="No PO Customer" required>
                 <Input value={form.po_number} onChange={(e) => setForm({ ...form, po_number: e.target.value })} placeholder="PO/ELSI/2026/0088" data-testid="purchase-order-number-input" />
