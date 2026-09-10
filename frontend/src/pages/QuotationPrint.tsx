@@ -270,77 +270,113 @@ export default function QuotationPrint() {
       <style>{`
         @media print {
           @page {
-            size: A4;
+            size: A4 portrait;
             margin: 0;
           }
-          html, body, #root {
+
+          html,
+          body,
+          #root {
             background: #fff !important;
             margin: 0 !important;
             padding: 0 !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
-            max-height: 297mm !important;
-            overflow: hidden !important;
+            width: 100% !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
           }
+
           .no-print {
             display: none !important;
           }
-          /*
-           * Keep the printed quotation isolated to our React application.
-           * Browser extensions such as Apollo can inject a floating widget
-           * directly under <body>. Hiding non-#root body children in print
-           * prevents that external widget from appearing in the quotation/PDF.
-           */
+
           body > *:not(#root) {
             display: none !important;
             visibility: hidden !important;
           }
+
           #root {
             position: relative !important;
             z-index: 0 !important;
             isolation: isolate !important;
           }
+
+          .quotation-print-root,
+          .quotation-print-root * {
+            visibility: visible !important;
+          }
+
           .quotation-print-root {
             box-sizing: border-box !important;
-            width: 210mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
-            max-height: 297mm !important;
+            width: 100% !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
             margin: 0 !important;
             padding: 0 !important;
-            overflow: hidden !important;
-            page-break-after: avoid !important;
-            break-after: avoid-page !important;
+            overflow: visible !important;
+            background: #fff !important;
+            page-break-after: auto !important;
+            break-after: auto !important;
           }
+
           .quotation-paper {
             box-sizing: border-box !important;
             position: relative !important;
-            max-width: none !important;
             width: 210mm !important;
-            height: 297mm !important;
-            min-height: 297mm !important;
-            max-height: 297mm !important;
-            margin: 0 !important;
+            max-width: 210mm !important;
+            min-height: 277mm !important;
+            height: auto !important;
+            max-height: none !important;
+            margin: 0 auto !important;
             padding: 9mm !important;
             box-shadow: none !important;
-            overflow: hidden !important;
-            page-break-after: avoid !important;
-            break-after: avoid-page !important;
+            overflow: visible !important;
+            page-break-after: auto !important;
+            break-after: auto !important;
           }
+
           .quotation-paper header {
             padding-bottom: 2.5mm !important;
           }
+
           .quotation-paper section {
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+          }
+
+          .quotation-paper table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+          }
+
+          .quotation-paper thead {
+            display: table-header-group !important;
+          }
+
+          .quotation-paper tbody {
+            display: table-row-group !important;
+          }
+
+          .quotation-paper tr {
             page-break-inside: avoid !important;
             break-inside: avoid-page !important;
           }
+
+          .quotation-paper th,
+          .quotation-paper td {
+            overflow-wrap: anywhere !important;
+            word-break: normal !important;
+          }
+
           .quotation-paper footer {
-            position: absolute !important;
-            left: 9mm !important;
-            right: 9mm !important;
-            bottom: 9mm !important;
-            margin-top: 0 !important;
+            position: static !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            margin-top: 8mm !important;
             page-break-inside: avoid !important;
             break-inside: avoid-page !important;
           }
