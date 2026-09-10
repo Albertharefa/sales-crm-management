@@ -30,7 +30,6 @@
     --color-accent-foreground: var(--accent-foreground);
     --color-accent: var(--accent);
     --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
     --color-secondary-foreground: var(--secondary-foreground);
     --color-secondary: var(--secondary);
     --color-primary-foreground: var(--primary-foreground);
@@ -90,8 +89,6 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);
@@ -112,7 +109,7 @@
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
 }
@@ -145,22 +142,32 @@
   flex-shrink: 0;
 }
 
-/* Purchase Order Customer - A4 print layout */
+/* Purchase Order Customer - print rules aligned with the Quotation print baseline */
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 29mm 9mm 27mm 9mm;
   }
 
   html,
-  body {
-    width: 210mm;
-    min-width: 210mm;
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  body > *:not(#root) {
+    display: none !important;
+    visibility: hidden !important;
   }
 
   body * {
@@ -173,39 +180,33 @@
   }
 
   .po-print-sheet {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 210mm !important;
-    min-height: 297mm !important;
+    position: relative !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
     box-sizing: border-box !important;
     margin: 0 !important;
-    padding: 12mm 14mm 14mm !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #111827 !important;
     overflow: visible !important;
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
 
+  /* Screen controls never enter the printed document. */
   .po-print-actions {
-    margin-bottom: 7mm !important;
-  }
-
-  .po-print-actions > button:first-child,
-  .po-print-actions .po-print-hide,
-  .po-print-actions button:last-child {
     display: none !important;
-  }
-
-  .po-print-sheet h1 {
-    font-size: 22pt !important;
-    line-height: 1.15 !important;
-    margin: 0 !important;
+    visibility: hidden !important;
   }
 
   .po-print-sheet section {
-    break-inside: auto;
-    page-break-inside: auto;
     box-shadow: none !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   .po-print-items {
@@ -215,17 +216,39 @@
   }
 
   .po-print-table-wrap {
-    overflow: visible !important;
     width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
   }
 
   .po-print-table-wrap table {
     width: 100% !important;
     min-width: 0 !important;
-    max-width: 100% !important;
+    max-width: none !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
-    box-sizing: border-box !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Repeat column headings when the PO item table flows to another page. */
+  .po-print-table-wrap thead {
+    display: table-header-group !important;
+  }
+
+  .po-print-table-wrap tbody {
+    display: table-row-group !important;
+  }
+
+  /* Keep each item row intact; let the table itself flow naturally. */
+  .po-print-table-wrap tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Do not repeat the total row as a page footer. */
+  .po-print-table-wrap tfoot {
+    display: table-row-group !important;
   }
 
   .po-print-table-wrap th,
@@ -236,16 +259,6 @@
     word-break: normal !important;
     padding-left: 2.5mm !important;
     padding-right: 2.5mm !important;
-  }
-
-  .po-print-table-wrap th:nth-child(5),
-  .po-print-table-wrap td:nth-child(5),
-  .po-print-table-wrap th:nth-child(6),
-  .po-print-table-wrap td:nth-child(6) {
-    font-size: 7.5pt !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: clip !important;
   }
 
   .po-print-table-wrap th:nth-child(1),
@@ -271,19 +284,20 @@
   .po-print-table-wrap th:nth-child(5),
   .po-print-table-wrap td:nth-child(5) {
     width: 14% !important;
+    font-size: 7pt !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow: visible !important;
+    letter-spacing: -0.1pt !important;
   }
 
   .po-print-table-wrap th:nth-child(6),
   .po-print-table-wrap td:nth-child(6) {
     width: 18% !important;
-  }
-
-  .po-print-table-wrap th:nth-child(6),
-  .po-print-table-wrap td:nth-child(6) {
+    font-size: 7pt !important;
     white-space: nowrap !important;
     word-break: keep-all !important;
     overflow: visible !important;
-    font-size: 7pt !important;
     letter-spacing: -0.1pt !important;
   }
 
@@ -295,17 +309,10 @@
     letter-spacing: -0.1pt !important;
   }
 
-  .po-print-table-wrap thead {
-    display: table-header-group !important;
-  }
-
-  .po-print-table-wrap tr {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-
+  .po-print-sheet h1,
   .po-print-sheet .text-4xl {
     font-size: 22pt !important;
+    line-height: 1.15 !important;
   }
 
   .po-print-sheet .text-sm {
