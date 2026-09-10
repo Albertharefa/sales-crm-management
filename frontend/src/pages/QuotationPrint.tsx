@@ -243,26 +243,20 @@ export default function QuotationPrint() {
         </section>
 
         <footer className="mt-auto border-t-2 border-slate-900 pt-3 text-[8px] text-slate-500">
-          <div className="grid grid-cols-2 gap-8">
-            <div>
-              <div className="font-semibold text-slate-700">JAKARTA OFFICE</div>
+          <div className="flex items-start justify-between gap-8">
+            <div className="text-left">
+              <div className="font-semibold text-slate-700">Jakarta Office :</div>
               Epincentrum Walk A707
               <br />
               Rasuna Epicentrum Kuningan
               <br />
-              Jl. HR Rasuna Said
-              <br />
-              Jakarta
+              Jl. HR Rasuna Said, Jakarta
               <br />
               Telp : 021-2994 1841
-              <br />
-              Fax : 021-2994 1842
             </div>
-            <div>
-              <div className="font-semibold text-slate-700">SURABAYA OFFICE</div>
-              Jl. Bratang Binangun 83
-              <br />
-              Surabaya 60284
+            <div className="text-right">
+              <div className="font-semibold text-slate-700">Surabaya Office :</div>
+              Jl. Bratang Binangun 83, Surabaya 60284
               <br />
               Phone : 031-502-8999
             </div>
