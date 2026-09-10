@@ -114,9 +114,21 @@ export default function Quotations() {
     staleTime: 60_000,
   });
 
-  const options = useQuery({
-    queryKey: ["options"],
-    queryFn: () => apiGet<Options>("/options"),
+  const customerOptions = useQuery({
+    queryKey: ["quotation-customer-options"],
+    queryFn: () =>
+      apiGet<Paginated<{ id: string; name: string }>>(
+        "/customers?page=1&page_size=100",
+      ),
+    staleTime: 60_000,
+  });
+
+  const productOptions = useQuery({
+    queryKey: ["quotation-product-options"],
+    queryFn: () =>
+      apiGet<Paginated<{ id: string; name: string; default_price?: number }>>(
+        "/products?page=1&page_size=100",
+      ),
     staleTime: 60_000,
   });
 
@@ -509,7 +521,7 @@ export default function Quotations() {
           setForm={setForm}
           items={quotationItems}
           setItems={setQuotationItems}
-          options={options.data}
+
           salesOptions={salesOptions.data ?? []}
           subtotal={subtotal}
           discount={discount}
@@ -695,7 +707,7 @@ function QuotationFormModal({
   setForm,
   items,
   setItems,
-  options,
+
   salesOptions,
   subtotal,
   discount,
@@ -712,8 +724,7 @@ function QuotationFormModal({
   setForm: Dispatch<SetStateAction<QuotationForm>>;
   items: QuotationForm[];
   setItems: Dispatch<SetStateAction<QuotationForm[]>>;
-  options?: Options;
-  salesOptions: { id: string; name: string }[];
+: { id: string; name: string }[];
   subtotal: number;
   discount: number;
   taxValue: number;
@@ -747,7 +758,7 @@ function QuotationFormModal({
               data-testid="quotation-customer-input"
             >
               <option value="">— Pilih customer —</option>
-              {(options?.customers ?? []).map((customer) => (
+              {(customerOptions.data?.items ?? []).map((customer) => (
                 <option key={customer.id} value={customer.id}>
                   {customer.name}
                 </option>
@@ -901,7 +912,7 @@ function QuotationFormModal({
                         className={selectClass}
                         value={item.product_id}
                         onChange={(e) => {
-                          const product = options?.products.find(
+                          const product = productOptions.data?.items.find(
                             (entry) => entry.id === e.target.value,
                           );
                           setItems((current) =>
@@ -922,7 +933,7 @@ function QuotationFormModal({
                         data-testid={`quotation-product-input-${index}`}
                       >
                         <option value="">— Pilih produk —</option>
-                        {(options?.products ?? []).map((product) => (
+                        {(productOptions.data?.items ?? []).map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name}
                           </option>
