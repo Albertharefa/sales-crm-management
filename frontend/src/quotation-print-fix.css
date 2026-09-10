@@ -1,7 +1,6 @@
 /* Quotation print layout.
  * Keep A4 as the default page size while allowing long quotations to flow
- * naturally onto additional pages. Header and footer are fixed so Chrome
- * repeats them on every printed page.
+ * naturally onto additional pages. Header and footer repeat on every page.
  */
 @media print {
   .quotation-print-root,
@@ -28,15 +27,14 @@
   .quotation-paper {
     box-sizing: border-box !important;
     position: relative !important;
-    display: flex !important;
-    flex-direction: column !important;
+    display: block !important;
     width: 210mm !important;
     max-width: none !important;
-    min-height: 297mm !important;
+    min-height: 0 !important;
     height: auto !important;
     max-height: none !important;
     margin: 0 !important;
-    padding: 35mm 9mm 31mm 9mm !important;
+    padding: 0 !important;
     background: #fff !important;
     box-shadow: none !important;
     overflow: visible !important;
@@ -44,37 +42,48 @@
     break-after: auto !important;
   }
 
-  /* Repeat the company header on every printed page. */
-  .quotation-paper > header {
+  /* Chrome uses these page-specific rules for every physical page.
+     They override the generic @page rule inside QuotationPrint.tsx. */
+  @page :first {
+    size: A4 portrait;
+    margin: 29mm 9mm 27mm 9mm;
+  }
+
+  @page :left,
+  @page :right {
+    size: A4 portrait;
+    margin: 29mm 9mm 27mm 9mm;
+  }
+
+  /* Repeat the company header at the very top of every printed page. */
+  .quotation-print-root .quotation-paper > header {
     position: fixed !important;
     top: 0 !important;
-    left: 9mm !important;
-    right: 9mm !important;
-    width: auto !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
     box-sizing: border-box !important;
-    z-index: 20 !important;
+    z-index: 100 !important;
     margin: 0 !important;
-    padding-top: 9mm !important;
-    padding-bottom: 2.5mm !important;
+    padding: 0 9mm 2.5mm !important;
     background: #fff !important;
   }
 
-  /* Repeat the address footer at the bottom of every printed page. */
-  .quotation-paper > footer {
+  /* Repeat the address footer at the absolute bottom of every page. */
+  .quotation-print-root .quotation-paper > footer {
     position: fixed !important;
-    left: 9mm !important;
-    right: 9mm !important;
+    left: 0 !important;
+    right: 0 !important;
     bottom: 0 !important;
-    width: auto !important;
+    width: 100% !important;
     box-sizing: border-box !important;
-    z-index: 20 !important;
+    z-index: 100 !important;
     margin: 0 !important;
-    padding-top: 3mm !important;
-    padding-bottom: 9mm !important;
+    padding: 3mm 9mm 0 !important;
     background: #fff !important;
   }
 
-  /* Let the item table split naturally across pages. */
+  /* Let the item table flow naturally between the reserved page margins. */
   .quotation-paper table {
     width: 100% !important;
     page-break-inside: auto !important;
@@ -94,19 +103,16 @@
     break-inside: avoid-page !important;
   }
 
-  .quotation-paper > section:first-of-type,
-  .quotation-paper > section:last-of-type {
+  .quotation-paper > section {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Keep totals together and keep the terms/signature block together when it fits. */
+  .quotation-paper > section:nth-of-type(2),
+  .quotation-paper > section:nth-of-type(3) {
     page-break-inside: avoid !important;
     break-inside: avoid-page !important;
-  }
-
-  .quotation-paper footer + * {
-    page-break-before: auto !important;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 0;
   }
 
   html,
@@ -115,8 +121,11 @@
     background: #fff !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 210mm !important;
-    min-height: 297mm !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   body > *:not(#root) {
