@@ -108,14 +108,20 @@
     break-inside: auto !important;
   }
 
-  /* Totals must never be split at the page boundary. The browser should
-     keep the whole block together and move it to the next page only when
-     there is not enough room on the current page. */
+  /* Keep totals together. For quotations with 4 or more items, the item
+     table can end very close to the page boundary, so start the complete
+     totals block on the following page. For 1–3 items, keep the totals on
+     the current page when there is enough room. */
   .quotation-paper > section:nth-of-type(3),
   .quotation-paper > section:nth-of-type(4),
   .quotation-paging-content .quotation-totals {
     page-break-inside: avoid !important;
     break-inside: avoid-page !important;
+  }
+
+  .quotation-paging-content:has(table tbody tr:nth-child(4)) .quotation-totals {
+    page-break-before: always !important;
+    break-before: page !important;
   }
 
   html,
