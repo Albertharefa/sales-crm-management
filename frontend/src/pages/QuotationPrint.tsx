@@ -261,6 +261,9 @@ export default function QuotationPrint() {
               Phone : 031-502-8999
             </div>
           </div>
+          <div className="mt-2 text-center text-[7px] italic text-slate-500">
+            This document is digitally generated
+          </div>
         </footer>
       </main>
 
