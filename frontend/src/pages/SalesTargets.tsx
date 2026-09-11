@@ -8,11 +8,13 @@ import { Field, selectClass } from "@/components/Field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Search } from "lucide-react";
 
 type SalesTarget = {
   id: string;
   sales_id: string;
   sales_name: string;
+  sales_status?: string;
   year: number;
   target: number;
 };
@@ -33,6 +35,9 @@ export default function SalesTargets() {
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<SalesTarget | null>(null);
   const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
+  const [search, setSearch] = useState("");
+  const [salesFilter, setSalesFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [form, setForm] = useState({ sales_id: "", year: String(new Date().getFullYear()), target: "" });
 
   const targets = useQuery({
@@ -40,23 +45,24 @@ export default function SalesTargets() {
     queryFn: () => apiGet<SalesTarget[]>("/sales-targets"),
   });
 
-  // Target Sales uses its own backend selector so only actual SALES users
-  // can be selected. Opportunity keeps its broader Sales Master selector.
   const salesOptions = useQuery({
     queryKey: ["sales-target-options"],
     queryFn: () => apiGet<SalesOption[]>("/sales-targets/options"),
     staleTime: 60_000,
   });
 
-  const salesUsers = useMemo(
-    () => salesOptions.data ?? [],
-    [salesOptions.data],
-  );
+  const salesUsers = salesOptions.data ?? [];
 
-  const visibleTargets = useMemo(
-    () => (targets.data ?? []).filter(item => !yearFilter || String(item.year) === yearFilter),
-    [targets.data, yearFilter],
-  );
+  const visibleTargets = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    return (targets.data ?? []).filter(item => {
+      const matchesYear = !yearFilter || String(item.year) === yearFilter;
+      const matchesSearch = !keyword || item.sales_name.toLowerCase().includes(keyword);
+      const matchesSales = !salesFilter || item.sales_id === salesFilter;
+      const matchesStatus = !statusFilter || (item.sales_status ?? "Active") === statusFilter;
+      return matchesYear && matchesSearch && matchesSales && matchesStatus;
+    });
+  }, [targets.data, yearFilter, search, salesFilter, statusFilter]);
 
   const save = useMutation({
     mutationFn: () => {
@@ -101,18 +107,53 @@ export default function SalesTargets() {
         onRefresh={() => window.location.reload()}
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-[220px_1fr]">
+      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(320px,1fr)_220px_240px_180px]">
+        <div className="relative w-full">
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Cari nama sales..."
+            className="h-10 w-full pl-9"
+            data-testid="sales-target-search-input"
+          />
+        </div>
+        <select
+          className={selectClass + " h-10"}
+          value={salesFilter}
+          onChange={e => setSalesFilter(e.target.value)}
+          data-testid="sales-target-sales-filter"
+        >
+          <option value="">Semua sales</option>
+          {salesUsers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <select
+          className={selectClass + " h-10"}
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value)}
+          data-testid="sales-target-status-filter"
+        >
+          <option value="">Semua status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
         <Field label="Tahun">
-          <select className={selectClass} value={yearFilter} onChange={e => setYearFilter(e.target.value)} data-testid="sales-target-year-filter">
+          <select
+            className={selectClass + " h-10"}
+            value={yearFilter}
+            onChange={e => setYearFilter(e.target.value)}
+            data-testid="sales-target-year-filter"
+          >
             {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(year => (
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
         </Field>
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Total Target {yearFilter}</div>
-          <div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(totalTarget)}</div>
-        </div>
+      </div>
+
+      <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Total Target {yearFilter}</div>
+        <div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(totalTarget)}</div>
       </div>
 
       <DataTable
@@ -124,6 +165,7 @@ export default function SalesTargets() {
           { key: "sales", label: "Sales", render: i => <span className="font-medium">{i.sales_name}</span> },
           { key: "year", label: "Tahun", render: i => i.year },
           { key: "target", label: "Target", render: i => <span className="font-mono font-semibold">{money(i.target)}</span> },
+          { key: "status", label: "Status", render: i => i.sales_status ?? "Active" },
           { key: "action", label: "Aksi", render: i => <Button size="sm" variant="outline" onClick={() => openEdit(i)}>Edit</Button> },
         ]}
       />
