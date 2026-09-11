@@ -11,6 +11,18 @@ router = APIRouter(prefix="/users", tags=["users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 DEFAULT_RESET_PASSWORD = "Password123"
 VALID_ROLES = {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}
+INACTIVE_STATUSES = {"INACTIVE", "DISABLED", "Inactive", "Disabled"}
+
+
+async def get_visible_user(user_id: str, current: dict) -> dict:
+    target = await db.users.find_one({"id": user_id})
+    if not target:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+    if current.get("role") == "SUPER_ADMIN":
+        return target
+    if current.get("role") == "SALES_MANAGER" and (target["id"] == current["id"] or target.get("manager_id") == current["id"]):
+        return target
+    raise HTTPException(status_code=403, detail="Anda tidak memiliki akses ke user ini")
 
 
 class UserUpdate(BaseModel):
@@ -23,83 +35,44 @@ class UserUpdate(BaseModel):
     password: str | None = Field(default=None, min_length=8)
 
 
-async def get_visible_user(user_id: str, current: dict) -> dict:
-    target = await db.users.find_one({"id": user_id})
-    if not target:
-        raise HTTPException(status_code=404, detail="User tidak ditemukan")
-
-    if current.get("role") == "SUPER_ADMIN":
-        return target
-
-    if current.get("role") == "SALES_MANAGER":
-        if target["id"] == current["id"] or target.get("manager_id") == current["id"]:
-            return target
-
-    raise HTTPException(status_code=403, detail="Anda tidak memiliki akses ke user ini")
-
-
 @router.get("/{user_id}", response_model=UserPublic)
-async def get_user(
-    user_id: str,
-    user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
-):
-    target = await get_visible_user(user_id, user)
-    return UserPublic(**target)
+async def get_user(user_id: str, user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER"))):
+    return UserPublic(**await get_visible_user(user_id, user))
 
 
 @router.put("/{user_id}", response_model=UserPublic)
-async def update_user(
-    user_id: str,
-    payload: UserUpdate,
-    user: dict = Depends(require_roles("SUPER_ADMIN")),
-):
+async def update_user(user_id: str, payload: UserUpdate, user: dict = Depends(require_roles("SUPER_ADMIN"))):
     target = await db.users.find_one({"id": user_id})
     if not target:
         raise HTTPException(status_code=404, detail="User tidak ditemukan")
-
     updates = payload.model_dump(exclude_unset=True)
 
     if "email" in updates:
         email = (updates["email"] or "").strip().lower()
         if not email:
             raise HTTPException(status_code=400, detail="Email wajib diisi")
-        existing = await db.users.find_one({"email": email, "id": {"$ne": user_id}})
-        if existing:
+        if await db.users.find_one({"email": email, "id": {"$ne": user_id}}):
             raise HTTPException(status_code=409, detail="Email sudah terdaftar")
         updates["email"] = email
-
     if "name" in updates and not (updates["name"] or "").strip():
         raise HTTPException(status_code=400, detail="Nama wajib diisi")
-
     if "role" in updates:
         updates["role"] = (updates["role"] or "").strip().upper()
         if updates["role"] not in VALID_ROLES:
             raise HTTPException(status_code=400, detail="Role tidak valid")
 
-    # Determine the effective role after this update so hierarchy rules also
-    # apply when role and manager are changed in the same request.
     effective_role = updates.get("role", target.get("role"))
-
-    # SUPER_ADMIN and SALES_MANAGER are top-level roles in this CRM hierarchy.
-    # Only individual SALES users may report to a SALES_MANAGER.
     if effective_role in {"SUPER_ADMIN", "SALES_MANAGER"}:
         if updates.get("manager_id"):
-            raise HTTPException(
-                status_code=400,
-                detail="SUPER_ADMIN dan SALES_MANAGER tidak dapat memiliki manager",
-            )
+            raise HTTPException(status_code=400, detail="SUPER_ADMIN dan SALES_MANAGER tidak dapat memiliki manager")
         updates["manager_id"] = None
     elif "manager_id" in updates and updates["manager_id"]:
         manager_id = str(updates["manager_id"]).strip()
         if manager_id == user_id:
             raise HTTPException(status_code=400, detail="User tidak dapat menjadi manager dirinya sendiri")
-
-        manager = await db.users.find_one(
-            {"id": manager_id, "role": "SALES_MANAGER"},
-            {"_id": 0, "id": 1, "name": 1, "role": 1},
-        )
+        manager = await db.users.find_one({"id": manager_id, "role": "SALES_MANAGER", "status": {"$nin": list(INACTIVE_STATUSES)}}, {"_id": 0, "id": 1})
         if not manager:
-            raise HTTPException(status_code=400, detail="Manager harus merupakan SALES_MANAGER")
+            raise HTTPException(status_code=400, detail="Manager harus merupakan SALES_MANAGER aktif")
         updates["manager_id"] = manager["id"]
     elif "manager_id" in updates:
         updates["manager_id"] = None
@@ -108,52 +81,42 @@ async def update_user(
         password = updates.pop("password")
         if password:
             updates["password_hash"] = pwd_context.hash(password)
+            await db.sessions.delete_many({"user_id": user_id})
 
     updates.pop("id", None)
     updates.pop("user_id", None)
     updates.pop("created_at", None)
     updates["updated_at"] = now()
-
     if updates:
         await db.users.update_one({"id": user_id}, {"$set": updates})
-
+    if str(updates.get("status") or "").strip() in INACTIVE_STATUSES:
+        await db.sessions.delete_many({"user_id": user_id})
     updated = await db.users.find_one({"id": user_id})
     await audit(user, "Update", "Users", user_id, {"email": updated.get("email")})
     return UserPublic(**updated)
 
 
 @router.post("/{user_id}/reset-password")
-async def reset_user_password(
-    user_id: str,
-    user: dict = Depends(require_roles("SUPER_ADMIN")),
-):
+async def reset_user_password(user_id: str, user: dict = Depends(require_roles("SUPER_ADMIN"))):
     target = await db.users.find_one({"id": user_id})
     if not target:
         raise HTTPException(status_code=404, detail="User tidak ditemukan")
-
-    await db.users.update_one(
-        {"id": user_id},
-        {"$set": {"password_hash": pwd_context.hash(DEFAULT_RESET_PASSWORD), "updated_at": now()}},
-    )
+    await db.users.update_one({"id": user_id}, {"$set": {"password_hash": pwd_context.hash(DEFAULT_RESET_PASSWORD), "failed_login_attempts": 0, "locked_until": None, "updated_at": now()}})
+    await db.sessions.delete_many({"user_id": user_id})
     await audit(user, "Reset Password", "Users", user_id, {"email": target.get("email"), "name": target.get("name")})
     return {"message": "Password user berhasil direset", "user_id": user_id}
 
 
 @router.delete("/{user_id}")
-async def delete_user(
-    user_id: str,
-    user: dict = Depends(require_roles("SUPER_ADMIN")),
-):
+async def delete_user(user_id: str, user: dict = Depends(require_roles("SUPER_ADMIN"))):
     if user_id == user.get("id"):
         raise HTTPException(status_code=400, detail="User yang sedang login tidak dapat dihapus")
-
     target = await db.users.find_one({"id": user_id})
     if not target:
         raise HTTPException(status_code=404, detail="User tidak ditemukan")
-
+    await db.sessions.delete_many({"user_id": user_id})
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count != 1:
         raise HTTPException(status_code=404, detail="User tidak ditemukan")
-
     await audit(user, "Delete", "Users", user_id, {"email": target.get("email"), "name": target.get("name")})
     return {"message": "User berhasil dihapus", "id": user_id}
