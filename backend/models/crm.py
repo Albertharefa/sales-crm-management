@@ -38,7 +38,6 @@ class CustomerUpdate(CRMBaseModel):
     name: Optional[str] = None
     company_name: Optional[str] = None
     company: Optional[str] = None
-    company: Optional[str] = None
     industry: Optional[str] = None
     city: Optional[str] = None
     province: Optional[str] = None
