@@ -1,0 +1,31 @@
+CRM SALES MANAGEMENT — PRODUCTION SECURITY BASELINE
+
+Date: 2026-09-12
+
+Accepted and implemented:
+- SUPER_ADMIN = ALL scope / full control.
+- SALES_MANAGER = TEAM scope / team management and quotation approval.
+- SALES = SELF scope / own operational data.
+- Centralized server-side RBAC permission policy.
+- Frontend navigation and direct-route guards.
+- Login by Email or User ID.
+- Active-user and valid-role enforcement.
+- 5 failed login attempts => 15-minute temporary lock.
+- httpOnly + Secure/SameSite session cookie.
+- 8-hour session expiry with backend enforcement.
+- Logout invalidates the current session.
+- Password reset invalidates all active sessions for the user.
+- Inactive users are prevented from logging in and active sessions are invalidated.
+- Access denied, login success/failure/lock, logout, user changes and operational actions are auditable.
+- Module-specific export permission and data scope.
+- Manager hierarchy validation for user creation/update.
+- Quotation approval protection and converted-record protection.
+- Purchase Order number uniqueness and completed-order deletion protection.
+- Production indexes for users, sessions, reset tokens and audit logs.
+- Demo login shortcuts hidden by default; can be enabled explicitly with VITE_SHOW_DEMO_LOGIN=true.
+- RBAC unit tests added under backend/tests/test_permissions.py.
+
+Final role rule:
+SUPER_ADMIN = ALL
+SALES_MANAGER = TEAM
+SALES = SELF
