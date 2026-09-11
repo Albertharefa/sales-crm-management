@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 import AppShell from './components/AppShell';
-import Login from './pages/Login';
+import Login from './pages/LoginProduction';
+import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
 import Customers from './pages/Customers';
 import CustomerDetail from './pages/CustomerDetail';
@@ -30,6 +31,7 @@ export default function App() {
       <Toaster position="top-right" richColors />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/" element={<Protected><Home /></Protected>} />
         <Route path="/customers" element={<Protected><Customers /></Protected>} />
         <Route path="/customers/:customerId" element={<Protected><CustomerDetail /></Protected>} />
