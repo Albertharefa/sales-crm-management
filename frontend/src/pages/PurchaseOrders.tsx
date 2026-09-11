@@ -220,7 +220,7 @@ export default function PurchaseOrders() {
 
   return (
     <div data-testid="purchase-orders-page">
-      <PageHeader title="Purchase Order Customer" description="Nomor PO berasal dari customer dan tersimpan bersama dokumen pendukung" action={{ label: "Input PO Customer", onClick: openCreate }} onRefresh={() => void list.refetch()} onExport={() => window.open("/api/v1/exports/purchase-orders", "_blank")} />
+      <PageHeader title="Purchase Order Customer" description="Nomor PO berasal dari customer dan tersimpan bersama dokumen pendukung" action={{ label: "Input PO Customer", onClick: openCreate }} onRefresh={() => window.location.reload()} onExport={() => window.open("/api/v1/exports/purchase-orders", "_blank")} />
       <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(360px,1fr)_220px_260px]">
         <div className="relative w-full"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nomor PO / customer..." className="h-10 w-full pl-9" data-testid="purchase-orders-search-input" /></div>
         <select className={selectClass + " h-10"} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} data-testid="purchase-orders-status-filter"><option value="">Semua status</option>{STATUS_OPTIONS.map((status) => <option key={status}>{status}</option>)}</select>

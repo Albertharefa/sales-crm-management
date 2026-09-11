@@ -86,7 +86,7 @@ export default function OrderMonitoring() {
 
   return (
     <div data-testid="order-monitoring-page">
-      <PageHeader title="Order Monitoring" description="PO Diterima → Processing → Indent → Ready Stock → Delivery → Completed" onRefresh={() => void query.refetch()} onExport={() => window.open("/api/exports/purchase-orders", "_blank")} />
+      <PageHeader title="Order Monitoring" description="PO Diterima → Processing → Indent → Ready Stock → Delivery → Completed" onRefresh={() => window.location.reload()} onExport={() => window.open("/api/exports/purchase-orders", "_blank")} />
       <div className="mb-4 grid grid-cols-[minmax(280px,1fr)_145px_175px_150px_245px] gap-2 overflow-x-auto border-y border-slate-200 bg-white p-3">
         <div className="relative min-w-0"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">⌕</span><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari PO / produk / customer..." className="h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-100" /></div>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}><option value="">Semua status</option>{stages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select>
