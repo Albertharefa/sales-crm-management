@@ -83,7 +83,11 @@ async def create_reset_request(email: str) -> None:
         "expires_at": expires_at,
         "created_at": datetime.now(timezone.utc),
     })
-    await asyncio.to_thread(send_reset_email, user.get("email", email), user.get("name", ""), build_reset_url(raw_token))
+    try:
+        await asyncio.to_thread(send_reset_email, user.get("email", email), user.get("name", ""), build_reset_url(raw_token))
+    except Exception:
+        await db.password_reset_tokens.delete_one({"token_hash": token_hash(raw_token)})
+        raise
 
 
 async def reset_password(raw_token: str, new_password: str) -> bool:
