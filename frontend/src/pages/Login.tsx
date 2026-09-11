@@ -52,42 +52,42 @@ export default function Login() {
     <>
       <Toaster position="top-right" richColors />
       <div className="grid min-h-svh bg-slate-50 lg:grid-cols-[1.05fr_0.95fr]" data-testid="login-page">
-        <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#7c1808] via-[#c2410c] to-[#f97316] p-10 text-white lg:flex lg:flex-col lg:justify-between lg:p-16">
-          <div className="absolute -right-28 -top-24 size-[30rem] rounded-full border border-amber-200/20" />
-          <div className="absolute -right-8 top-28 size-64 rounded-full border border-yellow-200/20" />
-          <div className="absolute -left-24 bottom-[-8rem] size-80 rounded-full bg-yellow-300/25 blur-3xl" />
-          <div className="absolute right-20 top-24 h-2 w-2 rounded-full bg-yellow-200 shadow-[0_0_30px_8px_rgba(254,240,138,0.45)]" />
-          <div className="absolute left-1/3 top-1/4 size-40 rounded-full bg-orange-300/15 blur-3xl" />
+        <section className="relative hidden overflow-hidden bg-gradient-to-br from-[#4f160e] via-[#7c2d12] to-[#c2410c] p-10 text-white lg:flex lg:flex-col lg:justify-between lg:p-16">
+          <div className="absolute -right-28 -top-24 size-[30rem] rounded-full border border-amber-100/15" />
+          <div className="absolute -right-8 top-28 size-64 rounded-full border border-amber-100/15" />
+          <div className="absolute -left-24 bottom-[-8rem] size-80 rounded-full bg-amber-300/10 blur-3xl" />
+          <div className="absolute right-20 top-24 h-2 w-2 rounded-full bg-amber-100/70 shadow-[0_0_25px_6px_rgba(254,240,138,0.25)]" />
+          <div className="absolute left-1/3 top-1/4 size-40 rounded-full bg-orange-200/10 blur-3xl" />
           <div className="relative z-10">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-white font-heading text-xl font-bold text-orange-600 shadow-lg shadow-orange-950/30">C</div>
+              <div className="flex size-10 items-center justify-center rounded-xl bg-white font-heading text-xl font-bold text-orange-600 shadow-lg shadow-orange-950/20">C</div>
               <div>
                 <div className="font-heading font-bold">CRM Sales</div>
-                <div className="text-[10px] tracking-[0.2em] text-orange-100/75">MANAGEMENT</div>
+                <div className="text-[10px] tracking-[0.2em] text-orange-100/70">MANAGEMENT</div>
               </div>
             </div>
             <div className="mt-32 max-w-xl">
-              <div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-yellow-100"><Sparkles className="size-3.5" /> Enterprise sales workspace</div>
+              <div className="mb-5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-100/90"><Sparkles className="size-3.5" /> Enterprise sales workspace</div>
               <h1 className="font-heading text-4xl font-bold leading-tight tracking-tight xl:text-5xl">Kendalikan pipeline, quotation, dan pengiriman order dalam satu tempat.</h1>
-              <p className="mt-6 max-w-lg text-base leading-relaxed text-orange-50/80">Server-side pagination, agregasi dashboard, dan monitoring ETA per PO untuk tim sales industri yang bergerak cepat.</p>
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-orange-50/70">Server-side pagination, agregasi dashboard, dan monitoring ETA per PO untuk tim sales industri yang bergerak cepat.</p>
               <div className="mt-12 grid max-w-lg grid-cols-3 gap-3">
                 {[["11", "MODUL"], ["3", "PERAN"], ["6", "TAHAP ORDER"]].map(([value, label]) => (
-                  <div key={label} className="border border-white/20 bg-white/10 p-4 backdrop-blur-sm" data-testid={`login-stat-${label.toLowerCase().replaceAll(" ", "-")}`}>
-                    <div className="font-mono text-2xl text-yellow-100">{value}</div>
-                    <div className="mt-2 text-[10px] tracking-wider text-orange-100/65">{label}</div>
+                  <div key={label} className="border border-white/15 bg-white/[0.06] p-4 backdrop-blur-sm" data-testid={`login-stat-${label.toLowerCase().replaceAll(" ", "-")}`}>
+                    <div className="font-mono text-2xl text-amber-100/90">{value}</div>
+                    <div className="mt-2 text-[10px] tracking-wider text-orange-100/55">{label}</div>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-          <div className="relative z-10 flex items-center gap-2 text-xs text-orange-100/70">
+          <div className="relative z-10 flex items-center gap-2 text-xs text-orange-100/60">
             <ShieldCheck className="size-4" /> Sesi httpOnly cookie · password ter-hash · RBAC per modul
           </div>
         </section>
 
-        <section className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-white via-orange-50/40 to-amber-50/60 p-5 sm:p-10">
-          <div className="absolute -left-24 top-1/4 size-64 rounded-full bg-orange-200/50 blur-3xl" />
-          <div className="absolute -right-24 bottom-10 size-72 rounded-full bg-amber-200/50 blur-3xl" />
+        <section className="relative flex items-center justify-center overflow-hidden bg-gradient-to-br from-white via-orange-50/25 to-amber-50/35 p-5 sm:p-10">
+          <div className="absolute -left-24 top-1/4 size-64 rounded-full bg-orange-200/25 blur-3xl" />
+          <div className="absolute -right-24 bottom-10 size-72 rounded-full bg-amber-200/25 blur-3xl" />
           <div className="relative z-10 w-full max-w-md">
             <div className="mb-8 lg:hidden">
               <div className="flex items-center gap-3">
@@ -95,7 +95,7 @@ export default function Login() {
                 <div className="font-heading font-bold">CRM Sales Management</div>
               </div>
             </div>
-            <div className="rounded-2xl border border-orange-100 bg-white/95 p-7 shadow-xl shadow-orange-100/70 backdrop-blur sm:p-9">
+            <div className="rounded-2xl border border-orange-100 bg-white/95 p-7 shadow-xl shadow-orange-100/50 backdrop-blur sm:p-9">
               <div className="mb-8">
                 <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><LockKeyhole className="size-5" /></div>
                 <h2 className="font-heading text-2xl font-bold tracking-tight" data-testid="login-title">Masuk ke akun Anda</h2>
@@ -132,26 +132,26 @@ export default function Login() {
             </div>
           </div>
         </section>
-      </div>
 
       {forgotOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-5 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="forgot-password-title" data-testid="forgot-password-modal">
           <div className="w-full max-w-md rounded-2xl border border-orange-100 bg-white p-7 shadow-2xl sm:p-8">
             <div className="mb-6 flex size-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600"><Mail className="size-5" /></div>
             <h2 id="forgot-password-title" className="font-heading text-2xl font-bold tracking-tight">Lupa password?</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-500">Masukkan email akun Anda. Permintaan reset akan diproses oleh administrator CRM.</p>
+            <p className="mt-2 text-sm leading-relaxed text-slate-500">Masukkan email akun Anda. Link reset akan dikirim ke email yang terdaftar.</p>
             <form onSubmit={submitForgotPassword} className="mt-6 space-y-5">
               <Field label="Email" required>
                 <Input type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} autoComplete="email" required data-testid="forgot-password-email-input" />
               </Field>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setForgotOpen(false)} data-testid="forgot-password-cancel">Batal</Button>
-                <Button type="submit" className="bg-orange-600 hover:bg-orange-700" data-testid="forgot-password-submit">Kirim Permintaan</Button>
+                <Button type="submit" className="bg-orange-600 hover:bg-orange-700" data-testid="forgot-password-submit">Kirim Link Reset</Button>
               </div>
             </form>
           </div>
         </div>
       )}
+      </div>
     </>
   );
 }
