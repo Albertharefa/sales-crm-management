@@ -13,7 +13,7 @@ export interface DashboardMetrics { total_customer: number; total_contacts: numb
 export interface AuditLog { id: string; user_name: string; action: string; module: string; record_id?: string; changes?: Record<string, unknown>; created_at: string; }
 export interface Paginated<T> { items: T[]; page: number; page_size: number; total: number; }
 export interface Options { customers: { id: string; name: string }[]; products: { id: string; name: string; default_price?: number }[]; users: { id: string; name: string; role: string }[]; }
-export interface SalesTeamMetric { sales: string; role: string; manager: string; open_pipeline: number; weighted: number; won: number; po: number; po_value: number; activities: number; indent: number; overdue: number; }
+export interface SalesTeamMetric { sales: string; role: string; manager: string; target: number; gap_to_target: number; achievement: number; open_pipeline: number; weighted: number; coverage: number; won: number; won_count: number; lost_count: number; win_rate: number; po: number; po_value: number; activities: number; overdue_activities: number; indent: number; overdue: number; }
 export type AIContextType = "dashboard" | "customer" | "opportunity" | "quotation";
 export type AICapability = "sales_copilot" | "report_analyst" | "quotation_writer";
 export interface AIMessage { id: string; conversation_id: string; role: "user" | "assistant"; content: string; capability: AICapability; context_type: AIContextType; context_id?: string | null; created_at: string; }
