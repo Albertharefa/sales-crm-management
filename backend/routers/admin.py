@@ -106,6 +106,7 @@ async def sales_team(
         query["$or"] = [
             {"name": {"$regex": keyword, "$options": "i"}},
             {"id": {"$regex": keyword, "$options": "i"}},
+            {"user_id": {"$regex": keyword, "$options": "i"}},
         ]
 
     if status:
@@ -116,6 +117,21 @@ async def sales_team(
             query["status"] = {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}
 
     users = await db.users.find(query).to_list(100)
+    all_users = await db.users.find(
+        {},
+        {"id": 1, "user_id": 1, "name": 1},
+    ).to_list(1000)
+    user_by_reference = {
+        str(item.get("id")): item
+        for item in all_users
+        if item.get("id")
+    }
+    user_by_reference.update({
+        str(item.get("user_id")): item
+        for item in all_users
+        if item.get("user_id")
+    })
+
     current_year = year or datetime.now(timezone.utc).year
     current_time = datetime.now(timezone.utc)
     result = []
@@ -176,10 +192,17 @@ async def sales_team(
             and order.get("eta")
             and str(order.get("eta"))[:10] < current_time.date().isoformat()
         )
+        manager_reference = person.get("manager_id")
+        manager = user_by_reference.get(str(manager_reference)) if manager_reference else None
+        manager_label = (
+            f"{manager.get('name')} — {manager.get('user_id')}"
+            if manager and manager.get("name")
+            else "-"
+        )
         result.append({
             "sales": sales_name,
             "role": person["role"],
-            "manager": person.get("manager_id") or "-",
+            "manager": manager_label,
             "target": target,
             "gap_to_target": gap_to_target,
             "achievement": achievement,
@@ -204,7 +227,7 @@ async def sales_team(
 async def options(user: dict = Depends(current_user)):
     customers = await db.customers.find({}, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
     products = await db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
-    users = await db.users.find({}, {"id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+    users = await db.users.find({}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
     return {"customers": customers, "products": products, "users": users}
 
 
