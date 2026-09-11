@@ -33,10 +33,11 @@ async def get_sales_options() -> list[dict[str, str]]:
     for user in users:
         user_id = str(user.get("id") or "").strip()
         name = str(user.get("name") or "").strip()
+        role = str(user.get("role") or "").strip().upper()
         if not user_id or not name:
             continue
 
-        record = {"id": user_id, "name": name}
+        record = {"id": user_id, "name": name, "role": role}
         by_id[user_id] = record
         by_name[_norm(name)] = record
 
@@ -55,7 +56,7 @@ async def get_sales_options() -> list[dict[str, str]]:
             and role in SALES_ROLES
             and status not in {"INACTIVE", "DISABLED"}
         ):
-            selected[user_id] = {"id": user_id, "name": name}
+            selected[user_id] = {"id": user_id, "name": name, "role": role}
 
     # Preserve existing assignments from all CRM modules by resolving them
     # to the same User record whenever possible.
