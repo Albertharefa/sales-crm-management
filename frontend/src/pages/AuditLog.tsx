@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api";
 import type { AuditLog as AuditLogType, Paginated } from "@/lib/types";
@@ -5,4 +6,9 @@ import PageHeader from "@/components/PageHeader";
 import DataTable from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
 
-export default function AuditLog() { const query = useQuery({ queryKey: ["audit-logs"], queryFn: () => apiGet<Paginated<AuditLogType>>("/audit-logs?page=1&page_size=50") }); return <div data-testid="audit-log-page"><PageHeader title="Audit Log" description="Jejak perubahan penting: siapa, apa, kapan, dari nilai apa ke apa" onRefresh={() => window.location.reload()} /><DataTable testId="audit-log-table" items={query.data?.items ?? []} loading={query.isLoading} total={query.data?.total} columns={[{ key: "user", label: "User", render: i => <span className="font-medium">{i.user_name}</span> }, { key: "action", label: "Aksi", render: i => <Badge variant="outline">{i.action}</Badge> }, { key: "module", label: "Modul", render: i => i.module }, { key: "record", label: "Record ID", render: i => <span className="font-mono text-[10px]">{i.record_id ?? "—"}</span> }, { key: "changes", label: "Perubahan", render: i => <span className="block max-w-xs truncate text-xs text-slate-500">{i.changes ? JSON.stringify(i.changes) : "—"}</span> }, { key: "time", label: "Waktu", render: i => new Date(i.created_at).toLocaleString("id-ID") }]} /></div>; }
+export default function AuditLog() {
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const query = useQuery({ queryKey: ["audit-logs", page, pageSize], queryFn: () => apiGet<Paginated<AuditLogType>>(`/audit-logs?page=${page}&page_size=${pageSize}`) });
+  return <div data-testid="audit-log-page"><PageHeader title="Audit Log" description="Jejak perubahan penting: siapa, apa, kapan, dari nilai apa ke apa" onRefresh={() => window.location.reload()} /><DataTable testId="audit-log-table" items={query.data?.items ?? []} loading={query.isLoading} total={query.data?.total} page={page} pageSize={pageSize} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1); }} columns={[{ key: "user", label: "User", render: i => <span className="font-medium">{i.user_name}</span> }, { key: "action", label: "Aksi", render: i => <Badge variant="outline">{i.action}</Badge> }, { key: "module", label: "Modul", render: i => i.module }, { key: "record", label: "Record ID", render: i => <span className="font-mono text-[10px]">{i.record_id ?? "—"}</span> }, { key: "changes", label: "Perubahan", render: i => <span className="block max-w-xs truncate text-xs text-slate-500">{i.changes ? JSON.stringify(i.changes) : "—"}</span> }, { key: "time", label: "Waktu", render: i => new Date(i.created_at).toLocaleString("id-ID") }]} /></div>;
+}
