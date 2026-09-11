@@ -20,7 +20,6 @@ type SalesTarget = {
 type SalesOption = {
   id: string;
   name: string;
-  role: string;
 };
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", {
@@ -42,8 +41,8 @@ export default function SalesTargets() {
   });
 
   // Use the same canonical Sales master as Sales Pipeline and other CRM
-  // modules. The backend resolves this list from the Users collection and
-  // also reconciles legacy sales assignments.
+  // modules. The backend already applies the allowed Sales-role rules and
+  // reconciles legacy CRM assignments, so the frontend must not filter again.
   const salesOptions = useQuery({
     queryKey: ["crm-sales-options"],
     queryFn: () => apiGet<SalesOption[]>("/pipeline/sales-options"),
@@ -51,7 +50,7 @@ export default function SalesTargets() {
   });
 
   const salesUsers = useMemo(
-    () => (salesOptions.data ?? []).filter(user => user.role === "SALES"),
+    () => salesOptions.data ?? [],
     [salesOptions.data],
   );
 
