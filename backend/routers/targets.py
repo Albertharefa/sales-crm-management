@@ -22,6 +22,21 @@ async def list_sales_targets(
     return docs
 
 
+@router.get("/sales-targets/options")
+async def sales_target_options(
+    user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
+):
+    """Return only active individual SALES users for Target Sales."""
+    users = await db.users.find(
+        {
+            "role": "SALES",
+            "status": {"$nin": ["INACTIVE", "DISABLED"]},
+        },
+        {"_id": 0, "id": 1, "name": 1},
+    ).sort("name", 1).to_list(1000)
+    return [{"id": str(item["id"]), "name": str(item["name"])} for item in users if item.get("id") and item.get("name")]
+
+
 @router.post("/sales-targets")
 async def create_sales_target(
     payload: SalesTargetPayload,
