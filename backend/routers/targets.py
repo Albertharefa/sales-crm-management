@@ -14,12 +14,42 @@ class SalesTargetPayload(BaseModel):
     target: float = Field(default=0, ge=0)
 
 
+async def visible_sales_ids(user: dict) -> list[str] | None:
+    """Return sales IDs visible for target management; None means unrestricted."""
+    if user.get("role") == "SUPER_ADMIN":
+        return None
+
+    reports = await db.users.find(
+        {"manager_id": user["id"], "role": "SALES"},
+        {"_id": 0, "id": 1},
+    ).to_list(1000)
+    return [str(item["id"]) for item in reports if item.get("id")]
+
+
+async def get_sales_for_target(sales_id: str, user: dict) -> dict:
+    """Validate the target owner and enforce manager hierarchy."""
+    sales = await db.users.find_one(
+        {"id": sales_id, "role": "SALES"},
+        {"_id": 0, "id": 1, "name": 1, "role": 1, "status": 1, "manager_id": 1},
+    )
+    if not sales:
+        raise HTTPException(status_code=404, detail="Sales tidak ditemukan")
+
+    if user.get("role") == "SALES_MANAGER" and sales.get("manager_id") != user.get("id"):
+        raise HTTPException(status_code=403, detail="Sales tersebut bukan anggota team Anda")
+
+    return sales
+
+
 @router.get("/sales-targets")
 async def list_sales_targets(
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
+    allowed_ids = await visible_sales_ids(user)
+    query = {} if allowed_ids is None else {"sales_id": {"$in": allowed_ids}}
+
     docs = await db.sales_targets.find(
-        {},
+        query,
         {"_id": 0},
     ).sort([("year", -1), ("sales_name", 1)]).to_list(5000)
 
@@ -44,15 +74,23 @@ async def list_sales_targets(
 async def sales_target_options(
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
-    """Return only active individual SALES users for Target Sales."""
+    """Return only active SALES users the current user may manage."""
+    query = {
+        "role": "SALES",
+        "status": {"$nin": ["INACTIVE", "DISABLED"]},
+    }
+    if user.get("role") == "SALES_MANAGER":
+        query["manager_id"] = user["id"]
+
     users = await db.users.find(
-        {
-            "role": "SALES",
-            "status": {"$nin": ["INACTIVE", "DISABLED"]},
-        },
+        query,
         {"_id": 0, "id": 1, "name": 1},
     ).sort("name", 1).to_list(1000)
-    return [{"id": str(item["id"]), "name": str(item["name"])} for item in users if item.get("id") and item.get("name")]
+    return [
+        {"id": str(item["id"]), "name": str(item["name"])}
+        for item in users
+        if item.get("id") and item.get("name")
+    ]
 
 
 @router.post("/sales-targets")
@@ -60,13 +98,7 @@ async def create_sales_target(
     payload: SalesTargetPayload,
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
-    # A sales target belongs to an individual SALES user, not an admin or manager.
-    sales = await db.users.find_one(
-        {"id": payload.sales_id, "role": "SALES"},
-        {"_id": 0, "id": 1, "name": 1, "role": 1},
-    )
-    if not sales:
-        raise HTTPException(status_code=404, detail="Sales tidak ditemukan")
+    sales = await get_sales_for_target(payload.sales_id, user)
 
     existing = await db.sales_targets.find_one(
         {"sales_id": payload.sales_id, "year": payload.year}
@@ -101,16 +133,14 @@ async def update_sales_target(
     payload: SalesTargetPayload,
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
-    sales = await db.users.find_one(
-        {"id": payload.sales_id, "role": "SALES"},
-        {"_id": 0, "id": 1, "name": 1, "role": 1},
-    )
-    if not sales:
-        raise HTTPException(status_code=404, detail="Sales tidak ditemukan")
+    sales = await get_sales_for_target(payload.sales_id, user)
 
     existing = await db.sales_targets.find_one({"id": target_id})
     if not existing:
         raise HTTPException(status_code=404, detail="Target tidak ditemukan")
+
+    if user.get("role") == "SALES_MANAGER" and existing.get("sales_id") not in (await visible_sales_ids(user) or []):
+        raise HTTPException(status_code=403, detail="Target tersebut bukan milik team Anda")
 
     duplicate = await db.sales_targets.find_one(
         {"sales_id": payload.sales_id, "year": payload.year, "id": {"$ne": target_id}}
