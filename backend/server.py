@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
-from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users
+from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset
 from routers.dashboard import router as dashboard_router
 from routers.order_monitoring import router as order_monitoring_router
 
@@ -63,6 +63,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(password_reset.router, prefix="/api/v1")
 app.include_router(customers.router, prefix="/api/v1")
 app.include_router(pipeline.router, prefix="/api/v1")
 app.include_router(quotations.router, prefix="/api/v1")
