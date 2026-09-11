@@ -38,7 +38,7 @@ export default function OrderMonitoring() {
 
   const query = useQuery({
     queryKey: ["order-monitoring"],
-    queryFn: () => apiGet<Paginated<MonitoringOrder>>("/purchase-orders?page=1&page_size=50"),
+    queryFn: () => apiGet<Paginated<MonitoringOrder>>("/order-monitoring?page=1&page_size=50"),
   });
   const customerQuery = useQuery({
     queryKey: ["order-monitoring-customers"],
