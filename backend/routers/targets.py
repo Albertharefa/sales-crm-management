@@ -18,7 +18,25 @@ class SalesTargetPayload(BaseModel):
 async def list_sales_targets(
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
-    docs = await db.sales_targets.find({}, {"_id": 0}).sort([("year", -1), ("sales_name", 1)]).to_list(5000)
+    docs = await db.sales_targets.find(
+        {},
+        {"_id": 0},
+    ).sort([("year", -1), ("sales_name", 1)]).to_list(5000)
+
+    sales_ids = [str(item.get("sales_id") or "").strip() for item in docs if item.get("sales_id")]
+    users = await db.users.find(
+        {"id": {"$in": sales_ids}},
+        {"_id": 0, "id": 1, "status": 1},
+    ).to_list(1000) if sales_ids else []
+    status_by_id = {
+        str(item.get("id")): str(item.get("status") or "Active").strip().upper()
+        for item in users
+    }
+
+    for item in docs:
+        status = status_by_id.get(str(item.get("sales_id") or ""), "ACTIVE")
+        item["sales_status"] = "Inactive" if status in {"INACTIVE", "DISABLED"} else "Active"
+
     return docs
 
 
