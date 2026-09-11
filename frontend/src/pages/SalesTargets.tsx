@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
-import type { Options } from "@/lib/types";
+import type { Paginated, User } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -9,7 +9,6 @@ import { Field, selectClass } from "@/components/Field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
 
 type SalesTarget = {
   id: string;
@@ -37,14 +36,15 @@ export default function SalesTargets() {
     queryFn: () => apiGet<SalesTarget[]>("/sales-targets"),
   });
 
-  const options = useQuery({
-    queryKey: ["options"],
-    queryFn: () => apiGet<Options>("/options"),
+  // Use the CRM Users endpoint directly as the authoritative sales database.
+  const salesUsersQuery = useQuery({
+    queryKey: ["sales-target-users"],
+    queryFn: () => apiGet<Paginated<User>>("/users?page=1&page_size=100&search="),
   });
 
   const salesUsers = useMemo(
-    () => (options.data?.users ?? []).filter(user => user.role === "SALES"),
-    [options.data],
+    () => (salesUsersQuery.data?.items ?? []).filter(user => user.role === "SALES"),
+    [salesUsersQuery.data],
   );
 
   const visibleTargets = useMemo(
