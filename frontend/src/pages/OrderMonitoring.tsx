@@ -10,6 +10,8 @@ import { toast } from "sonner";
 
 const stages = ["Received", "Processing", "Indent", "Ready Stock", "Delivery", "Completed"];
 
+type MonitoringOrder = PurchaseOrder & { is_demo?: boolean };
+
 function monitoringId(order: PurchaseOrder) {
   const match = order.po_number.match(/(\d+)$/);
   return `MON-${match ? match[1].padStart(4, "0") : order.id.slice(0, 4).toUpperCase()}`;
@@ -35,7 +37,7 @@ export default function OrderMonitoring() {
 
   const query = useQuery({
     queryKey: ["order-monitoring"],
-    queryFn: () => apiGet<Paginated<PurchaseOrder>>("/purchase-orders?page=1&page_size=50"),
+    queryFn: () => apiGet<Paginated<MonitoringOrder>>("/purchase-orders?page=1&page_size=50"),
   });
   const customerQuery = useQuery({
     queryKey: ["order-monitoring-customers"],
@@ -62,7 +64,10 @@ export default function OrderMonitoring() {
     });
     return map;
   }, [customers]);
-  const linkedItems = useMemo(() => items.filter((item) => customerByKey.has(item.customer_id)), [items, customerByKey]);
+  const linkedItems = useMemo(
+    () => items.filter((item) => !item.is_demo && customerByKey.has(item.customer_id)),
+    [items, customerByKey]
+  );
   const customerName = (order: PurchaseOrder) => {
     const customer = customerByKey.get(order.customer_id);
     return customer?.name || order.customer_name || "—";
