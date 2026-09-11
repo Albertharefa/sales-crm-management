@@ -107,7 +107,7 @@ export default function SalesTargets() {
         onRefresh={() => window.location.reload()}
       />
 
-      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[minmax(320px,1fr)_220px_240px_180px]">
+      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[360px_220px_240px_200px]">
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
           <Input
@@ -137,9 +137,10 @@ export default function SalesTargets() {
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </select>
-        <Field label="Tahun">
+        <div className="flex h-10 items-center gap-2">
+          <span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-slate-500">Tahun</span>
           <select
-            className={selectClass + " h-10"}
+            className={selectClass + " h-10 flex-1"}
             value={yearFilter}
             onChange={e => setYearFilter(e.target.value)}
             data-testid="sales-target-year-filter"
@@ -148,7 +149,7 @@ export default function SalesTargets() {
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
-        </Field>
+        </div>
       </div>
 
       <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
