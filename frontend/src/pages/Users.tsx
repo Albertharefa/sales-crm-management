@@ -64,7 +64,13 @@ export default function Users() {
     onError: () => toast.error("Password user gagal direset"),
   });
 
-  const managers = (optionsQuery.data?.users ?? []).filter(u => u.role === "SALES_MANAGER");
+  const managerCandidates = [
+    ...(query.data?.items ?? []),
+    ...(optionsQuery.data?.users ?? []),
+  ];
+  const managers = Array.from(
+    new Map(managerCandidates.filter(u => String(u.role ?? "").toUpperCase() === "SALES_MANAGER").map(u => [u.id, u])).values(),
+  );
 
   const managerLabel = (managerId: string | null | undefined) => {
     if (!managerId) return "—";
