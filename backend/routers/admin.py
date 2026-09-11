@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import re
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from passlib.context import CryptContext
@@ -87,14 +88,35 @@ async def list_audit_logs(
 
 @router.get("/sales-team", response_model=list[SalesTeamMetric])
 async def sales_team(
+    search: str = Query(""),
+    sales_id: str = Query(""),
+    status: str = Query(""),
+    year: int | None = Query(None, ge=2000, le=2100),
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
-    query = {"role": {"$in": ["SALES", "SALES_MANAGER"]}}
+    query: dict = {"role": {"$in": ["SALES", "SALES_MANAGER"]}}
     if user.get("role") == "SALES_MANAGER":
         query = {"id": {"$in": await manager_user_ids(user)}, "role": "SALES"}
 
+    if sales_id:
+        query["id"] = sales_id
+
+    if search.strip():
+        keyword = re.escape(search.strip())
+        query["$or"] = [
+            {"name": {"$regex": keyword, "$options": "i"}},
+            {"id": {"$regex": keyword, "$options": "i"}},
+        ]
+
+    if status:
+        normalized_status = status.strip().lower()
+        if normalized_status == "inactive":
+            query["status"] = {"$in": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}
+        elif normalized_status == "active":
+            query["status"] = {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}
+
     users = await db.users.find(query).to_list(100)
-    current_year = datetime.now(timezone.utc).year
+    current_year = year or datetime.now(timezone.utc).year
     current_time = datetime.now(timezone.utc)
     result = []
 
