@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import os
 import secrets
 import smtplib
@@ -13,7 +14,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def token_hash(token: str) -> str:
-    return secrets.token_hex(32) if False else __import__("hashlib").sha256(token.encode("utf-8")).hexdigest()
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def build_reset_url(token: str) -> str:
@@ -49,13 +50,13 @@ def send_reset_email(to_email: str, user_name: str, reset_url: str) -> None:
         "CRM Sales Management\n"
     )
     message.add_alternative(
-        f"""<!doctype html><html><body style=\"font-family:Arial,sans-serif;color:#172033;line-height:1.6\">\n"
-        f"<h2>Reset Password</h2><p>Halo {user_name or 'User'},</p>\n"
-        "<p>Kami menerima permintaan untuk reset password akun CRM Sales Management Anda.</p>\n"
-        f"<p><a href=\"{reset_url}\" style=\"display:inline-block;padding:12px 20px;background:#c65a24;color:#fff;text-decoration:none;border-radius:8px\">Reset Password</a></p>\n"
-        "<p>Link ini berlaku selama <strong>30 menit</strong> dan hanya dapat digunakan satu kali.</p>\n"
-        "<p>Jika Anda tidak meminta reset password, abaikan email ini.</p>\n"
-        "</body></html>""",
+        f"<!doctype html><html><body style=\"font-family:Arial,sans-serif;color:#172033;line-height:1.6\">"
+        f"<h2>Reset Password</h2><p>Halo {user_name or 'User'},</p>"
+        "<p>Kami menerima permintaan untuk reset password akun CRM Sales Management Anda.</p>"
+        f"<p><a href=\"{reset_url}\" style=\"display:inline-block;padding:12px 20px;background:#c65a24;color:#fff;text-decoration:none;border-radius:8px\">Reset Password</a></p>"
+        "<p>Link ini berlaku selama <strong>30 menit</strong> dan hanya dapat digunakan satu kali.</p>"
+        "<p>Jika Anda tidak meminta reset password, abaikan email ini.</p>"
+        "</body></html>",
         subtype="html",
     )
 
@@ -70,7 +71,6 @@ async def create_reset_request(email: str) -> None:
     user = await db.users.find_one({"email": email})
     if not user:
         return
-
     if not smtp_configured():
         raise RuntimeError("SMTP belum dikonfigurasi")
 
@@ -83,9 +83,7 @@ async def create_reset_request(email: str) -> None:
         "expires_at": expires_at,
         "created_at": datetime.now(timezone.utc),
     })
-
-    reset_url = build_reset_url(raw_token)
-    await asyncio.to_thread(send_reset_email, user.get("email", email), user.get("name", ""), reset_url)
+    await asyncio.to_thread(send_reset_email, user.get("email", email), user.get("name", ""), build_reset_url(raw_token))
 
 
 async def reset_password(raw_token: str, new_password: str) -> bool:
