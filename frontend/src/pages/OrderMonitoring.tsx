@@ -62,16 +62,17 @@ export default function OrderMonitoring() {
     });
     return map;
   }, [customers]);
+  const linkedItems = useMemo(() => items.filter((item) => customerByKey.has(item.customer_id)), [items, customerByKey]);
   const customerName = (order: PurchaseOrder) => {
     const customer = customerByKey.get(order.customer_id);
-    return customer?.company_name || customer?.name || order.customer_name || "—";
+    return customer?.name || order.customer_name || "—";
   };
-  const salesOptions = useMemo(() => Array.from(new Set(items.map((item) => item.sales_name).filter(Boolean))).sort(), [items]);
-  const customerOptions = useMemo(() => Array.from(new Set(items.map((item) => customerName(item)).filter((name) => name !== "—"))).sort(), [items, customerByKey]);
+  const salesOptions = useMemo(() => Array.from(new Set(linkedItems.map((item) => item.sales_name).filter(Boolean))).sort(), [linkedItems]);
+  const customerOptions = useMemo(() => Array.from(new Set(linkedItems.map((item) => customerName(item)).filter((name) => name !== "—"))).sort(), [linkedItems, customerByKey]);
 
   const filteredItems = useMemo(() => {
     const keyword = search.trim().toLowerCase();
-    return items.filter((item) => {
+    return linkedItems.filter((item) => {
       const customer = customerName(item);
       const product = item.items[0]?.description ?? "";
       const matchesSearch = !keyword || [item.po_number, product, customer].some((value) => String(value).toLowerCase().includes(keyword));
@@ -81,7 +82,7 @@ export default function OrderMonitoring() {
       const matchesCustomer = !customerFilter || customer === customerFilter;
       return matchesSearch && matchesStatus && matchesEta && matchesSales && matchesCustomer;
     });
-  }, [items, search, statusFilter, etaFilter, salesFilter, customerFilter, customerByKey]);
+  }, [linkedItems, search, statusFilter, etaFilter, salesFilter, customerFilter, customerByKey]);
 
   const stats = [
     { label: "TOTAL", value: filteredItems.length },
