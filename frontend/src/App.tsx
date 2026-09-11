@@ -15,6 +15,7 @@ import OrderMonitoring from './pages/OrderMonitoring';
 import Activities from './pages/Activities';
 import Products from './pages/Products';
 import SalesTeam from './pages/SalesTeam';
+import SalesTargets from './pages/SalesTargets';
 import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="/activities" element={<Protected><Activities /></Protected>} />
         <Route path="/products" element={<Protected><Products /></Protected>} />
         <Route path="/sales-team" element={<Protected><SalesTeam /></Protected>} />
+        <Route path="/sales-targets" element={<Protected><SalesTargets /></Protected>} />
         <Route path="/users" element={<Protected><Users /></Protected>} />
         <Route path="/audit-log" element={<Protected><AuditLog /></Protected>} />
         <Route path="/settings" element={<Protected><Settings /></Protected>} />
