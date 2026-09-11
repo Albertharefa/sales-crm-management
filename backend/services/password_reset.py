@@ -41,24 +41,8 @@ def send_reset_email(to_email: str, user_name: str, reset_url: str) -> None:
     message["Subject"] = "Reset Password – CRM Sales Management"
     message["From"] = f"{sender_name} <{sender}>"
     message["To"] = to_email
-    message.set_content(
-        f"Halo {user_name or 'User'},\n\n"
-        "Kami menerima permintaan untuk reset password akun CRM Sales Management Anda.\n\n"
-        f"Buka link berikut untuk membuat password baru:\n{reset_url}\n\n"
-        "Link ini berlaku selama 30 menit dan hanya dapat digunakan satu kali.\n"
-        "Jika Anda tidak meminta reset password, abaikan email ini.\n\n"
-        "CRM Sales Management\n"
-    )
-    message.add_alternative(
-        f"<!doctype html><html><body style=\"font-family:Arial,sans-serif;color:#172033;line-height:1.6\">"
-        f"<h2>Reset Password</h2><p>Halo {user_name or 'User'},</p>"
-        "<p>Kami menerima permintaan untuk reset password akun CRM Sales Management Anda.</p>"
-        f"<p><a href=\"{reset_url}\" style=\"display:inline-block;padding:12px 20px;background:#c65a24;color:#fff;text-decoration:none;border-radius:8px\">Reset Password</a></p>"
-        "<p>Link ini berlaku selama <strong>30 menit</strong> dan hanya dapat digunakan satu kali.</p>"
-        "<p>Jika Anda tidak meminta reset password, abaikan email ini.</p>"
-        "</body></html>",
-        subtype="html",
-    )
+    message.set_content(f"Halo {user_name or 'User'},\n\nKami menerima permintaan reset password akun CRM Sales Management Anda.\n\nBuka link berikut untuk membuat password baru:\n{reset_url}\n\nLink ini berlaku selama 30 menit dan hanya dapat digunakan satu kali.\nJika Anda tidak meminta reset password, abaikan email ini.\n\nCRM Sales Management\n")
+    message.add_alternative(f"<!doctype html><html><body style=\"font-family:Arial,sans-serif;color:#172033;line-height:1.6\"><h2>Reset Password</h2><p>Halo {user_name or 'User'},</p><p>Kami menerima permintaan untuk reset password akun CRM Sales Management Anda.</p><p><a href=\"{reset_url}\" style=\"display:inline-block;padding:12px 20px;background:#c65a24;color:#fff;text-decoration:none;border-radius:8px\">Reset Password</a></p><p>Link ini berlaku selama <strong>30 menit</strong> dan hanya dapat digunakan satu kali.</p><p>Jika Anda tidak meminta reset password, abaikan email ini.</p></body></html>", subtype="html")
 
     with smtplib.SMTP(host, port, timeout=20) as smtp:
         if use_tls:
@@ -77,12 +61,7 @@ async def create_reset_request(email: str) -> None:
     raw_token = secrets.token_urlsafe(48)
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     await db.password_reset_tokens.delete_many({"user_id": user["id"]})
-    await db.password_reset_tokens.insert_one({
-        "token_hash": token_hash(raw_token),
-        "user_id": user["id"],
-        "expires_at": expires_at,
-        "created_at": datetime.now(timezone.utc),
-    })
+    await db.password_reset_tokens.insert_one({"token_hash": token_hash(raw_token), "user_id": user["id"], "expires_at": expires_at, "created_at": datetime.now(timezone.utc)})
     try:
         await asyncio.to_thread(send_reset_email, user.get("email", email), user.get("name", ""), build_reset_url(raw_token))
     except Exception:
