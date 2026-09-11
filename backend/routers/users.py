@@ -9,6 +9,7 @@ from routers.deps import require_roles
 
 router = APIRouter(prefix="/users", tags=["users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+DEFAULT_RESET_PASSWORD = "Password123"
 
 
 class UserUpdate(BaseModel):
@@ -95,6 +96,23 @@ async def update_user(
     updated = await db.users.find_one({"id": user_id})
     await audit(user, "Update", "Users", user_id, {"email": updated.get("email")})
     return UserPublic(**updated)
+
+
+@router.post("/{user_id}/reset-password")
+async def reset_user_password(
+    user_id: str,
+    user: dict = Depends(require_roles("SUPER_ADMIN")),
+):
+    target = await db.users.find_one({"id": user_id})
+    if not target:
+        raise HTTPException(status_code=404, detail="User tidak ditemukan")
+
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": pwd_context.hash(DEFAULT_RESET_PASSWORD), "updated_at": now()}},
+    )
+    await audit(user, "Reset Password", "Users", user_id, {"email": target.get("email"), "name": target.get("name")})
+    return {"message": "Password user berhasil direset", "user_id": user_id}
 
 
 @router.delete("/{user_id}")
