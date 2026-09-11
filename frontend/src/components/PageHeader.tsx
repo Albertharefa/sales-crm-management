@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Download, Plus, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -13,16 +12,11 @@ type PageHeaderProps = {
 
 export default function PageHeader({ title, description, action, onRefresh, onExport }: PageHeaderProps) {
   const [refreshing, setRefreshing] = useState(false);
-  const queryClient = useQueryClient();
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     if (!onRefresh || refreshing) return;
     setRefreshing(true);
-    try {
-      await queryClient.invalidateQueries({ refetchType: "active" });
-    } finally {
-      setRefreshing(false);
-    }
+    window.location.reload();
   };
 
   return (
@@ -34,7 +28,7 @@ export default function PageHeader({ title, description, action, onRefresh, onEx
       </div>
       <div className="flex items-center gap-2">
         {onRefresh && (
-          <Button variant="outline" size="sm" onClick={() => void handleRefresh()} disabled={refreshing} data-testid="page-refresh-button">
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing} data-testid="page-refresh-button">
             <RefreshCw className={`mr-2 size-4 ${refreshing ? "animate-spin" : ""}`} />
             {refreshing ? "Memuat..." : "Refresh"}
           </Button>
