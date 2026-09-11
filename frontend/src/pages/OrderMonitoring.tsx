@@ -76,25 +76,25 @@ export default function OrderMonitoring() {
   return (
     <div data-testid="order-monitoring-page">
       <PageHeader title="Order Monitoring" description="PO Diterima → Processing → Indent → Ready Stock → Delivery → Completed" onRefresh={() => void query.refetch()} onExport={() => window.open("/api/exports/purchase-orders", "_blank")} />
-      <div className="mb-4 flex flex-wrap gap-2 border-y border-slate-200 bg-white p-3">
-        <div className="relative min-w-[280px] flex-1 sm:flex-none sm:w-[320px]">
+      <div className="mb-4 grid grid-cols-[minmax(280px,1fr)_145px_175px_150px_245px] gap-2 overflow-x-auto border-y border-slate-200 bg-white p-3">
+        <div className="relative min-w-0">
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">⌕</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari PO / produk / customer..." className="h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
         </div>
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={`${selectClass} h-9 min-w-[145px]`}>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
           <option value="">Semua status</option>
           {stages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}
         </select>
-        <select value={etaFilter} onChange={(event) => setEtaFilter(event.target.value)} className={`${selectClass} h-9 min-w-[175px]`}>
+        <select value={etaFilter} onChange={(event) => setEtaFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
           <option value="">Semua indikator ETA</option>
           <option value="available">ETA tersedia</option>
           <option value="empty">ETA belum diisi</option>
         </select>
-        <select value={salesFilter} onChange={(event) => setSalesFilter(event.target.value)} className={`${selectClass} h-9 min-w-[150px]`}>
+        <select value={salesFilter} onChange={(event) => setSalesFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
           <option value="">Semua sales</option>
           {salesOptions.map((sales) => <option key={sales} value={sales}>{sales}</option>)}
         </select>
-        <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className={`${selectClass} h-9 min-w-[245px]`}>
+        <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
           <option value="">Semua customer</option>
           {customerOptions.map((customer) => <option key={customer} value={customer}>{customer}</option>)}
         </select>
