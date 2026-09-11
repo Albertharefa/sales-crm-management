@@ -13,7 +13,7 @@ import AICopilot from "@/components/AICopilot";
 
 const navGroups = [
   { label: "CRM DATABASE", items: [{ label: "Dashboard", to: "/", icon: Gauge }, { label: "Customers", to: "/customers", icon: Users }, { label: "Sales Pipeline", to: "/pipeline", icon: BarChart3 }, { label: "Aktivitas", to: "/activities", icon: ClipboardCheck }, { label: "Quotations", to: "/quotations", icon: FileText }, { label: "Purchase Orders", to: "/purchase-orders", icon: ShoppingCart }, { label: "Order Monitoring", to: "/order-monitoring", icon: PackageCheck }] },
-  { label: "MANAGEMENT", items: [{ label: "Sales Team", to: "/sales-team", icon: Target }, { label: "Audit Log", to: "/audit-log", icon: ShieldCheck }] },
+  { label: "MANAGEMENT", items: [{ label: "Sales Team", to: "/sales-team", icon: Target }, { label: "Target Sales", to: "/sales-targets", icon: Target }, { label: "Audit Log", to: "/audit-log", icon: ShieldCheck }] },
   { label: "ADMINISTRATION", items: [{ label: "Users", to: "/users", icon: Users }, { label: "Products", to: "/products", icon: Boxes }, { label: "Settings", to: "/settings", icon: Settings }] },
 ];
 
@@ -56,7 +56,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     ...group,
     items: group.items.filter(item => {
       if (item.label === "Users") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
-      if (item.label === "Audit Log" || item.label === "Sales Team") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
+      if (item.label === "Audit Log" || item.label === "Sales Team" || item.label === "Target Sales") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
       return true;
     }),
   })).filter(group => group.items.length > 0);
