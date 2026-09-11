@@ -59,9 +59,7 @@ async def find_customer(customer_ref: str):
     if not ref:
         return None
     customer = await db.customers.find_one({"id": ref})
-    if customer:
-        return customer
-    return await db.customers.find_one({"customer_id": ref})
+    return customer or await db.customers.find_one({"customer_id": ref})
 
 
 def calculate_total(payload):
@@ -119,11 +117,14 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
         raise HTTPException(status_code=400, detail="Customer tidak valid")
     if payload.status not in ALL_STATUSES:
         raise HTTPException(status_code=422, detail="Status order tidak valid")
+    if await db.purchase_orders.find_one({"po_number": payload.po_number.strip()}, {"_id": 1}):
+        raise HTTPException(status_code=409, detail="Nomor PO sudah digunakan")
     sales_id = payload.sales_id or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
     raw_total = calculate_total(payload)
     total = await quotation_total(payload.quotation_number, raw_total) if payload.quotation_number else raw_total
     payload_data = payload.model_dump(mode="json")
+    payload_data["po_number"] = payload.po_number.strip()
     payload_data["customer_id"] = str(customer.get("id") or customer.get("customer_id"))
     payload_data["sales_id"] = str(sales["id"])
     doc = {"id": new_id(), "customer_name": customer.get("name") or customer.get("company_name") or "", "sales_name": sales["name"], "total": total, **payload_data, "created_at": now()}
@@ -163,10 +164,15 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
         raise HTTPException(status_code=400, detail="Customer tidak valid")
     if payload.status not in ALL_STATUSES:
         raise HTTPException(status_code=422, detail="Status order tidak valid")
+    po_number = payload.po_number.strip()
+    duplicate = await db.purchase_orders.find_one({"po_number": po_number, "id": {"$ne": order_id}}, {"_id": 1})
+    if duplicate:
+        raise HTTPException(status_code=409, detail="Nomor PO sudah digunakan")
     sales_id = payload.sales_id or old.get("sales_id") or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
     total = await quotation_total(payload.quotation_number, calculate_total(payload)) if payload.quotation_number else calculate_total(payload)
     payload_data = payload.model_dump(mode="json")
+    payload_data["po_number"] = po_number
     payload_data["customer_id"] = str(customer.get("id") or customer.get("customer_id"))
     payload_data["sales_id"] = str(sales["id"])
     doc = {"id": order_id, "customer_name": customer.get("name") or customer.get("company_name") or "", "sales_name": sales["name"], "total": total, **payload_data, "created_at": old.get("created_at", now()), "updated_at": now()}
@@ -181,6 +187,8 @@ async def delete_order(order_id: str, user: dict = Depends(current_user)):
     if not doc:
         raise HTTPException(status_code=404, detail="PO tidak ditemukan")
     await ensure_access(doc, user)
+    if doc.get("status") == "Completed":
+        raise HTTPException(status_code=409, detail="PO yang sudah Completed tidak dapat dihapus")
     await db.purchase_orders.delete_one({"id": order_id})
     await audit(user, "Delete", "Purchase Orders", order_id, {"po_number": doc.get("po_number")})
     return {"ok": True}
