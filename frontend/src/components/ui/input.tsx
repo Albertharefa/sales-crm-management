@@ -3,7 +3,7 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+function Input({ className, type, style, ...props }: React.ComponentProps<"input">) {
   const isSearchField = typeof props.placeholder === "string" && props.placeholder.trimStart().toLowerCase().startsWith("cari")
 
   return (
@@ -16,7 +16,7 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       )}
       style={{
         ...(isSearchField ? { width: "360px", height: "40px", maxWidth: "100%" } : {}),
-        ...props.style,
+        ...style,
       }}
       {...props}
     />
