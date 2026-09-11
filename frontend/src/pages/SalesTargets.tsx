@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiGet, apiPost, apiPut } from "@/lib/api";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -8,7 +8,7 @@ import { Field, selectClass } from "@/components/Field";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
+import { Search, Eye, Pencil, Trash2 } from "lucide-react";
 
 type SalesTarget = {
   id: string;
@@ -33,6 +33,7 @@ const money = (value: number) => new Intl.NumberFormat("id-ID", {
 export default function SalesTargets() {
   const qc = useQueryClient();
   const [modal, setModal] = useState(false);
+  const [viewing, setViewing] = useState<SalesTarget | null>(null);
   const [editing, setEditing] = useState<SalesTarget | null>(null);
   const [yearFilter, setYearFilter] = useState(String(new Date().getFullYear()));
   const [search, setSearch] = useState("");
@@ -84,16 +85,39 @@ export default function SalesTargets() {
     onError: (error: any) => toast.error(error?.response?.data?.detail || "Target gagal disimpan"),
   });
 
+  const remove = useMutation({
+    mutationFn: (id: string) => apiDelete(`/sales-targets/${id}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["sales-targets"] });
+      toast.success("Target sales berhasil dihapus");
+    },
+    onError: (error: any) => toast.error(error?.response?.data?.detail || "Target gagal dihapus"),
+  });
+
   const openCreate = () => {
+    setViewing(null);
     setEditing(null);
     setForm({ sales_id: salesUsers[0]?.id ?? "", year: yearFilter || String(new Date().getFullYear()), target: "" });
     setModal(true);
   };
 
+  const openView = (item: SalesTarget) => {
+    setModal(false);
+    setEditing(null);
+    setViewing(item);
+  };
+
   const openEdit = (item: SalesTarget) => {
+    setViewing(null);
     setEditing(item);
     setForm({ sales_id: item.sales_id, year: String(item.year), target: String(item.target) });
     setModal(true);
+  };
+
+  const handleDelete = (item: SalesTarget) => {
+    if (window.confirm(`Hapus target sales ${item.sales_name} tahun ${item.year}?`)) {
+      remove.mutate(item.id);
+    }
   };
 
   const totalTarget = visibleTargets.reduce((sum, item) => sum + Number(item.target || 0), 0);
@@ -167,9 +191,69 @@ export default function SalesTargets() {
           { key: "year", label: "Tahun", render: i => i.year },
           { key: "target", label: "Target", render: i => <span className="font-mono font-semibold">{money(i.target)}</span> },
           { key: "status", label: "Status", render: i => i.sales_status ?? "Active" },
-          { key: "action", label: "Aksi", render: i => <Button size="sm" variant="outline" onClick={() => openEdit(i)}>Edit</Button> },
+          {
+            key: "action",
+            label: "Aksi",
+            render: i => (
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 text-blue-600 hover:text-blue-700"
+                  onClick={() => openView(i)}
+                  title="View"
+                  aria-label={`View target ${i.sales_name}`}
+                >
+                  <Eye className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 text-slate-600 hover:text-slate-900"
+                  onClick={() => openEdit(i)}
+                  title="Edit"
+                  aria-label={`Edit target ${i.sales_name}`}
+                >
+                  <Pencil className="size-4" />
+                </Button>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-8 text-red-600 hover:text-red-700"
+                  onClick={() => handleDelete(i)}
+                  disabled={remove.isPending}
+                  title="Delete"
+                  aria-label={`Delete target ${i.sales_name}`}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ),
+          },
         ]}
       />
+
+      {viewing && (
+        <Modal title="Detail Target Sales" onClose={() => setViewing(null)}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Sales">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{viewing.sales_name}</div>
+            </Field>
+            <Field label="Status">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{viewing.sales_status ?? "Active"}</div>
+            </Field>
+            <Field label="Tahun">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">{viewing.year}</div>
+            </Field>
+            <Field label="Target Tahunan">
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm font-semibold">{money(viewing.target)}</div>
+            </Field>
+          </div>
+        </Modal>
+      )}
 
       {modal && (
         <Modal title={editing ? "Edit Target Sales" : "Set Target Sales"} onClose={() => { setModal(false); setEditing(null); }}>
