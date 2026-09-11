@@ -34,10 +34,10 @@ class CustomerBase(CRMBaseModel):
     notes: Optional[str] = None
 
 class CustomerCreate(CustomerBase): pass
-
 class CustomerUpdate(CRMBaseModel):
     name: Optional[str] = None
     company_name: Optional[str] = None
+    company: Optional[str] = None
     company: Optional[str] = None
     industry: Optional[str] = None
     city: Optional[str] = None
@@ -52,7 +52,6 @@ class CustomerUpdate(CRMBaseModel):
     sales_name: Optional[str] = None
     address: Optional[str] = None
     notes: Optional[str] = None
-
 class Customer(CustomerBase):
     id: str
     customer_id: str
@@ -72,9 +71,7 @@ class OpportunityBase(CRMBaseModel):
     next_action: Optional[str] = None
     description: Optional[str] = None
     loss_reason: Optional[str] = None
-
 class OpportunityCreate(OpportunityBase): pass
-
 class OpportunityUpdate(CRMBaseModel):
     name: Optional[str] = None
     value: Optional[float] = None
@@ -86,7 +83,6 @@ class OpportunityUpdate(CRMBaseModel):
     next_action: Optional[str] = None
     description: Optional[str] = None
     loss_reason: Optional[str] = None
-
 class Opportunity(OpportunityBase):
     id: str
     opportunity_id: str
@@ -105,9 +101,7 @@ class ProductBase(CRMBaseModel):
     supplier: Optional[str] = None
     status: str = "Active"
     description: Optional[str] = None
-
 class ProductCreate(ProductBase): pass
-
 class Product(ProductBase):
     id: str
     created_at: Optional[datetime] = None
@@ -121,7 +115,6 @@ class QuotationItem(CRMBaseModel):
     discount: float = Field(default=0, ge=0)
     tax: float = Field(default=0, ge=0)
     total: Optional[float] = None
-
 class QuotationCreate(CRMBaseModel):
     customer_id: str
     sales_id: Optional[str] = None
@@ -132,7 +125,6 @@ class QuotationCreate(CRMBaseModel):
     delivery_term: Optional[str] = None
     notes: Optional[str] = None
     items: list[QuotationItem] = Field(min_length=1)
-
 class Quotation(QuotationCreate):
     id: str
     number: str
@@ -146,7 +138,6 @@ class Quotation(QuotationCreate):
     status: str = "Draft"
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
 class QuotationUpdate(CRMBaseModel):
     sales_id: Optional[str] = None
     items: Optional[list[QuotationItem]] = None
@@ -163,7 +154,6 @@ class PurchaseOrderItem(CRMBaseModel):
     unit_price: float = Field(ge=0)
     discount: float = Field(default=0, ge=0)
     tax: float = Field(default=11, ge=0)
-
 class PurchaseOrderCreate(CRMBaseModel):
     po_number: str
     customer_id: str
@@ -177,7 +167,6 @@ class PurchaseOrderCreate(CRMBaseModel):
     supplier: Optional[str] = None
     shipping_address: Optional[str] = None
     document_name: Optional[str] = None
-
 class PurchaseOrder(PurchaseOrderCreate):
     id: str
     customer_name: str = ""
@@ -185,14 +174,12 @@ class PurchaseOrder(PurchaseOrderCreate):
     total: float = 0
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
 class PurchaseOrderUpdate(CRMBaseModel):
     status: Optional[str] = None
     eta: Optional[date] = None
     supplier: Optional[str] = None
     shipping_address: Optional[str] = None
     document_name: Optional[str] = None
-
 class OrderBase(PurchaseOrderCreate): pass
 class OrderCreate(PurchaseOrderCreate): pass
 class OrderUpdate(PurchaseOrderUpdate): pass
@@ -207,7 +194,6 @@ class ActivityCreate(CRMBaseModel):
     next_follow_up: Optional[date] = None
     status: str = "Open"
     description: Optional[str] = None
-
 class Activity(ActivityCreate):
     id: str
     activity_id: str
@@ -216,7 +202,6 @@ class Activity(ActivityCreate):
     sales_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
 class ActivityUpdate(CRMBaseModel):
     subject: Optional[str] = None
     activity_type: Optional[str] = None
@@ -236,7 +221,6 @@ class Task(CRMBaseModel):
     assigned_user: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
 TaskCreate = Task
 TaskUpdate = ActivityUpdate
 
@@ -247,7 +231,6 @@ class UserBase(CRMBaseModel):
     manager_id: Optional[str] = None
     phone: Optional[str] = None
     status: str = "Active"
-
 class UserCreate(UserBase): password: str = Field(min_length=8)
 class UserInDB(UserBase):
     id: str
@@ -270,12 +253,20 @@ class SalesTeamMetric(CRMBaseModel):
     sales: str
     role: str
     manager: str
+    target: float = 0
+    gap_to_target: float = 0
+    achievement: float = 0
     open_pipeline: float = 0
     weighted: float = 0
+    coverage: float = 0
     won: float = 0
+    won_count: int = 0
+    lost_count: int = 0
+    win_rate: float = 0
     po: int = 0
     po_value: float = 0
     activities: int = 0
+    overdue_activities: int = 0
     indent: int = 0
     overdue: int = 0
 
@@ -312,7 +303,6 @@ class OptionsResponse(CRMBaseModel):
     customers: list[dict[str, Any]] = []
     products: list[dict[str, Any]] = []
     users: list[dict[str, Any]] = []
-
 class UploadResponse(CRMBaseModel):
     id: str
     file_name: str
