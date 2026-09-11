@@ -17,6 +17,6 @@ export interface SalesTeamMetric { sales: string; role: string; manager: string;
 export type AIContextType = "dashboard" | "customer" | "opportunity" | "quotation";
 export type AICapability = "sales_copilot" | "report_analyst" | "quotation_writer";
 export interface AIMessage { id: string; conversation_id: string; role: "user" | "assistant"; content: string; capability: AICapability; context_type: AIContextType; context_id?: string | null; created_at: string; }
-export interface AIConversationDetail { id: string; title: string; context_type: string; context_id?: string | null; messages: AIMessage[]; created_at: string; updated_at: string; }
+export interface AIConversationDetail { id: string; title: string; context_type: AIContextType; context_id?: string | null; messages: AIMessage[]; created_at: string; updated_at: string; }
 export interface AIContextOption { id: string; name: string; description?: string | null; }
 export interface AISavedNote { id: string; target_type: AIContextType; target_id?: string | null; title: string; content: string; created_by: string; created_at: string; }
