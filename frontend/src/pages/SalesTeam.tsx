@@ -1,9 +1,12 @@
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiGet } from "@/lib/api";
 import type { SalesTeamMetric } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import DataTable from "@/components/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", notation: "compact", maximumFractionDigits: 1 }).format(value);
 const percent = (value: number) => `${Number(value || 0).toFixed(1)}%`;
@@ -11,7 +14,29 @@ const multiple = (value: number) => `${Number(value || 0).toFixed(1)}x`;
 type TeamRow = SalesTeamMetric & { id: string };
 
 export default function SalesTeam() {
-  const query = useQuery({ queryKey: ["sales-team"], queryFn: () => apiGet<SalesTeamMetric[]>("/sales-team") });
+  const currentYear = new Date().getFullYear();
+  const [search, setSearch] = useState("");
+  const [salesId, setSalesId] = useState("");
+  const [status, setStatus] = useState("");
+  const [year, setYear] = useState(String(currentYear));
+
+  const queryParams = new URLSearchParams();
+  if (search.trim()) queryParams.set("search", search.trim());
+  if (salesId) queryParams.set("sales_id", salesId);
+  if (status) queryParams.set("status", status);
+  if (year) queryParams.set("year", year);
+
+  const query = useQuery({
+    queryKey: ["sales-team", search, salesId, status, year],
+    queryFn: () => apiGet<SalesTeamMetric[]>(`/sales-team?${queryParams.toString()}`),
+  });
+
+  const salesOptions = useQuery({
+    queryKey: ["sales-team-sales-options"],
+    queryFn: () => apiGet<{ id: string; name: string }[]>("/sales-targets/options"),
+    staleTime: 60_000,
+  });
+
   const rows: TeamRow[] = (query.data ?? []).map((item, index) => ({ ...item, id: `${index}-${item.sales}` }));
   const totals = rows.reduce((sum, item) => ({
     target: sum.target + item.target,
@@ -32,9 +57,69 @@ export default function SalesTeam() {
   const totalLostCount = rows.reduce((sum, item) => sum + item.lost_count, 0);
   const totalWinRate = totalWonCount + totalLostCount ? totalWonCount / (totalWonCount + totalLostCount) * 100 : 0;
 
+  const resetFilters = () => {
+    setSearch("");
+    setSalesId("");
+    setStatus("");
+    setYear(String(currentYear));
+  };
+
   return (
     <div data-testid="sales-team-page">
       <PageHeader title="Sales Team & KPI" description="Performance sales berdasarkan target, pipeline, closing, aktivitas, dan purchase order" onRefresh={() => window.location.reload()} onExport={() => window.open("/api/v1/exports/sales-team", "_blank")} />
+
+      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[360px_360px] xl:grid-cols-[360px_360px_360px_360px]">
+        <div className="relative w-full">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari nama sales..."
+            className="h-10 w-full pl-9"
+            data-testid="sales-team-search-input"
+          />
+        </div>
+
+        <select
+          className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          value={salesId}
+          onChange={(e) => setSalesId(e.target.value)}
+          data-testid="sales-team-sales-filter"
+        >
+          <option value="">Semua sales</option>
+          {(salesOptions.data ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+
+        <select
+          className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          data-testid="sales-team-status-filter"
+        >
+          <option value="">Semua status</option>
+          <option value="Active">Active</option>
+          <option value="Inactive">Inactive</option>
+        </select>
+
+        <div className="flex h-10 w-full items-center gap-2">
+          <span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-slate-500">TAHUN</span>
+          <select
+            className="h-10 min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            data-testid="sales-team-year-filter"
+          >
+            {[currentYear - 1, currentYear, currentYear + 1].map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {(search || salesId || status || year !== String(currentYear)) && (
+        <div className="mb-4 flex justify-end">
+          <button type="button" className="text-xs font-medium text-blue-600 hover:underline" onClick={resetFilters}>Reset filter</button>
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
         {[
           ["Target", money(totals.target)],
