@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
-import type { Paginated, User } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -16,6 +15,12 @@ type SalesTarget = {
   sales_name: string;
   year: number;
   target: number;
+};
+
+type SalesOption = {
+  id: string;
+  name: string;
+  role: string;
 };
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", {
@@ -36,15 +41,18 @@ export default function SalesTargets() {
     queryFn: () => apiGet<SalesTarget[]>("/sales-targets"),
   });
 
-  // Use the CRM Users endpoint directly as the authoritative sales database.
-  const salesUsersQuery = useQuery({
-    queryKey: ["sales-target-users"],
-    queryFn: () => apiGet<Paginated<User>>("/users?page=1&page_size=100&search="),
+  // Use the same canonical Sales master as Sales Pipeline and other CRM
+  // modules. The backend resolves this list from the Users collection and
+  // also reconciles legacy sales assignments.
+  const salesOptions = useQuery({
+    queryKey: ["crm-sales-options"],
+    queryFn: () => apiGet<SalesOption[]>("/pipeline/sales-options"),
+    staleTime: 60_000,
   });
 
   const salesUsers = useMemo(
-    () => (salesUsersQuery.data?.items ?? []).filter(user => user.role === "SALES"),
-    [salesUsersQuery.data],
+    () => (salesOptions.data ?? []).filter(user => user.role === "SALES"),
+    [salesOptions.data],
   );
 
   const visibleTargets = useMemo(
