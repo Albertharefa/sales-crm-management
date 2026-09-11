@@ -120,7 +120,7 @@ export default function OrderMonitoring() {
           { key: "id", label: "Monitoring ID", render: (item) => <span className="font-mono text-[10px] text-slate-500">{monitoringId(item)}</span> },
           { key: "po", label: "Nomor PO", render: (item) => <span className="font-medium">{item.po_number}</span> },
           { key: "customer", label: "Customer", render: (item) => customerName(item) },
-          { key: "product", label: "Produk", render: (item) => item.items[0]?.description ?? "—" },
+          { key: "product", label: "Produk", render: (item) => <div className="w-[420px] max-w-[420px] whitespace-normal break-words leading-5">{item.items[0]?.description ?? "—"}</div> },
           { key: "qty", label: "Qty", render: (item) => `${item.items[0]?.quantity ?? 0}` },
           { key: "status", label: "Status", render: (item) => <select className={`${selectClass} min-w-36`} value={item.status} onChange={(event) => update.mutate({ id: item.id, status: event.target.value })} data-testid={`order-status-${item.id}`}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select> },
           { key: "supplier", label: "Supplier", render: (item) => item.supplier ?? "—" },
