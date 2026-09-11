@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
-from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads
+from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets
 from routers.dashboard import router as dashboard_router
 from routers.order_monitoring import router as order_monitoring_router
 
@@ -73,6 +73,7 @@ app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v1")
 app.include_router(uploads.router, prefix="/api/v1")
+app.include_router(targets.router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 
 @app.get("/health", tags=["system"])
