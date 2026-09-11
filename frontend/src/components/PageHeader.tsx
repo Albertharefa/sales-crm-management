@@ -13,14 +13,10 @@ type PageHeaderProps = {
 export default function PageHeader({ title, description, action, onRefresh, onExport }: PageHeaderProps) {
   const [refreshing, setRefreshing] = useState(false);
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     if (!onRefresh || refreshing) return;
-    try {
-      setRefreshing(true);
-      await onRefresh();
-    } finally {
-      setRefreshing(false);
-    }
+    setRefreshing(true);
+    window.location.reload();
   };
 
   return (
