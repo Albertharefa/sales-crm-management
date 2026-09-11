@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
 from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads
 from routers.dashboard import router as dashboard_router
+from routers.order_monitoring import router as order_monitoring_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -66,6 +67,7 @@ app.include_router(customers.router, prefix="/api/v1")
 app.include_router(pipeline.router, prefix="/api/v1")
 app.include_router(quotations.router, prefix="/api/v1")
 app.include_router(orders.router, prefix="/api/v1")
+app.include_router(order_monitoring_router, prefix="/api/v1")
 app.include_router(activities.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
