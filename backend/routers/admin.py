@@ -16,7 +16,7 @@ VALID_ROLES = {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}
 
 async def manager_user_ids(user: dict) -> list[str]:
     reports = await db.users.find({"manager_id": user["id"]}, {"id": 1}).to_list(1000)
-    return [user["id"], *[item["id"] for item in reports]
+    return [user["id"], *[item["id"] for item in reports]]
 
 
 async def visible_sales_ids(user: dict) -> list[str]:
@@ -86,7 +86,10 @@ async def sales_team(search: str = Query(""), sales_id: str = Query(""), status:
         query["$or"] = [{"name": {"$regex": keyword, "$options": "i"}}, {"id": {"$regex": keyword, "$options": "i"}}, {"user_id": {"$regex": keyword, "$options": "i"}}]
     if status:
         normalized_status = status.strip().lower()
-        query["status"] = {"$in": list(INACTIVE_STATUSES)} if normalized_status == "inactive" else ({"$nin": list(INACTIVE_STATUSES)} if normalized_status == "active" else query.get("status"))
+        if normalized_status == "inactive":
+            query["status"] = {"$in": list(INACTIVE_STATUSES)}
+        elif normalized_status == "active":
+            query["status"] = {"$nin": list(INACTIVE_STATUSES)}
 
     users = await db.users.find(query).to_list(100)
     all_users = await db.users.find({}, {"id": 1, "user_id": 1, "name": 1}).to_list(1000)
