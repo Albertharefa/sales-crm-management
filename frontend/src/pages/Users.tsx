@@ -14,6 +14,11 @@ import { toast } from "sonner";
 
 const emptyForm = { name: "", email: "", role: "SALES", manager_id: "", phone: "", status: "Active", password: "Password123" };
 type UserForm = typeof emptyForm;
+type UserOption = Pick<User, "id" | "user_id" | "name" | "role">;
+
+type OptionsResponse = {
+  users: UserOption[];
+};
 
 export default function Users() {
   const [modal, setModal] = useState(false);
@@ -28,6 +33,7 @@ export default function Users() {
   const qc = useQueryClient();
 
   const query = useQuery({ queryKey: ["users", page, pageSize], queryFn: () => apiGet<Paginated<User>>(`/users?page=${page}&page_size=${pageSize}`) });
+  const optionsQuery = useQuery({ queryKey: ["user-manager-options"], queryFn: () => apiGet<OptionsResponse>("/options") });
 
   const create = useMutation({
     mutationFn: () => apiPost<User>("/users", { ...form, manager_id: form.manager_id || null }),
@@ -58,9 +64,23 @@ export default function Users() {
     onError: () => toast.error("Password user gagal direset"),
   });
 
+  const managers = (optionsQuery.data?.users ?? []).filter(u => u.role === "SALES_MANAGER");
+
+  const managerLabel = (managerId: string | null | undefined) => {
+    if (!managerId) return "—";
+    const manager = managers.find(u => u.id === managerId || u.user_id === managerId);
+    return manager ? `${manager.name} — ${manager.user_id}` : managerId;
+  };
+
+  const normalizeManagerId = (managerId: string | null | undefined) => {
+    if (!managerId) return "";
+    const manager = managers.find(u => u.id === managerId || u.user_id === managerId);
+    return manager?.id ?? managerId;
+  };
+
   const openEdit = (user: User) => {
     setEditUser(user);
-    setEditForm({ name: user.name, email: user.email, role: user.role, manager_id: user.manager_id ?? "", phone: user.phone ?? "", status: user.status, password: "" });
+    setEditForm({ name: user.name, email: user.email, role: user.role, manager_id: normalizeManagerId(user.manager_id), phone: user.phone ?? "", status: user.status, password: "" });
     setShowEditPassword(false);
   };
 
@@ -74,8 +94,6 @@ export default function Users() {
     if (confirmed) resetPassword.mutate(user);
   };
 
-  const managers = (query.data?.items ?? []).filter(u => u.role === "SALES_MANAGER");
-
   return (
     <div data-testid="users-page">
       <PageHeader title="Kelola Pengguna" description="User_ID adalah identifier utama; Manager_ID menghubungkan hierarki" action={{ label: "Tambah User", onClick: () => { setForm({ ...emptyForm }); setShowCreatePassword(false); setModal(true); } }} onRefresh={() => void query.refetch()} />
@@ -84,7 +102,7 @@ export default function Users() {
         { key: "name", label: "Nama", render: i => <span className="font-medium">{i.name}</span> },
         { key: "email", label: "Email", render: i => i.email },
         { key: "role", label: "Role", render: i => <Badge>{i.role}</Badge> },
-        { key: "manager", label: "Manager", render: i => i.manager_id ?? "—" },
+        { key: "manager", label: "Manager", render: i => managerLabel(i.manager_id) },
         { key: "phone", label: "Telepon", render: i => i.phone ?? "—" },
         { key: "status", label: "Status", render: i => <Badge variant="outline">{i.status}</Badge> },
         { key: "last", label: "Last Login", render: i => i.last_login ? new Date(i.last_login).toLocaleString("id-ID") : "Belum pernah" },
@@ -101,7 +119,7 @@ export default function Users() {
           <Field label="Nama" required><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} data-testid="user-name-input" /></Field>
           <Field label="Email" required><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} data-testid="user-email-input" /></Field>
           <Field label="Role"><select className={selectClass} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} data-testid="user-role-input"><option>SUPER_ADMIN</option><option>SALES_MANAGER</option><option>SALES</option></select></Field>
-          <Field label="Manager"><select className={selectClass} value={form.manager_id} onChange={e => setForm({ ...form, manager_id: e.target.value })} data-testid="user-manager-input"><option value="">— Tanpa manager —</option>{managers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
+          <Field label="Manager"><select className={selectClass} value={form.manager_id} onChange={e => setForm({ ...form, manager_id: e.target.value })} data-testid="user-manager-input"><option value="">— Tanpa manager —</option>{managers.map(u => <option key={u.id} value={u.id}>{u.name} — {u.user_id}</option>)}</select></Field>
           <Field label="Telepon"><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} data-testid="user-phone-input" /></Field>
           <Field label="Status"><select className={selectClass} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} data-testid="user-status-input"><option>Active</option><option>Inactive</option></select></Field>
           <Field label="Password Awal"><div className="relative"><Input type={showCreatePassword ? "text" : "password"} value={form.password} autoComplete="new-password" onChange={e => setForm({ ...form, password: e.target.value })} data-testid="user-password-input" className="pr-10" /><button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800" onClick={() => setShowCreatePassword(v => !v)} title={showCreatePassword ? "Sembunyikan password" : "Lihat password"} aria-label={showCreatePassword ? "Sembunyikan password" : "Lihat password"} data-testid="user-password-toggle">{showCreatePassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></Field>
@@ -115,7 +133,7 @@ export default function Users() {
           <Field label="Nama"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.name}</div></Field>
           <Field label="Email"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.email}</div></Field>
           <Field label="Role"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.role}</div></Field>
-          <Field label="Manager ID"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.manager_id ?? "—"}</div></Field>
+          <Field label="Manager ID"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{managerLabel(viewUser.manager_id)}</div></Field>
           <Field label="Telepon"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.phone ?? "—"}</div></Field>
           <Field label="Status"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.status}</div></Field>
           <Field label="Last Login"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.last_login ? new Date(viewUser.last_login).toLocaleString("id-ID") : "Belum pernah"}</div></Field>
@@ -129,7 +147,7 @@ export default function Users() {
           <Field label="Nama" required><Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} data-testid="user-edit-name-input" /></Field>
           <Field label="Email" required><Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} data-testid="user-edit-email-input" /></Field>
           <Field label="Role"><select className={selectClass} value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })} data-testid="user-edit-role-input"><option>SUPER_ADMIN</option><option>SALES_MANAGER</option><option>SALES</option></select></Field>
-          <Field label="Manager"><select className={selectClass} value={editForm.manager_id} onChange={e => setEditForm({ ...editForm, manager_id: e.target.value })} data-testid="user-edit-manager-input"><option value="">— Tanpa manager —</option>{managers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
+          <Field label="Manager"><select className={selectClass} value={editForm.manager_id} onChange={e => setEditForm({ ...editForm, manager_id: e.target.value })} data-testid="user-edit-manager-input"><option value="">— Tanpa manager —</option>{managers.map(u => <option key={u.id} value={u.id}>{u.name} — {u.user_id}</option>)}</select></Field>
           <Field label="Telepon"><Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} data-testid="user-edit-phone-input" /></Field>
           <Field label="Status"><select className={selectClass} value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} data-testid="user-edit-status-input"><option>Active</option><option>Inactive</option></select></Field>
           <Field label="Password Baru"><div className="relative"><Input type={showEditPassword ? "text" : "password"} value={editForm.password} autoComplete="new-password" onChange={e => setEditForm({ ...editForm, password: e.target.value })} data-testid="user-edit-password-input" placeholder="Kosongkan jika tidak diubah" className="pr-10" /><button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800" onClick={() => setShowEditPassword(v => !v)} title={showEditPassword ? "Sembunyikan password" : "Lihat password"} aria-label={showEditPassword ? "Sembunyikan password" : "Lihat password"} data-testid="user-edit-password-toggle">{showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div></Field>
