@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Eye, KeyRound, Pencil, Trash2 } from "lucide-react";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { Paginated, User } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
@@ -81,6 +81,17 @@ export default function Users() {
     onError: () => toast.error("User gagal dihapus"),
   });
 
+  const resetPassword = useMutation({
+    mutationFn: (user: User) =>
+      apiPost<{ message: string }>(`/users/${user.id}/reset-password`, {
+        new_password: emptyForm.password,
+      }),
+    onSuccess: (_data, user) => {
+      toast.success(`Password ${user.name} berhasil di-reset ke password default`);
+    },
+    onError: () => toast.error("Password gagal di-reset"),
+  });
+
   const openEdit = (user: User) => {
     setEditUser(user);
     setEditForm({
@@ -136,6 +147,9 @@ export default function Users() {
             label: "Aksi",
             render: i => (
               <div className="flex items-center gap-1">
+                <Button type="button" variant="ghost" size="icon-sm" className="text-amber-600 hover:text-amber-700" onClick={() => resetPassword.mutate(i)} title="Reset Password" aria-label={`Reset password ${i.name}`} data-testid={`user-reset-password-${i.id}`} disabled={resetPassword.isPending}>
+                  <KeyRound />
+                </Button>
                 <Button type="button" variant="ghost" size="icon-sm" className="text-blue-600 hover:text-blue-700" onClick={() => setViewUser(i)} title="View" aria-label={`View ${i.name}`} data-testid={`user-view-${i.id}`}>
                   <Eye />
                 </Button>
