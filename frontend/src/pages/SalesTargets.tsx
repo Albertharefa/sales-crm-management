@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiGet, apiPost, apiPut } from "@/lib/api";
-import type { OptionsResponse } from "@/lib/types";
+import type { Options } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
 import Modal from "@/components/Modal";
 import DataTable from "@/components/DataTable";
@@ -39,7 +39,7 @@ export default function SalesTargets() {
 
   const options = useQuery({
     queryKey: ["options"],
-    queryFn: () => apiGet<OptionsResponse>("/options"),
+    queryFn: () => apiGet<Options>("/options"),
   });
 
   const salesUsers = useMemo(
