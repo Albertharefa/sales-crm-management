@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from passlib.context import CryptContext
 from lib.db import db
@@ -92,22 +94,86 @@ async def sales_team(
         query = {"id": {"$in": await manager_user_ids(user)}, "role": "SALES"}
 
     users = await db.users.find(query).to_list(100)
+    current_year = datetime.now(timezone.utc).year
+    current_time = datetime.now(timezone.utc)
     result = []
+
     for person in users:
-        opportunities = await db.opportunities.find({"sales_id": person["id"]}).to_list(1000)
-        orders = await db.purchase_orders.find({"sales_name": person["name"]}).to_list(1000)
+        sales_id = person["id"]
+        sales_name = person["name"]
+        opportunities = await db.opportunities.find(
+            {"$or": [{"sales_id": sales_id}, {"sales_name": sales_name}]}
+        ).to_list(1000)
+        orders = await db.purchase_orders.find(
+            {"$or": [{"sales_id": sales_id}, {"sales_name": sales_name}]}
+        ).to_list(1000)
+        activities = await db.activities.find(
+            {"$or": [{"sales_id": sales_id}, {"sales_name": sales_name}]}
+        ).to_list(5000)
+        targets = await db.sales_targets.find(
+            {
+                "year": current_year,
+                "$or": [{"sales_id": sales_id}, {"sales_name": sales_name}],
+            },
+            {"target": 1},
+        ).to_list(1000)
+
+        open_opportunities = [
+            opportunity for opportunity in opportunities
+            if opportunity.get("stage") not in ["Won", "Lost"]
+        ]
+        won_opportunities = [
+            opportunity for opportunity in opportunities
+            if opportunity.get("stage") == "Won"
+        ]
+        lost_opportunities = [
+            opportunity for opportunity in opportunities
+            if opportunity.get("stage") == "Lost"
+        ]
+        target = sum(float(item.get("target", 0) or 0) for item in targets)
+        won = sum(float(item.get("value", 0) or 0) for item in won_opportunities)
+        gap_to_target = max(0.0, target - won)
+        achievement = (won / target * 100) if target else 0.0
+        coverage = (
+            sum(float(item.get("value", 0) or 0) for item in open_opportunities) / gap_to_target
+            if gap_to_target > 0 else 0.0
+        )
+        closed_count = len(won_opportunities) + len(lost_opportunities)
+        win_rate = (len(won_opportunities) / closed_count * 100) if closed_count else 0.0
+        overdue_activities = sum(
+            1
+            for activity in activities
+            if activity.get("status") not in ["Completed", "Cancelled"]
+            and activity.get("next_follow_up")
+            and str(activity.get("next_follow_up"))[:10] < current_time.date().isoformat()
+        )
+        overdue_orders = sum(
+            1
+            for order in orders
+            if order.get("status") not in ["Completed", "Cancelled"]
+            and order.get("eta")
+            and str(order.get("eta"))[:10] < current_time.date().isoformat()
+        )
         result.append({
-            "sales": person["name"],
+            "sales": sales_name,
             "role": person["role"],
             "manager": person.get("manager_id") or "-",
-            "open_pipeline": sum(o.get("value", 0) for o in opportunities if o.get("stage") not in ["Won", "Lost"]),
-            "weighted": sum(o.get("value", 0) * o.get("probability", 0) / 100 for o in opportunities if o.get("stage") not in ["Won", "Lost"]),
-            "won": sum(o.get("value", 0) for o in opportunities if o.get("stage") == "Won"),
+            "target": target,
+            "gap_to_target": gap_to_target,
+            "achievement": achievement,
+            "open_pipeline": sum(float(o.get("value", 0) or 0) for o in open_opportunities),
+            "weighted": sum(float(o.get("value", 0) or 0) * float(o.get("probability", 0) or 0) / 100 for o in open_opportunities),
+            "coverage": coverage,
+            "won": won,
+            "won_count": len(won_opportunities),
+            "lost_count": len(lost_opportunities),
+            "win_rate": win_rate,
             "po": len(orders),
-            "po_value": sum(o.get("total", 0) for o in orders),
-            "activities": await db.activities.count_documents({"sales_id": person["id"]}),
+            "po_value": sum(float(o.get("total", 0) or 0) for o in orders),
+            "activities": len(activities),
+            "overdue_activities": overdue_activities,
             "indent": len([o for o in orders if o.get("status") == "Indent"]),
-            "overdue": 0,
+            "overdue": overdue_orders,
         })
     return result
 
