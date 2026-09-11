@@ -17,6 +17,18 @@ const navGroups = [
   { label: "ADMINISTRATION", items: [{ label: "Users", to: "/users", icon: Users }, { label: "Products", to: "/products", icon: Boxes }, { label: "Settings", to: "/settings", icon: Settings }] },
 ];
 
+const roleAllowedPrefixes: Record<string, string[]> = {
+  SUPER_ADMIN: ["/"],
+  SALES_MANAGER: ["/", "/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products", "/settings"],
+  SALES: ["/", "/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/products", "/settings"],
+};
+
+function canAccessPath(pathname: string, role: string) {
+  if (pathname === "/" || pathname === "/settings") return true;
+  const prefixes = roleAllowedPrefixes[role] ?? [];
+  return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
 export function useCurrentUser() {
   return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/me"), retry: false, staleTime: 60_000 });
 }
@@ -44,13 +56,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (sessionLoading) return <div className="flex min-h-svh items-center justify-center bg-slate-50" data-testid="session-loading"><div className="text-center"><div className="mx-auto size-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm text-slate-500">Memverifikasi sesi CRM...</p></div></div>;
   if (sessionFailed) {
-    if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) {
-      return <Navigate to="/login" replace />;
-    }
+    if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) return <Navigate to="/login" replace />;
     const status = axios.isAxiosError(sessionError) ? sessionError.response?.status : undefined;
     return <div className="flex min-h-svh items-center justify-center bg-slate-50 p-6" data-testid="session-error"><div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm"><h1 className="font-heading text-lg font-semibold">Sesi tidak tersedia</h1><p className="mt-2 text-sm text-slate-500">{status ? `Server mengembalikan HTTP ${status}. Pastikan MongoDB dan Railway Variables sudah benar.` : "Kami tidak dapat memverifikasi sesi Anda. Coba lagi atau masuk kembali."}</p><Button className="mt-5" onClick={() => void refetchSession()} data-testid="session-retry-button">Coba lagi</Button></div></div>;
   }
   if (!user) return <Navigate to="/login" replace />;
+
+  if (!canAccessPath(location.pathname, user.role)) {
+    return <Navigate to="/" replace state={{ accessDenied: true }} />;
+  }
 
   const visibleGroups = navGroups.map(group => ({
     ...group,
