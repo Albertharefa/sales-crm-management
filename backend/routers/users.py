@@ -10,6 +10,7 @@ from routers.deps import require_roles
 router = APIRouter(prefix="/users", tags=["users"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 DEFAULT_RESET_PASSWORD = "Password123"
+VALID_ROLES = {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}
 
 
 class UserUpdate(BaseModel):
@@ -70,15 +71,38 @@ async def update_user(
     if "name" in updates and not (updates["name"] or "").strip():
         raise HTTPException(status_code=400, detail="Nama wajib diisi")
 
-    if "role" in updates and updates["role"] not in ["SUPER_ADMIN", "SALES_MANAGER", "SALES"]:
-        raise HTTPException(status_code=400, detail="Role tidak valid")
+    if "role" in updates:
+        updates["role"] = (updates["role"] or "").strip().upper()
+        if updates["role"] not in VALID_ROLES:
+            raise HTTPException(status_code=400, detail="Role tidak valid")
 
-    if "manager_id" in updates and updates["manager_id"]:
-        if updates["manager_id"] == user_id:
+    # Determine the effective role after this update so hierarchy rules also
+    # apply when role and manager are changed in the same request.
+    effective_role = updates.get("role", target.get("role"))
+
+    # SUPER_ADMIN and SALES_MANAGER are top-level roles in this CRM hierarchy.
+    # Only individual SALES users may report to a SALES_MANAGER.
+    if effective_role in {"SUPER_ADMIN", "SALES_MANAGER"}:
+        if updates.get("manager_id"):
+            raise HTTPException(
+                status_code=400,
+                detail="SUPER_ADMIN dan SALES_MANAGER tidak dapat memiliki manager",
+            )
+        updates["manager_id"] = None
+    elif "manager_id" in updates and updates["manager_id"]:
+        manager_id = str(updates["manager_id"]).strip()
+        if manager_id == user_id:
             raise HTTPException(status_code=400, detail="User tidak dapat menjadi manager dirinya sendiri")
-        manager = await db.users.find_one({"id": updates["manager_id"], "role": "SALES_MANAGER"})
+
+        manager = await db.users.find_one(
+            {"id": manager_id, "role": "SALES_MANAGER"},
+            {"_id": 0, "id": 1, "name": 1, "role": 1},
+        )
         if not manager:
             raise HTTPException(status_code=400, detail="Manager harus merupakan SALES_MANAGER")
+        updates["manager_id"] = manager["id"]
+    elif "manager_id" in updates:
+        updates["manager_id"] = None
 
     if "password" in updates:
         password = updates.pop("password")
