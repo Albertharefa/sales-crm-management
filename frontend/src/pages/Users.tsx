@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Pencil, Trash2 } from "lucide-react";
 import { apiDelete, apiGet, apiPost, apiPut } from "@/lib/api";
 import type { Paginated, User } from "@/lib/types";
 import PageHeader from "@/components/PageHeader";
@@ -52,6 +52,12 @@ export default function Users() {
     onError: () => toast.error("User gagal dihapus"),
   });
 
+  const resetPassword = useMutation({
+    mutationFn: (user: User) => apiPost<{ message: string; user_id: string }>(`/users/${user.id}/reset-password`, {}),
+    onSuccess: (_, user) => toast.success(`Password ${user.name} berhasil direset ke Password123`),
+    onError: () => toast.error("Password user gagal direset"),
+  });
+
   const openEdit = (user: User) => {
     setEditUser(user);
     setEditForm({ name: user.name, email: user.email, role: user.role, manager_id: user.manager_id ?? "", phone: user.phone ?? "", status: user.status, password: "" });
@@ -61,6 +67,11 @@ export default function Users() {
   const handleDelete = (user: User) => {
     const confirmed = window.confirm(`Hapus user ${user.name} (${user.user_id})?\n\nData user akan dihapus dan tidak dapat dibatalkan.`);
     if (confirmed) remove.mutate(user);
+  };
+
+  const handleResetPassword = (user: User) => {
+    const confirmed = window.confirm(`Reset password ${user.name} (${user.user_id})?\n\nPassword akan dikembalikan ke Password123.`);
+    if (confirmed) resetPassword.mutate(user);
   };
 
   const managers = (query.data?.items ?? []).filter(u => u.role === "SALES_MANAGER");
@@ -80,6 +91,7 @@ export default function Users() {
         { key: "actions", label: "Aksi", render: i => <div className="flex items-center gap-1">
           <Button type="button" variant="ghost" size="icon-sm" className="text-blue-600 hover:text-blue-700" onClick={() => setViewUser(i)} title="View" aria-label={`View ${i.name}`} data-testid={`user-view-${i.id}`}><Eye /></Button>
           <Button type="button" variant="ghost" size="icon-sm" className="text-slate-600 hover:text-slate-900" onClick={() => openEdit(i)} title="Edit" aria-label={`Edit ${i.name}`} data-testid={`user-edit-${i.id}`}><Pencil /></Button>
+          <Button type="button" variant="ghost" size="icon-sm" className="text-amber-600 hover:text-amber-700" onClick={() => handleResetPassword(i)} title="Reset Password" aria-label={`Reset password ${i.name}`} data-testid={`user-reset-password-${i.id}`} disabled={resetPassword.isPending}><KeyRound /></Button>
           <Button type="button" variant="ghost" size="icon-sm" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(i)} title="Delete" aria-label={`Delete ${i.name}`} data-testid={`user-delete-${i.id}`} disabled={remove.isPending}><Trash2 /></Button>
         </div> },
       ]} />
