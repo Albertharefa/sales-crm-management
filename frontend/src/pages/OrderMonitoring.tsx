@@ -9,7 +9,6 @@ import { selectClass } from "@/components/Field";
 import { toast } from "sonner";
 
 const stages = ["Received", "Processing", "Indent", "Ready Stock", "Delivery", "Completed"];
-
 type MonitoringOrder = PurchaseOrder & { is_demo?: boolean };
 
 function monitoringId(order: PurchaseOrder) {
@@ -22,9 +21,11 @@ function etaIndicator(eta?: string) {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const etaKey = eta.slice(0, 10);
-  return etaKey >= todayKey
-    ? { label: "On Time", variant: "outline" as const }
-    : { label: "Overdue", variant: "destructive" as const };
+  return etaKey >= todayKey ? { label: "On Time", variant: "outline" as const } : { label: "Overdue", variant: "destructive" as const };
+}
+
+function isDemoOrder(order: PurchaseOrder) {
+  return String(order.customer_id || "").startsWith("DEMO-CUS-") || String(order.po_number || "").startsWith("PO/CUST/DEMO/");
 }
 
 export default function OrderMonitoring() {
@@ -65,7 +66,7 @@ export default function OrderMonitoring() {
     return map;
   }, [customers]);
   const linkedItems = useMemo(
-    () => items.filter((item) => !item.is_demo && customerByKey.has(item.customer_id)),
+    () => items.filter((item) => !isDemoOrder(item) && customerByKey.has(item.customer_id)),
     [items, customerByKey]
   );
   const customerName = (order: PurchaseOrder) => {
@@ -102,31 +103,13 @@ export default function OrderMonitoring() {
           <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">⌕</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari PO / produk / customer..." className="h-9 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-blue-400 focus:ring-1 focus:ring-blue-100" />
         </div>
-        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
-          <option value="">Semua status</option>
-          {stages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}
-        </select>
-        <select value={etaFilter} onChange={(event) => setEtaFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
-          <option value="">Semua indikator ETA</option>
-          <option value="available">ETA tersedia</option>
-          <option value="empty">ETA belum diisi</option>
-        </select>
-        <select value={salesFilter} onChange={(event) => setSalesFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
-          <option value="">Semua sales</option>
-          {salesOptions.map((sales) => <option key={sales} value={sales}>{sales}</option>)}
-        </select>
-        <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}>
-          <option value="">Semua customer</option>
-          {customerOptions.map((customer) => <option key={customer} value={customer}>{customer}</option>)}
-        </select>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}><option value="">Semua status</option>{stages.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select>
+        <select value={etaFilter} onChange={(event) => setEtaFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}><option value="">Semua indikator ETA</option><option value="available">ETA tersedia</option><option value="empty">ETA belum diisi</option></select>
+        <select value={salesFilter} onChange={(event) => setSalesFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}><option value="">Semua sales</option>{salesOptions.map((sales) => <option key={sales} value={sales}>{sales}</option>)}</select>
+        <select value={customerFilter} onChange={(event) => setCustomerFilter(event.target.value)} className={`${selectClass} h-9 min-w-0`}><option value="">Semua customer</option>{customerOptions.map((customer) => <option key={customer} value={customer}>{customer}</option>)}</select>
       </div>
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-        {stats.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-slate-200 bg-white p-4" data-testid={`order-stat-${stat.label.toLowerCase().replaceAll(" ", "-")}`}>
-            <div className="text-[10px] font-semibold tracking-wider text-slate-500">{stat.label}</div>
-            <div className="mt-2 font-mono text-2xl font-semibold">{stat.value}</div>
-          </div>
-        ))}
+        {stats.map((stat) => <div key={stat.label} className="rounded-lg border border-slate-200 bg-white p-4" data-testid={`order-stat-${stat.label.toLowerCase().replaceAll(" ", "-")}`}><div className="text-[10px] font-semibold tracking-wider text-slate-500">{stat.label}</div><div className="mt-2 font-mono text-2xl font-semibold">{stat.value}</div></div>)}
       </div>
       <DataTable
         testId="order-monitoring-table"
