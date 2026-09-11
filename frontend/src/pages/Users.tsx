@@ -82,13 +82,8 @@ export default function Users() {
   });
 
   const resetPassword = useMutation({
-    mutationFn: (user: User) =>
-      apiPost<{ message: string }>(`/users/${user.id}/reset-password`, {
-        new_password: emptyForm.password,
-      }),
-    onSuccess: (_data, user) => {
-      toast.success(`Password ${user.name} berhasil di-reset ke password default`);
-    },
+    mutationFn: (user: User) => apiPut<User>(`/users/${user.id}`, { password: emptyForm.password }),
+    onSuccess: (_data, user) => toast.success(`Password ${user.name} berhasil di-reset ke password default`),
     onError: () => toast.error("Password gagal di-reset"),
   });
 
