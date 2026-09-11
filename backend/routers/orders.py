@@ -105,7 +105,10 @@ async def delete_order(order_id: str, user: dict = Depends(current_user)):
 
 @router.get("/monitoring", response_model=Paginated)
 async def monitoring(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", status: str | None = None, user: dict = Depends(current_user)):
-    return await page_collection("purchase_orders", page, page_size, search, {"status": status} if status else {})
+    filters = {"is_demo": {"$ne": True}}
+    if status:
+        filters["status"] = status
+    return await page_collection("purchase_orders", page, page_size, search, filters)
 
 @router.patch("/{order_id}/status", response_model=PurchaseOrder)
 async def update_order_status(order_id: str, status: str, user: dict = Depends(current_user)):
