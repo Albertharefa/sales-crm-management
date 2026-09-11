@@ -13,7 +13,7 @@ export default function OrderMonitoring() {
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: ["order-monitoring"],
-    queryFn: () => apiGet<Paginated<PurchaseOrder>>("/purchase-orders/monitoring?page=1&page_size=50"),
+    queryFn: () => apiGet<Paginated<PurchaseOrder>>("/purchase-orders?page=1&page_size=50"),
   });
   const customerQuery = useQuery({
     queryKey: ["order-monitoring-customers"],
