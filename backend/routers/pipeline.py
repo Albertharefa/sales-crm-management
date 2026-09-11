@@ -198,6 +198,10 @@ async def create_opportunity(
     customer = await db.customers.find_one({"id": payload.customer_id})
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
+    if payload.stage not in STAGES:
+        raise HTTPException(status_code=422, detail="Stage tidak valid")
+    if payload.stage == "Lost" and not payload.loss_reason:
+        raise HTTPException(status_code=422, detail="Loss reason wajib diisi untuk stage Lost")
 
     sales_id = payload.sales_id or user["id"]
     sales = await validate_sales_assignment(sales_id, user)
