@@ -136,41 +136,13 @@ export default function Users() {
             label: "Aksi",
             render: i => (
               <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-blue-600 hover:text-blue-700"
-                  onClick={() => setViewUser(i)}
-                  title="View"
-                  aria-label={`View ${i.name}`}
-                  data-testid={`user-view-${i.id}`}
-                >
+                <Button type="button" variant="ghost" size="icon-sm" className="text-blue-600 hover:text-blue-700" onClick={() => setViewUser(i)} title="View" aria-label={`View ${i.name}`} data-testid={`user-view-${i.id}`}>
                   <Eye />
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-slate-600 hover:text-slate-900"
-                  onClick={() => openEdit(i)}
-                  title="Edit"
-                  aria-label={`Edit ${i.name}`}
-                  data-testid={`user-edit-${i.id}`}
-                >
+                <Button type="button" variant="ghost" size="icon-sm" className="text-slate-600 hover:text-slate-900" onClick={() => openEdit(i)} title="Edit" aria-label={`Edit ${i.name}`} data-testid={`user-edit-${i.id}`}>
                   <Pencil />
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-red-500 hover:text-red-600"
-                  onClick={() => handleDelete(i)}
-                  title="Delete"
-                  aria-label={`Delete ${i.name}`}
-                  data-testid={`user-delete-${i.id}`}
-                  disabled={remove.isPending}
-                >
+                <Button type="button" variant="ghost" size="icon-sm" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(i)} title="Delete" aria-label={`Delete ${i.name}`} data-testid={`user-delete-${i.id}`} disabled={remove.isPending}>
                   <Trash2 />
                 </Button>
               </div>
@@ -181,49 +153,15 @@ export default function Users() {
 
       {modal && (
         <Modal title="Tambah User" onClose={() => setModal(false)}>
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={e => {
-              e.preventDefault();
-              create.mutate();
-            }}
-            data-testid="user-create-form"
-          >
-            <Field label="Nama" required>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} data-testid="user-name-input" />
-            </Field>
-            <Field label="Email" required>
-              <Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} data-testid="user-email-input" />
-            </Field>
-            <Field label="Role">
-              <select className={selectClass} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} data-testid="user-role-input">
-                <option>SUPER_ADMIN</option>
-                <option>SALES_MANAGER</option>
-                <option>SALES</option>
-              </select>
-            </Field>
-            <Field label="Manager">
-              <select className={selectClass} value={form.manager_id} onChange={e => setForm({ ...form, manager_id: e.target.value })} data-testid="user-manager-input">
-                <option value="">— Tanpa manager —</option>
-                {managers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Telepon">
-              <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} data-testid="user-phone-input" />
-            </Field>
-            <Field label="Status">
-              <select className={selectClass} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} data-testid="user-status-input">
-                <option>Active</option>
-                <option>Inactive</option>
-              </select>
-            </Field>
-            <Field label="Password Awal">
-              <Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} data-testid="user-password-input" />
-            </Field>
-            <div className="flex justify-end gap-2 sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setModal(false)} data-testid="user-cancel-button">Batal</Button>
-              <Button type="submit" disabled={create.isPending} data-testid="user-save-button">Simpan</Button>
-            </div>
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); create.mutate(); }} data-testid="user-create-form">
+            <Field label="Nama" required><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} data-testid="user-name-input" /></Field>
+            <Field label="Email" required><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} data-testid="user-email-input" /></Field>
+            <Field label="Role"><select className={selectClass} value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} data-testid="user-role-input"><option>SUPER_ADMIN</option><option>SALES_MANAGER</option><option>SALES</option></select></Field>
+            <Field label="Manager"><select className={selectClass} value={form.manager_id} onChange={e => setForm({ ...form, manager_id: e.target.value })} data-testid="user-manager-input"><option value="">— Tanpa manager —</option>{managers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
+            <Field label="Telepon"><Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} data-testid="user-phone-input" /></Field>
+            <Field label="Status"><select className={selectClass} value={form.status} onChange={e => setForm({ ...form, status: e.target.value })} data-testid="user-status-input"><option>Active</option><option>Inactive</option></select></Field>
+            <Field label="Password Awal"><Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} data-testid="user-password-input" /></Field>
+            <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setModal(false)} data-testid="user-cancel-button">Batal</Button><Button type="submit" disabled={create.isPending} data-testid="user-save-button">Simpan</Button></div>
           </form>
         </Modal>
       )}
@@ -240,58 +178,22 @@ export default function Users() {
             <Field label="Status"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.status}</div></Field>
             <Field label="Last Login"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.last_login ? new Date(viewUser.last_login).toLocaleString("id-ID") : "Belum pernah"}</div></Field>
             <Field label="Created At"><div className="rounded-md border bg-slate-50 px-3 py-2 text-sm">{viewUser.created_at ? new Date(viewUser.created_at).toLocaleString("id-ID") : "—"}</div></Field>
-            <div className="flex justify-end sm:col-span-2">
-              <Button type="button" onClick={() => setViewUser(null)}>Tutup</Button>
-            </div>
+            <div className="flex justify-end sm:col-span-2"><Button type="button" onClick={() => setViewUser(null)}>Tutup</Button></div>
           </div>
         </Modal>
       )}
 
       {editUser && (
         <Modal title={`Edit User — ${editUser.name}`} onClose={() => setEditUser(null)}>
-          <form
-            className="grid gap-4 sm:grid-cols-2"
-            onSubmit={e => {
-              e.preventDefault();
-              update.mutate();
-            }}
-            data-testid="user-edit-form"
-          >
-            <Field label="Nama" required>
-              <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} data-testid="user-edit-name-input" />
-            </Field>
-            <Field label="Email" required>
-              <Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} data-testid="user-edit-email-input" />
-            </Field>
-            <Field label="Role">
-              <select className={selectClass} value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })} data-testid="user-edit-role-input">
-                <option>SUPER_ADMIN</option>
-                <option>SALES_MANAGER</option>
-                <option>SALES</option>
-              </select>
-            </Field>
-            <Field label="Manager">
-              <select className={selectClass} value={editForm.manager_id} onChange={e => setEditForm({ ...editForm, manager_id: e.target.value })} data-testid="user-edit-manager-input">
-                <option value="">— Tanpa manager —</option>
-                {managers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </Field>
-            <Field label="Telepon">
-              <Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} data-testid="user-edit-phone-input" />
-            </Field>
-            <Field label="Status">
-              <select className={selectClass} value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} data-testid="user-edit-status-input">
-                <option>Active</option>
-                <option>Inactive</option>
-              </select>
-            </Field>
-            <Field label="Password Baru" description="Kosongkan jika password tidak ingin diubah.">
-              <Input type="password" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} data-testid="user-edit-password-input" placeholder="Tidak diubah" />
-            </Field>
-            <div className="flex justify-end gap-2 sm:col-span-2">
-              <Button type="button" variant="outline" onClick={() => setEditUser(null)} data-testid="user-edit-cancel-button">Batal</Button>
-              <Button type="submit" disabled={update.isPending} data-testid="user-edit-save-button">Simpan Perubahan</Button>
-            </div>
+          <form className="grid gap-4 sm:grid-cols-2" onSubmit={e => { e.preventDefault(); update.mutate(); }} data-testid="user-edit-form">
+            <Field label="Nama" required><Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} data-testid="user-edit-name-input" /></Field>
+            <Field label="Email" required><Input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} data-testid="user-edit-email-input" /></Field>
+            <Field label="Role"><select className={selectClass} value={editForm.role} onChange={e => setEditForm({ ...editForm, role: e.target.value })} data-testid="user-edit-role-input"><option>SUPER_ADMIN</option><option>SALES_MANAGER</option><option>SALES</option></select></Field>
+            <Field label="Manager"><select className={selectClass} value={editForm.manager_id} onChange={e => setEditForm({ ...editForm, manager_id: e.target.value })} data-testid="user-edit-manager-input"><option value="">— Tanpa manager —</option>{managers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}</select></Field>
+            <Field label="Telepon"><Input value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} data-testid="user-edit-phone-input" /></Field>
+            <Field label="Status"><select className={selectClass} value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })} data-testid="user-edit-status-input"><option>Active</option><option>Inactive</option></select></Field>
+            <Field label="Password Baru"><Input type="password" value={editForm.password} onChange={e => setEditForm({ ...editForm, password: e.target.value })} data-testid="user-edit-password-input" placeholder="Kosongkan jika tidak diubah" /></Field>
+            <div className="flex justify-end gap-2 sm:col-span-2"><Button type="button" variant="outline" onClick={() => setEditUser(null)} data-testid="user-edit-cancel-button">Batal</Button><Button type="submit" disabled={update.isPending} data-testid="user-edit-save-button">Simpan Perubahan</Button></div>
           </form>
         </Modal>
       )}
