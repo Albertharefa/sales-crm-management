@@ -10,6 +10,21 @@ import { toast } from "sonner";
 
 const stages = ["Received", "Processing", "Indent", "Ready Stock", "Delivery", "Completed"];
 
+function monitoringId(order: PurchaseOrder) {
+  const match = order.po_number.match(/(\d+)$/);
+  return `MON-${match ? match[1].padStart(4, "0") : order.id.slice(0, 4).toUpperCase()}`;
+}
+
+function etaIndicator(eta?: string) {
+  if (!eta) return { label: "No ETA", variant: "outline" as const };
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const etaKey = eta.slice(0, 10);
+  return etaKey >= todayKey
+    ? { label: "On Time", variant: "outline" as const }
+    : { label: "Overdue", variant: "destructive" as const };
+}
+
 export default function OrderMonitoring() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
@@ -113,7 +128,7 @@ export default function OrderMonitoring() {
         loading={query.isLoading || customerQuery.isLoading}
         total={filteredItems.length}
         columns={[
-          { key: "id", label: "Monitoring ID", render: (item) => <span className="font-mono text-[10px] text-slate-500">{item.id.slice(0, 8).toUpperCase()}</span> },
+          { key: "id", label: "Monitoring ID", render: (item) => <span className="font-mono text-[10px] text-slate-500">{monitoringId(item)}</span> },
           { key: "po", label: "Nomor PO", render: (item) => <span className="font-medium">{item.po_number}</span> },
           { key: "customer", label: "Customer", render: (item) => customerName(item) },
           { key: "product", label: "Produk", render: (item) => item.items[0]?.description ?? "—" },
@@ -121,7 +136,7 @@ export default function OrderMonitoring() {
           { key: "status", label: "Status", render: (item) => <select className={`${selectClass} min-w-36`} value={item.status} onChange={(event) => update.mutate({ id: item.id, status: event.target.value })} data-testid={`order-status-${item.id}`}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select> },
           { key: "supplier", label: "Supplier", render: (item) => item.supplier ?? "—" },
           { key: "eta", label: "ETA", render: (item) => item.eta ?? "—" },
-          { key: "indicator", label: "Indikator", render: (item) => <Badge variant={item.status === "Completed" ? "default" : "outline"}>{item.status === "Completed" ? "Selesai" : "Berjalan"}</Badge> },
+          { key: "indicator", label: "Indikator", render: (item) => { const indicator = etaIndicator(item.eta); return <Badge variant={indicator.variant}>{indicator.label}</Badge>; } },
           { key: "sales", label: "Sales", render: (item) => item.sales_name ?? "—" },
         ]}
       />
