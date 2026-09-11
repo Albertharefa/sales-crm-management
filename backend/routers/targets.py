@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
@@ -29,9 +27,10 @@ async def create_sales_target(
     payload: SalesTargetPayload,
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
+    # A sales target belongs to an individual SALES user, not an admin or manager.
     sales = await db.users.find_one(
-        {"id": payload.sales_id, "role": {"$in": ["SALES", "SALES_MANAGER"]}},
-        {"_id": 0, "id": 1, "name": 1},
+        {"id": payload.sales_id, "role": "SALES"},
+        {"_id": 0, "id": 1, "name": 1, "role": 1},
     )
     if not sales:
         raise HTTPException(status_code=404, detail="Sales tidak ditemukan")
@@ -70,8 +69,8 @@ async def update_sales_target(
     user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
     sales = await db.users.find_one(
-        {"id": payload.sales_id, "role": {"$in": ["SALES", "SALES_MANAGER"]}},
-        {"_id": 0, "id": 1, "name": 1},
+        {"id": payload.sales_id, "role": "SALES"},
+        {"_id": 0, "id": 1, "name": 1, "role": 1},
     )
     if not sales:
         raise HTTPException(status_code=404, detail="Sales tidak ditemukan")
