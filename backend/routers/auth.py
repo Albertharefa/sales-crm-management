@@ -2,7 +2,7 @@ import os
 import secrets
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Cookie, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from passlib.context import CryptContext
 
 from lib.db import db
@@ -11,7 +11,6 @@ from routers.deps import current_user
 from security.permissions import ROLES, permissions_for_role
 
 router = APIRouter(tags=["auth"])
-
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SESSION_TTL_SECONDS = 60 * 60 * 8
 MAX_FAILED_LOGINS = 5
@@ -48,14 +47,11 @@ async def login(payload: LoginRequest, response: Response):
             {"user_id": identifier.upper()},
         ]
     })
-
-    # Deliberately return the same authentication error for unknown users and
-    # wrong passwords so the endpoint does not disclose account existence.
     if not user:
         raise HTTPException(status_code=401, detail="Email/User ID atau password salah")
 
-    locked_until = _utc(user.get("locked_until"))
     now = datetime.now(timezone.utc)
+    locked_until = _utc(user.get("locked_until"))
     if locked_until and locked_until > now:
         remaining = max(1, int((locked_until - now).total_seconds() // 60) + 1)
         raise HTTPException(status_code=423, detail=f"Akun terkunci sementara. Coba lagi dalam {remaining} menit")
@@ -69,15 +65,14 @@ async def login(payload: LoginRequest, response: Response):
         await _audit_auth(user, "Login Denied", user.get("id"), {"reason": "Invalid role"})
         raise HTTPException(status_code=403, detail="Role pengguna tidak valid")
 
-    password_hash = user.get("password_hash")
     password_valid = False
+    password_hash = user.get("password_hash")
     if password_hash:
         try:
             password_valid = pwd_context.verify(payload.password, password_hash)
         except Exception:
             password_valid = False
 
-    # Explicit production recovery path using Railway variables.
     force_env_admin = (
         os.getenv("ADMIN_FORCE_PASSWORD_RESET", "false").strip().lower() in {"1", "true", "yes", "on"}
         and identifier in {os.getenv("ADMIN_EMAIL", "").strip().lower(), str(user.get("user_id") or "").lower()}
@@ -92,8 +87,7 @@ async def login(payload: LoginRequest, response: Response):
         updates = {"failed_login_attempts": failed, "last_failed_login": now}
         if failed >= MAX_FAILED_LOGINS:
             updates["locked_until"] = now + timedelta(minutes=LOCK_MINUTES)
-            failed = 0
-            updates["failed_login_attempts"] = failed
+            updates["failed_login_attempts"] = 0
             await _audit_auth(user, "Login Locked", user.get("id"), {"lock_minutes": LOCK_MINUTES})
         else:
             await _audit_auth(user, "Login Failed", user.get("id"), {"attempt": failed})
@@ -115,12 +109,7 @@ async def login(payload: LoginRequest, response: Response):
         "last_seen_at": now,
     })
 
-    await _audit_auth(
-        user,
-        "Login Success",
-        user["id"],
-        {"role": role, "permissions": len(permissions_for_role(role))},
-    )
+    await _audit_auth(user, "Login Success", user["id"], {"role": role})
 
     secure_cookie = os.getenv("COOKIE_SECURE", "true").strip().lower() in {"1", "true", "yes", "on"}
     response.set_cookie(
@@ -132,22 +121,12 @@ async def login(payload: LoginRequest, response: Response):
         secure=secure_cookie,
         path="/",
     )
-
     return UserPublic(**{**user, "last_login": now})
 
 
 @router.get("/me", response_model=UserPublic)
-async def me(user: dict):
-    # This endpoint is intentionally kept compatible with the existing route
-    # contract; the session dependency is attached below at runtime.
+async def me(user: dict = Depends(current_user)):
     return UserPublic(**user)
-
-
-# Keep the dependency explicit without changing the public response model.
-from fastapi import Depends
-
-me.__wrapped__ = me
-router.routes[-1].endpoint = me
 
 
 @router.get("/session-info")
