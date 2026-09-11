@@ -1,11 +1,27 @@
-from fastapi import APIRouter, Depends, Query
-
+from fastapi import APIRouter, Depends, HTTPException, Query
 from lib.db import db
 from models.crm import Paginated
 from routers.common import page_collection
 from routers.deps import current_user
 
 router = APIRouter(prefix="/order-monitoring", tags=["order-monitoring"])
+
+
+def role_name(user: dict) -> str:
+    return str(user.get("role") or "").strip().upper()
+
+
+async def visible_sales_ids(user: dict) -> list[str]:
+    role = role_name(user)
+    if role == "SUPER_ADMIN":
+        docs = await db.users.find({"role": "SALES", "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}}, {"_id": 0, "id": 1}).to_list(1000)
+        return [str(d["id"]) for d in docs if d.get("id")]
+    if role == "SALES_MANAGER":
+        docs = await db.users.find({"manager_id": user.get("id"), "role": "SALES", "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}}, {"_id": 0, "id": 1}).to_list(1000)
+        return [str(d["id"]) for d in docs if d.get("id")]
+    if role == "SALES":
+        return [str(user.get("id"))]
+    return []
 
 
 @router.get("", response_model=Paginated)
@@ -17,25 +33,24 @@ async def list_order_monitoring(
     sales: str | None = None,
     user: dict = Depends(current_user),
 ):
-    customers = await db.customers.find(
-        {}, {"_id": 0, "id": 1, "customer_id": 1}
-    ).to_list(10000)
-    valid_customer_ids = set()
-    for customer in customers:
-        if customer.get("id"):
-            valid_customer_ids.add(str(customer["id"]))
-        if customer.get("customer_id"):
-            valid_customer_ids.add(str(customer["customer_id"]))
+    if role_name(user) not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:
+        raise HTTPException(status_code=403, detail="Role Anda tidak memiliki akses Order Monitoring")
 
-    filters = {
+    visible_ids = await visible_sales_ids(user)
+    customers = await db.customers.find({}, {"_id": 0, "id": 1, "customer_id": 1}).to_list(10000)
+    valid_customer_ids = {str(c[k]) for c in customers for k in ("id", "customer_id") if c.get(k)}
+
+    filters: dict = {
         "is_demo": {"$ne": True},
         "customer_id": {"$in": list(valid_customer_ids)},
+        "sales_id": {"$in": visible_ids},
     }
     if status:
         filters["status"] = status
     if sales:
-        filters["sales_name"] = sales
+        sales_user = await db.users.find_one({"name": sales, "id": {"$in": visible_ids}}, {"_id": 0, "id": 1})
+        if not sales_user:
+            raise HTTPException(status_code=403, detail="Sales berada di luar scope Anda")
+        filters["sales_id"] = sales_user["id"]
 
-    return await page_collection(
-        "purchase_orders", page, page_size, search, filters
-    )
+    return await page_collection("purchase_orders", page, page_size, search, filters)
