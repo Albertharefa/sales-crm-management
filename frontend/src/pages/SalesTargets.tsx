@@ -20,7 +20,6 @@ type SalesTarget = {
 type SalesOption = {
   id: string;
   name: string;
-  role: string;
 };
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", {
@@ -41,16 +40,16 @@ export default function SalesTargets() {
     queryFn: () => apiGet<SalesTarget[]>("/sales-targets"),
   });
 
-  // Use the same canonical CRM Sales master as Sales Pipeline.
-  // Target Sales is limited to users whose actual role is SALES.
+  // Target Sales uses its own backend selector so only actual SALES users
+  // can be selected. Opportunity keeps its broader Sales Master selector.
   const salesOptions = useQuery({
-    queryKey: ["crm-sales-options"],
-    queryFn: () => apiGet<SalesOption[]>("/pipeline/sales-options"),
+    queryKey: ["sales-target-options"],
+    queryFn: () => apiGet<SalesOption[]>("/sales-targets/options"),
     staleTime: 60_000,
   });
 
   const salesUsers = useMemo(
-    () => (salesOptions.data ?? []).filter(user => user.role === "SALES"),
+    () => salesOptions.data ?? [],
     [salesOptions.data],
   );
 
