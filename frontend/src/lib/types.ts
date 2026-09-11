@@ -1,4 +1,4 @@
-export interface User { id: string; user_id: string; name: string; email: string; role: string; manager_id?: string; phone?: string; status: string; last_login?: string; }
+export interface User { id: string; user_id: string; name: string; email: string; role: string; manager_id?: string; phone?: string; status: string; last_login?: string; created_at?: string; }
 export interface Customer { id: string; customer_id: string; name: string; industry: string; city: string; province?: string; phone?: string; email?: string; pic_name?: string; pic_position?: string; source?: string; status: string; sales_id?: string; sales_name?: string; address?: string; notes?: string; created_at: string; updated_at: string; }
 export interface Contact { id: string; contact_id: string; customer_id: string; customer_name: string; first_name: string; last_name?: string; position?: string; department?: string; email?: string; mobile?: string; contact_type: string; is_decision_maker: boolean; status: string; notes?: string; created_at: string; }
 export interface Opportunity { id: string; opportunity_id: string; name: string; customer_id: string; customer_name: string; sales_id?: string; sales_name?: string; value: number; probability: number; stage: string; target_close?: string; brand?: string; product?: string; next_action?: string; description?: string; loss_reason?: string; created_at: string; }
@@ -17,6 +17,6 @@ export interface SalesTeamMetric { sales: string; role: string; manager: string;
 export type AIContextType = "dashboard" | "customer" | "opportunity" | "quotation";
 export type AICapability = "sales_copilot" | "report_analyst" | "quotation_writer";
 export interface AIMessage { id: string; conversation_id: string; role: "user" | "assistant"; content: string; capability: AICapability; context_type: AIContextType; context_id?: string | null; created_at: string; }
-export interface AIConversationDetail { id: string; title: string; context_type: AIContextType; context_id?: string | null; messages: AIMessage[]; created_at: string; updated_at: string; }
+export interface AIConversationDetail { id: string; title: string; context_type: string; context_id?: string | null; messages: AIMessage[]; created_at: string; updated_at: string; }
 export interface AIContextOption { id: string; name: string; description?: string | null; }
 export interface AISavedNote { id: string; target_type: AIContextType; target_id?: string | null; title: string; content: string; created_by: string; created_at: string; }
