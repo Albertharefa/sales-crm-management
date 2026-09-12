@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from lib.db import db
 from models.crm import Paginated
@@ -10,6 +12,28 @@ router = APIRouter(prefix="/order-monitoring", tags=["order-monitoring"])
 
 def role_name(user: dict) -> str:
     return str(user.get("role") or "").strip().upper()
+
+
+def build_eta_filter(value: str) -> dict:
+    indicator = value.strip()
+    if indicator not in {"Overdue", "Due Soon", "Selesai"}:
+        raise HTTPException(status_code=422, detail="Indikator ETA tidak valid")
+    if indicator == "Selesai":
+        return {"status": "Completed"}
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    eta_date = {"$convert": {"input": "$eta", "to": "date", "onError": None, "onNull": None}}
+    if indicator == "Overdue":
+        return {
+            "status": {"$nin": ["Completed", "Cancelled"]},
+            "$expr": {"$lt": [eta_date, today]},
+        }
+    return {
+        "status": {"$ne": "Completed"},
+        "$or": [
+            {"eta": {"$in": [None, ""]}},
+            {"$expr": {"$gte": [eta_date, today]}},
+        ],
+    }
 
 
 async def visible_sales_ids(user: dict) -> list[str]:
@@ -33,6 +57,7 @@ async def list_order_monitoring(
     status: str | None = None,
     sales: str | None = None,
     customer_id: str | None = None,
+    eta_filter: str | None = None,
     user: dict = Depends(current_user),
 ):
     if role_name(user) not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:
@@ -59,6 +84,8 @@ async def list_order_monitoring(
             raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
         await ensure_customer_access(customer, user)
         filters["customer_id"] = str(customer.get("id") or customer_id)
+    if eta_filter:
+        filters.update(build_eta_filter(eta_filter))
 
     return await page_collection("purchase_orders", page, page_size, search, filters)
 
@@ -69,6 +96,7 @@ async def order_monitoring_summary(
     status: str | None = None,
     sales: str | None = None,
     customer_id: str | None = None,
+    eta_filter: str | None = None,
     user: dict = Depends(current_user),
 ):
     if role_name(user) not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:
@@ -92,6 +120,8 @@ async def order_monitoring_summary(
             raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
         await ensure_customer_access(customer, user)
         filters["customer_id"] = str(customer.get("id") or customer_id)
+    if eta_filter:
+        filters.update(build_eta_filter(eta_filter))
     if search.strip():
         term = search.strip()
         filters["$or"] = [

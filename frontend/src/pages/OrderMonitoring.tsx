@@ -40,14 +40,16 @@ export default function OrderMonitoring() {
   if (statusFilter) params.set("status", statusFilter);
   if (salesFilter) params.set("sales", salesFilter);
   if (customerFilter) params.set("customer_id", customerFilter);
+  if (etaFilter) params.set("eta_filter", etaFilter);
   const summaryParams = new URLSearchParams();
   if (search.trim()) summaryParams.set("search", search.trim());
   if (statusFilter) summaryParams.set("status", statusFilter);
   if (salesFilter) summaryParams.set("sales", salesFilter);
   if (customerFilter) summaryParams.set("customer_id", customerFilter);
+  if (etaFilter) summaryParams.set("eta_filter", etaFilter);
 
-  const query = useQuery({ queryKey: ["order-monitoring", page, pageSize, search, statusFilter, salesFilter, customerFilter], queryFn: () => apiGet<Paginated<MonitoringOrder>>(`/order-monitoring?${params.toString()}`) });
-  const summaryQuery = useQuery({ queryKey: ["order-monitoring-summary", search, statusFilter, salesFilter, customerFilter], queryFn: () => apiGet<Record<string, number>>(`/order-monitoring/summary?${summaryParams.toString()}`) });
+  const query = useQuery({ queryKey: ["order-monitoring", page, pageSize, search, statusFilter, etaFilter, salesFilter, customerFilter], queryFn: () => apiGet<Paginated<MonitoringOrder>>(`/order-monitoring?${params.toString()}`) });
+  const summaryQuery = useQuery({ queryKey: ["order-monitoring-summary", search, statusFilter, etaFilter, salesFilter, customerFilter], queryFn: () => apiGet<Record<string, number>>(`/order-monitoring/summary?${summaryParams.toString()}`) });
   const customerQuery = useQuery({ queryKey: ["order-monitoring-customers"], queryFn: () => apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"), staleTime: 60_000 });
   const salesQuery = useQuery({ queryKey: ["order-monitoring-sales"], queryFn: () => apiGet<SalesTeamMetric[]>("/sales-team"), staleTime: 60_000 });
   const update = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => apiPatch<PurchaseOrder>(`/purchase-orders/${id}/status?status=${encodeURIComponent(status)}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["order-monitoring"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Status order diperbarui"); }, onError: () => toast.error("Status order gagal diperbarui") });
