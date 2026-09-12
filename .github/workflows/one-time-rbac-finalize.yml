@@ -1,0 +1,64 @@
+name: One-Time RBAC Finalize
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.head_commit.message != 'chore: finalize RBAC audit fixes'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply final RBAC consistency fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          targets = Path('backend/routers/targets.py')
+          text = targets.read_text()
+          old = '''@router.delete("/sales-targets/{target_id}")\nasync def delete_sales_target(\n    target_id: str,\n    user: dict = Depends(require_roles("SUPER_ADMIN")),\n):\n    result = await db.sales_targets.delete_one({"id": target_id})\n    if result.deleted_count == 0:\n        raise HTTPException(status_code=404, detail="Target tidak ditemukan")\n    await audit(user, "Delete", "Sales Targets", target_id)\n    return {"message": "Target berhasil dihapus"}\n'''
+          new = '''@router.delete("/sales-targets/{target_id}")\nasync def delete_sales_target(\n    target_id: str,\n    user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),\n):\n    existing = await db.sales_targets.find_one({"id": target_id}, {"_id": 0, "sales_id": 1})\n    if not existing:\n        raise HTTPException(status_code=404, detail="Target tidak ditemukan")\n\n    if user.get("role") == "SALES_MANAGER" and existing.get("sales_id") not in (await visible_sales_ids(user) or []):\n        raise HTTPException(status_code=403, detail="Target tersebut bukan milik team Anda")\n\n    result = await db.sales_targets.delete_one({"id": target_id})\n    if result.deleted_count == 0:\n        raise HTTPException(status_code=404, detail="Target tidak ditemukan")\n    await audit(user, "Delete", "Sales Targets", target_id)\n    return {"message": "Target berhasil dihapus"}\n'''
+          if old not in text:
+              raise SystemExit('Expected target delete block not found')
+          targets.write_text(text.replace(old, new))
+
+          permissions = Path('backend/security/permissions.py')
+          text = permissions.read_text()
+          old = '''    if route.startswith("/integrity"): return "integrity.audit"\n    if route.startswith("/dashboard"): return "dashboard.view"\n'''
+          new = '''    if route.startswith("/admin"): return "__admin_only__"\n    if route.startswith("/integrity"): return "integrity.audit"\n    if route.startswith("/dashboard"): return "dashboard.view"\n'''
+          if old not in text:
+              raise SystemExit('Expected permission policy block not found')
+          permissions.write_text(text.replace(old, new))
+          print('RBAC consistency fixes applied')
+          PY
+
+      - name: Validate backend syntax
+        run: python -m compileall -q backend
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npx tsc --noEmit
+          npm run build
+
+      - name: Commit and remove one-time workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/routers/targets.py backend/security/permissions.py
+          git commit -m 'chore: finalize RBAC audit fixes'
+          git rm .github/workflows/one-time-rbac-finalize.yml
+          git commit -m 'chore: remove one-time RBAC workflow'
+          git push
