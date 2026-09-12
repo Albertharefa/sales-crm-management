@@ -295,7 +295,7 @@ export default function Activities() {
 
         {mode === "activities" && (
           <>
-            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
               <Input
                 value={search}
                 onChange={(e) => {
