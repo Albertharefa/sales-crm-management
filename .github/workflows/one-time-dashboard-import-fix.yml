@@ -1,0 +1,55 @@
+name: One-time Dashboard Import Fix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Patch dashboard import
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path("backend/services/dashboard.py")
+          text = path.read_text(encoding="utf-8")
+          old = "from lib.db import db\n"
+          new = "from fastapi import HTTPException\nfrom lib.db import db\n"
+          if "from fastapi import HTTPException" not in text:
+              if old not in text:
+                  raise SystemExit("dashboard db import not found")
+              text = text.replace(old, new, 1)
+              path.write_text(text, encoding="utf-8")
+
+      - name: Validate backend
+        run: python -m py_compile backend/services/dashboard.py backend/routers/dashboard.py
+
+      - name: Validate frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npx tsc --noEmit
+          npm run build
+
+      - name: Commit and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/services/dashboard.py .github/workflows/one-time-dashboard-import-fix.yml
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "fix: import dashboard HTTPException"
+          git push origin main
+          git rm .github/workflows/one-time-dashboard-import-fix.yml
+          git commit -m "chore: remove one-time dashboard import fix workflow"
+          git push origin main
