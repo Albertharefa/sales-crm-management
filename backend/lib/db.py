@@ -31,8 +31,12 @@ async def connect_to_mongo():
 
 
 async def _ensure_indexes():
-    # Non-unique indexes are safe against legacy duplicate data and materially
-    # improve authentication, RBAC, audit, and list-query performance.
+    """Create safe, non-unique indexes used by the production CRM.
+
+    Index creation is idempotent and runs automatically at application startup.
+    None of these indexes enforce uniqueness, so legacy production data cannot
+    make deployment fail because of historical duplicates.
+    """
     indexes = {
         "users": [
             ([('email', 1)], "users_email"),
@@ -53,7 +57,68 @@ async def _ensure_indexes():
             ([('created_at', -1)], "audit_created_at"),
             ([('user_id', 1), ('created_at', -1)], "audit_user_created"),
         ],
+        "customers": [
+            ([('id', 1)], "customers_id"),
+            ([('customer_id', 1)], "customers_customer_id"),
+            ([('sales_id', 1), ('status', 1)], "customers_sales_status"),
+            ([('name', 1)], "customers_name"),
+            ([('is_demo', 1)], "customers_demo"),
+        ],
+        "products": [
+            ([('id', 1)], "products_id"),
+            ([('code', 1)], "products_code"),
+            ([('brand', 1), ('category', 1)], "products_brand_category"),
+            ([('status', 1)], "products_status"),
+            ([('is_demo', 1)], "products_demo"),
+        ],
+        "opportunities": [
+            ([('id', 1)], "opportunities_id"),
+            ([('customer_id', 1)], "opportunities_customer"),
+            ([('sales_id', 1)], "opportunities_sales"),
+            ([('stage', 1), ('status', 1)], "opportunities_stage_status"),
+            ([('is_demo', 1)], "opportunities_demo"),
+        ],
+        "activities": [
+            ([('id', 1)], "activities_id"),
+            ([('customer_id', 1), ('created_at', -1)], "activities_customer_created"),
+            ([('opportunity_id', 1)], "activities_opportunity"),
+            ([('sales_id', 1), ('created_at', -1)], "activities_sales_created"),
+            ([('status', 1), ('type', 1)], "activities_status_type"),
+            ([('is_demo', 1)], "activities_demo"),
+        ],
+        "quotations": [
+            ([('id', 1)], "quotations_id"),
+            ([('quotation_number', 1)], "quotations_number"),
+            ([('customer_id', 1)], "quotations_customer"),
+            ([('sales_id', 1)], "quotations_sales"),
+            ([('opportunity_id', 1)], "quotations_opportunity"),
+            ([('status', 1), ('created_at', -1)], "quotations_status_created"),
+            ([('is_demo', 1)], "quotations_demo"),
+        ],
+        "purchase_orders": [
+            ([('id', 1)], "purchase_orders_id"),
+            ([('po_number', 1)], "purchase_orders_number"),
+            ([('customer_id', 1)], "purchase_orders_customer"),
+            ([('sales_id', 1)], "purchase_orders_sales"),
+            ([('quotation_number', 1)], "purchase_orders_quotation"),
+            ([('status', 1), ('eta', 1)], "purchase_orders_status_eta"),
+            ([('is_demo', 1)], "purchase_orders_demo"),
+        ],
+        "sales_targets": [
+            ([('id', 1)], "sales_targets_id"),
+            ([('sales_id', 1), ('year', 1)], "sales_targets_sales_year"),
+            ([('year', 1), ('status', 1)], "sales_targets_year_status"),
+            ([('is_demo', 1)], "sales_targets_demo"),
+        ],
+        "tasks": [
+            ([('id', 1)], "tasks_id"),
+            ([('assigned_user', 1), ('status', 1)], "tasks_assignee_status"),
+            ([('customer_name', 1)], "tasks_customer"),
+            ([('opportunity_name', 1)], "tasks_opportunity"),
+            ([('is_demo', 1)], "tasks_demo"),
+        ],
     }
+
     for collection_name, collection_indexes in indexes.items():
         collection = db[collection_name]
         for keys, name in collection_indexes:
