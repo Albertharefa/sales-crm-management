@@ -1,0 +1,62 @@
+name: Order Monitoring Scale Fix
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[order-monitoring-scale]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Order Monitoring server pagination
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('backend/routers/order_monitoring.py')
+          s = p.read_text()
+          s = s.replace('from routers.common import page_collection\n', 'from routers.common import page_collection\nfrom routers.customers import ensure_customer_access\n')
+          old = '''    sales: str | None = None,\n    user: dict = Depends(current_user),\n):\n'''
+          new = '''    sales: str | None = None,\n    customer_id: str | None = None,\n    user: dict = Depends(current_user),\n):\n'''
+          if old not in s: raise SystemExit('order monitoring signature not found')
+          s = s.replace(old, new, 1)
+          old = '''    if sales:\n        sales_user = await db.users.find_one({"name": sales, "id": {"$in": visible_ids}}, {"_id": 0, "id": 1})\n        if not sales_user:\n            raise HTTPException(status_code=403, detail="Sales berada di luar scope Anda")\n        filters["sales_id"] = sales_user["id"]\n\n    return await page_collection("purchase_orders", page, page_size, search, filters)\n'''
+          new = '''    if sales:\n        sales_user = await db.users.find_one({"name": sales, "id": {"$in": visible_ids}}, {"_id": 0, "id": 1})\n        if not sales_user:\n            raise HTTPException(status_code=403, detail="Sales berada di luar scope Anda")\n        filters["sales_id"] = sales_user["id"]\n    if customer_id:\n        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n        filters["customer_id"] = str(customer.get("id") or customer_id)\n\n    return await page_collection("purchase_orders", page, page_size, search, filters)\n\n\n@router.get("/summary")\nasync def order_monitoring_summary(\n    search: str = "",\n    status: str | None = None,\n    sales: str | None = None,\n    customer_id: str | None = None,\n    user: dict = Depends(current_user),\n):\n    if role_name(user) not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:\n        raise HTTPException(status_code=403, detail="Role Anda tidak memiliki akses Order Monitoring")\n    visible_ids = await visible_sales_ids(user)\n    customers = await db.customers.find({}, {"_id": 0, "id": 1, "customer_id": 1}).to_list(10000)\n    valid_customer_ids = {str(c[k]) for c in customers for k in ("id", "customer_id") if c.get(k)}\n    filters: dict = {"customer_id": {"$in": list(valid_customer_ids)}, "sales_id": {"$in": visible_ids}}\n    if status:\n        if status not in {"Received", "Waiting Order", "Confirmed", "Processing", "Indent", "Ready Stock", "Delivery", "Completed", "Cancelled"}:\n            raise HTTPException(status_code=422, detail="Status order tidak valid")\n        filters["status"] = status\n    if sales:\n        sales_user = await db.users.find_one({"name": sales, "id": {"$in": visible_ids}}, {"_id": 0, "id": 1})\n        if not sales_user:\n            raise HTTPException(status_code=403, detail="Sales berada di luar scope Anda")\n        filters["sales_id"] = sales_user["id"]\n    if customer_id:\n        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n        filters["customer_id"] = str(customer.get("id") or customer_id)\n    if search.strip():\n        term = search.strip()\n        filters["$or"] = [\n            {"po_number": {"$regex": term, "$options": "i"}},\n            {"customer_name": {"$regex": term, "$options": "i"}},\n            {"sales_name": {"$regex": term, "$options": "i"}},\n            {"items.description": {"$regex": term, "$options": "i"}},\n        ]\n    counts = {"TOTAL": await db.purchase_orders.count_documents(filters)}\n    for stage in ["Received", "Waiting Order", "Processing", "Indent", "Ready Stock", "Delivery", "Completed", "Cancelled"]:\n        stage_filter = {**filters, "status": stage}\n        counts[stage.upper()] = await db.purchase_orders.count_documents(stage_filter)\n    return counts\n'''
+          if old not in s: raise SystemExit('order monitoring return block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path('frontend/src/pages/OrderMonitoring.tsx')
+          s = p.read_text()
+          old = '''  const query = useQuery({ queryKey: ["order-monitoring"], queryFn: () => apiGet<Paginated<MonitoringOrder>>("/order-monitoring?page=1&page_size=100") });\n  const customerQuery = useQuery({ queryKey: ["order-monitoring-customers"], queryFn: () => apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"), staleTime: 60_000 });\n  const salesQuery = useQuery({ queryKey: ["order-monitoring-sales"], queryFn: () => apiGet<SalesTeamMetric[]>("/sales-team"), staleTime: 60_000 });\n'''
+          new = '''  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });\n  if (search.trim()) params.set("search", search.trim());\n  if (statusFilter) params.set("status", statusFilter);\n  if (salesFilter) params.set("sales", salesFilter);\n  if (customerFilter) params.set("customer_id", customerFilter);\n  const summaryParams = new URLSearchParams();\n  if (search.trim()) summaryParams.set("search", search.trim());\n  if (statusFilter) summaryParams.set("status", statusFilter);\n  if (salesFilter) summaryParams.set("sales", salesFilter);\n  if (customerFilter) summaryParams.set("customer_id", customerFilter);\n\n  const query = useQuery({ queryKey: ["order-monitoring", page, pageSize, search, statusFilter, salesFilter, customerFilter], queryFn: () => apiGet<Paginated<MonitoringOrder>>(`/order-monitoring?${params.toString()}`) });\n  const summaryQuery = useQuery({ queryKey: ["order-monitoring-summary", search, statusFilter, salesFilter, customerFilter], queryFn: () => apiGet<Record<string, number>>(`/order-monitoring/summary?${summaryParams.toString()}`) });\n  const customerQuery = useQuery({ queryKey: ["order-monitoring-customers"], queryFn: () => apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"), staleTime: 60_000 });\n  const salesQuery = useQuery({ queryKey: ["order-monitoring-sales"], queryFn: () => apiGet<SalesTeamMetric[]>("/sales-team"), staleTime: 60_000 });\n'''
+          if old not in s: raise SystemExit('order monitoring query block not found')
+          s = s.replace(old, new, 1)
+          old = '''  const items = query.data?.items ?? [];\n  const customers = customerQuery.data?.items ?? [];\n  const customerByKey = useMemo(() => { const map = new Map<string, Customer>(); customers.forEach((customer) => { map.set(customer.id, customer); if (customer.customer_id) map.set(customer.customer_id, customer); }); return map; }, [customers]);\n  const customerName = (order: PurchaseOrder) => customerByKey.get(order.customer_id)?.name || order.customer_name || "—";\n  const salesOptions = useMemo(() => { const fromSalesTeam = (salesQuery.data ?? []).map((item) => item.sales).filter(Boolean); const fromCustomers = customers.map((customer) => customer.sales_name).filter(Boolean) as string[]; const fromOrders = items.map((item) => item.sales_name).filter(Boolean) as string[]; return Array.from(new Set([...fromSalesTeam, ...fromCustomers, ...fromOrders])).sort(); }, [salesQuery.data, customers, items]);\n  const customerOptions = useMemo(() => {\n    const options = customers.map((customer) => ({ id: customer.id || customer.customer_id, name: customer.name || customer.company_name || customer.customer_id })).filter((customer) => Boolean(customer.id && customer.name));\n    return Array.from(new Map(options.map((customer) => [String(customer.id), customer])).values()).sort((a, b) => String(a.name).localeCompare(String(b.name)));\n  }, [customers]);\n  const filteredItems = useMemo(() => { const keyword = search.trim().toLowerCase(); return items.filter((item) => { const customer = customerName(item); const product = item.items[0]?.description ?? ""; const indicator = etaIndicator(item.eta, item.status); const matchesSearch = !keyword || [item.po_number, product, customer].some((value) => String(value).toLowerCase().includes(keyword)); const matchesStatus = !statusFilter || item.status === statusFilter; const matchesEta = !etaFilter || indicator === etaFilter; const matchesSales = !salesFilter || (item.sales_name ?? "") === salesFilter; const matchesCustomer = !customerFilter || String(item.customer_id) === customerFilter; return matchesSearch && matchesStatus && matchesEta && matchesSales && matchesCustomer; }); }, [items, search, statusFilter, etaFilter, salesFilter, customerFilter, customerByKey]);\n  const pagedItems = useMemo(() => { const start = (page - 1) * pageSize; return filteredItems.slice(start, start + pageSize); }, [filteredItems, page, pageSize]);\n  const stats = [{ label: "TOTAL", value: filteredItems.length }, ...stages.map((stage) => ({ label: stage.toUpperCase(), value: filteredItems.filter((item) => item.status === stage).length }))];\n'''
+          new = '''  const items = query.data?.items ?? [];\n  const customers = customerQuery.data?.items ?? [];\n  const customerByKey = useMemo(() => { const map = new Map<string, Customer>(); customers.forEach((customer) => { map.set(customer.id, customer); if (customer.customer_id) map.set(customer.customer_id, customer); }); return map; }, [customers]);\n  const customerName = (order: PurchaseOrder) => customerByKey.get(order.customer_id)?.name || order.customer_name || "—";\n  const salesOptions = useMemo(() => Array.from(new Set((salesQuery.data ?? []).map((item) => item.sales).filter(Boolean))).sort(), [salesQuery.data]);\n  const customerOptions = useMemo(() => { const options = customers.map((customer) => ({ id: customer.id || customer.customer_id, name: customer.name || customer.company_name || customer.customer_id })).filter((customer) => Boolean(customer.id && customer.name)); return Array.from(new Map(options.map((customer) => [String(customer.id), customer])).values()).sort((a, b) => String(a.name).localeCompare(String(b.name))); }, [customers]);\n  const stats = [{ label: "TOTAL", value: summaryQuery.data?.TOTAL ?? 0 }, ...stages.map((stage) => ({ label: stage.toUpperCase(), value: summaryQuery.data?.[stage.toUpperCase()] ?? 0 }))];\n'''
+          if old not in s: raise SystemExit('order monitoring derived block not found')
+          s = s.replace(old, new, 1)
+          s = s.replace('items={pagedItems} loading={query.isLoading || customerQuery.isLoading || salesQuery.isLoading} total={filteredItems.length}', 'items={items} loading={query.isLoading || summaryQuery.isLoading || customerQuery.isLoading || salesQuery.isLoading} total={query.data?.total ?? 0}')
+          s = s.replace('onExport={() => window.open("/api/exports/purchase-orders", "_blank")}', 'onExport={() => window.open("/api/v1/exports/purchase-orders", "_blank")}')
+          p.write_text(s)
+          PY
+      - name: Build and syntax check
+        run: |
+          python -m compileall -q backend
+          cd frontend
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Commit patch and remove workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/routers/order_monitoring.py frontend/src/pages/OrderMonitoring.tsx
+          git rm .github/workflows/order-monitoring-scale.yml
+          git commit -m 'fix: make order monitoring pagination and filters production-safe [order-monitoring-scale]'
+          git push origin main
