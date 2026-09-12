@@ -10,25 +10,18 @@ STAGES = ["Lead", "Qualification", "Proposal", "Negotiation", "Won", "Lost"]
 
 async def visible_sales_ids(user: dict) -> list[str]:
     """Return the active SALES IDs visible to the current user."""
-    role = str(user.get("role") or "").upper()
+    role = str(user.get("role") or "").strip().upper()
 
     if role == "SUPER_ADMIN":
         sales = await db.users.find(
-            {
-                "role": "SALES",
-                "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]},
-            },
+            {"role": "SALES", "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}},
             {"_id": 0, "id": 1},
         ).to_list(1000)
         return [str(item["id"]) for item in sales if item.get("id")]
 
     if role == "SALES_MANAGER":
         reports = await db.users.find(
-            {
-                "manager_id": user["id"],
-                "role": "SALES",
-                "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]},
-            },
+            {"manager_id": user["id"], "role": "SALES", "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]}},
             {"_id": 0, "id": 1},
         ).to_list(1000)
         return [str(item["id"]) for item in reports if item.get("id")]
@@ -37,6 +30,31 @@ async def visible_sales_ids(user: dict) -> list[str]:
         return [str(user["id"])]
 
     return []
+
+
+async def visible_customer_filter(user: dict) -> dict:
+    role = str(user.get("role") or "").strip().upper()
+    if role == "SUPER_ADMIN":
+        return {}
+    sales_ids = await visible_sales_ids(user)
+    if not sales_ids:
+        return {"_id": {"$exists": False}}
+    sales_users = await db.users.find({"id": {"$in": sales_ids}}, {"_id": 0, "name": 1}).to_list(1000)
+    sales_names = [str(item["name"]) for item in sales_users if item.get("name")]
+    return {"$or": [{"sales_id": {"$in": sales_ids}}, {"sales_name": {"$in": sales_names}}]}
+
+
+async def ensure_customer_access(customer: dict, user: dict) -> None:
+    if str(user.get("role") or "").strip().upper() == "SUPER_ADMIN":
+        return
+    sales_ids = await visible_sales_ids(user)
+    sales_names = []
+    if sales_ids:
+        sales_users = await db.users.find({"id": {"$in": sales_ids}}, {"_id": 0, "name": 1}).to_list(1000)
+        sales_names = [str(item["name"]) for item in sales_users if item.get("name")]
+    if str(customer.get("sales_id") or "") in sales_ids or str(customer.get("sales_name") or "") in sales_names:
+        return
+    raise HTTPException(status_code=403, detail="Customer berada di luar scope Anda")
 
 
 async def validate_sales_assignment(sales_id: str, user: dict) -> dict:
@@ -52,7 +70,7 @@ async def validate_sales_assignment(sales_id: str, user: dict) -> dict:
     if status in {"INACTIVE", "DISABLED"}:
         raise HTTPException(status_code=400, detail="Sales penanggung jawab tidak aktif")
 
-    role = str(user.get("role") or "").upper()
+    role = str(user.get("role") or "").strip().upper()
     if role == "SALES" and sales["id"] != user["id"]:
         raise HTTPException(status_code=403, detail="Sales hanya dapat membuat opportunity untuk dirinya sendiri")
     if role == "SALES_MANAGER" and sales.get("manager_id") != user.get("id"):
@@ -65,7 +83,7 @@ async def validate_sales_assignment(sales_id: str, user: dict) -> dict:
 
 async def ensure_opportunity_access(doc: dict, user: dict) -> None:
     """Prevent users from viewing or changing opportunities outside their scope."""
-    role = str(user.get("role") or "").upper()
+    role = str(user.get("role") or "").strip().upper()
     if role == "SUPER_ADMIN":
         return
 
@@ -104,41 +122,33 @@ async def list_opportunities(
         filters["stage"] = stage
     if customer_id:
         filters["customer_id"] = customer_id
+        if customer_id:
+            customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})
+            if not customer:
+                raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+            await ensure_customer_access(customer, user)
 
     return await page_collection("opportunities", page, page_size, search, filters)
 
 
 @router.get("/sales-options")
 async def sales_options(user: dict = Depends(current_user)):
-    """Return only active Sales that the current user may assign."""
     visible_ids = await visible_sales_ids(user)
     query: dict = {
         "role": "SALES",
         "status": {"$nin": ["INACTIVE", "DISABLED", "Inactive", "Disabled"]},
         "id": {"$in": visible_ids},
     }
-
-    users = await db.users.find(
-        query,
-        {"_id": 0, "id": 1, "user_id": 1, "name": 1, "role": 1},
-    ).sort("name", 1).to_list(1000)
-    return [
-        {
-            "id": str(item["id"]),
-            "user_id": str(item.get("user_id") or ""),
-            "name": str(item["name"]),
-            "role": str(item.get("role") or "SALES"),
-        }
-        for item in users
-        if item.get("id") and item.get("name")
-    ]
+    users = await db.users.find(query, {"_id": 0, "id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(1000)
+    return [{"id": str(item["id"]), "user_id": str(item.get("user_id") or ""), "name": str(item["name"]), "role": str(item.get("role") or "SALES")} for item in users if item.get("id") and item.get("name")]
 
 
 @router.get("/customer-options")
 async def customer_options(user: dict = Depends(current_user)):
-    """Return customers for the Sales Pipeline customer filter."""
+    """Return only customers in the logged-in user's sales scope."""
+    scope = await visible_customer_filter(user)
     customers = await db.customers.find(
-        {},
+        scope,
         {"_id": 0, "id": 1, "customer_id": 1, "name": 1, "company_name": 1},
     ).sort("name", 1).to_list(1000)
 
@@ -148,12 +158,7 @@ async def customer_options(user: dict = Depends(current_user)):
         customer_id = customer.get("id") or customer.get("customer_id")
         if not customer_id or customer_id in seen_ids:
             continue
-        display_name = (
-            customer.get("name")
-            or customer.get("company_name")
-            or customer.get("customer_id")
-            or str(customer_id)
-        )
+        display_name = customer.get("name") or customer.get("company_name") or customer.get("customer_id") or str(customer_id)
         result.append({"id": str(customer_id), "name": str(display_name)})
         seen_ids.add(customer_id)
     return result
@@ -173,7 +178,11 @@ async def kanban(
     if sales_id:
         base_filters["sales_id"] = sales_id
     if customer_id:
-        base_filters["customer_id"] = customer_id
+        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+        await ensure_customer_access(customer, user)
+        base_filters["customer_id"] = customer.get("id") or customer_id
 
     result = []
     for stage in STAGES:
@@ -181,23 +190,16 @@ async def kanban(
         items = await db.opportunities.find(query).sort("created_at", -1).to_list(100)
         for item in items:
             item.pop("_id", None)
-        result.append({
-            "stage": stage,
-            "count": len(items),
-            "value": sum(float(i.get("value", 0) or 0) for i in items),
-            "items": items,
-        })
+        result.append({"stage": stage, "count": len(items), "value": sum(float(i.get("value", 0) or 0) for i in items), "items": items})
     return result
 
 
 @router.post("", response_model=Opportunity)
-async def create_opportunity(
-    payload: OpportunityCreate,
-    user: dict = Depends(current_user),
-):
-    customer = await db.customers.find_one({"id": payload.customer_id})
+async def create_opportunity(payload: OpportunityCreate, user: dict = Depends(current_user)):
+    customer = await db.customers.find_one({"id": payload.customer_id}) or await db.customers.find_one({"customer_id": payload.customer_id})
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
+    await ensure_customer_access(customer, user)
     if payload.stage not in STAGES:
         raise HTTPException(status_code=422, detail="Stage tidak valid")
     if payload.stage == "Lost" and not payload.loss_reason:
@@ -208,12 +210,13 @@ async def create_opportunity(
 
     count = await db.opportunities.count_documents({}) + 1
     payload_data = payload.model_dump(mode="json")
+    payload_data["customer_id"] = str(customer.get("id") or customer.get("customer_id"))
     payload_data["sales_id"] = sales["id"]
 
     doc = {
         "id": new_id(),
         "opportunity_id": f"OPP-{now().year}-{count:05d}",
-        "customer_name": customer["name"],
+        "customer_name": customer.get("name") or customer.get("company_name") or "",
         "sales_id": sales["id"],
         "sales_name": sales["name"],
         **payload_data,
@@ -221,22 +224,12 @@ async def create_opportunity(
     }
 
     await db.opportunities.insert_one(doc)
-    await audit(
-        user,
-        "Create",
-        "Sales Pipeline",
-        doc["id"],
-        {"name": doc["name"], "sales_name": doc["sales_name"]},
-    )
+    await audit(user, "Create", "Sales Pipeline", doc["id"], {"name": doc["name"], "sales_name": doc["sales_name"]})
     return Opportunity(**doc)
 
 
 @router.put("/{opportunity_id}", response_model=Opportunity)
-async def update_opportunity(
-    opportunity_id: str,
-    payload: OpportunityUpdate,
-    user: dict = Depends(current_user),
-):
+async def update_opportunity(opportunity_id: str, payload: OpportunityUpdate, user: dict = Depends(current_user)):
     doc = await db.opportunities.find_one({"id": opportunity_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Opportunity tidak ditemukan")
@@ -248,17 +241,6 @@ async def update_opportunity(
         raise HTTPException(status_code=422, detail="Stage tidak valid")
     if data.get("stage") == "Lost" and not data.get("loss_reason") and not doc.get("loss_reason"):
         raise HTTPException(status_code=422, detail="Loss reason wajib diisi untuk stage Lost")
-
-    if "customer_id" in data and data["customer_id"]:
-        customer = await db.customers.find_one({"id": data["customer_id"]})
-        if not customer:
-            raise HTTPException(status_code=400, detail="Customer tidak valid")
-        data["customer_name"] = customer["name"]
-
-    if "sales_id" in data and data["sales_id"]:
-        sales = await validate_sales_assignment(data["sales_id"], user)
-        data["sales_id"] = sales["id"]
-        data["sales_name"] = sales["name"]
 
     if "value" in data and data["value"] is not None and float(data["value"]) < 0:
         raise HTTPException(status_code=422, detail="Value tidak boleh negatif")
@@ -278,14 +260,10 @@ async def update_opportunity(
 
 
 @router.delete("/{opportunity_id}")
-async def delete_opportunity(
-    opportunity_id: str,
-    user: dict = Depends(current_user),
-):
+async def delete_opportunity(opportunity_id: str, user: dict = Depends(current_user)):
     doc = await db.opportunities.find_one({"id": opportunity_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Opportunity tidak ditemukan")
-
     await ensure_opportunity_access(doc, user)
     await db.opportunities.delete_one({"id": opportunity_id})
     await audit(user, "Delete", "Sales Pipeline", opportunity_id, {"name": doc.get("name")})
@@ -293,12 +271,7 @@ async def delete_opportunity(
 
 
 @router.patch("/{opportunity_id}/stage", response_model=Opportunity)
-async def update_stage(
-    opportunity_id: str,
-    stage: str,
-    loss_reason: str | None = None,
-    user: dict = Depends(current_user),
-):
+async def update_stage(opportunity_id: str, stage: str, loss_reason: str | None = None, user: dict = Depends(current_user)):
     if stage not in STAGES:
         raise HTTPException(status_code=422, detail="Stage tidak valid")
     if stage == "Lost" and not loss_reason:
