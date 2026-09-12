@@ -286,3 +286,13 @@ class UserInDB(UserBase):
     password_hash: str
     created_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
+
+class LoginRequest(CRMBaseModel):
+    email: str
+    password: str
+
+class UserPublic(UserBase):
+    id: str
+    user_id: str
+    created_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
