@@ -1,0 +1,86 @@
+name: One-time Order Monitoring ETA Filter
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Patch ETA filter
+        shell: python
+        run: |
+          from pathlib import Path
+
+          backend = Path("backend/routers/order_monitoring.py")
+          text = backend.read_text(encoding="utf-8")
+          text = text.replace('from fastapi import APIRouter, Depends, HTTPException, Query', 'from datetime import datetime, timezone\n\nfrom fastapi import APIRouter, Depends, HTTPException, Query', 1)
+          old = '    customer_id: str | None = None,\n    user: dict = Depends(current_user),'
+          new = '    customer_id: str | None = None,\n    eta_filter: str | None = None,\n    user: dict = Depends(current_user),'
+          if text.count(old) != 2:
+              raise SystemExit("order monitoring parameter blocks not found")
+          text = text.replace(old, new, 2)
+          old = '    if customer_id:\n        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n        filters["customer_id"] = str(customer.get("id") or customer_id)\n\n    return await page_collection("purchase_orders", page, page_size, search, filters)'
+          new = '    if customer_id:\n        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n        filters["customer_id"] = str(customer.get("id") or customer_id)\n    if eta_filter:\n        filters.update(build_eta_filter(eta_filter))\n\n    return await page_collection("purchase_orders", page, page_size, search, filters)'
+          if old not in text:
+              raise SystemExit("order monitoring list customer block not found")
+          text = text.replace(old, new, 1)
+          old = '    if search.strip():\n        term = search.strip()\n        filters["$or"] = [\n            {"po_number": {"$regex": term, "$options": "i"}},\n            {"customer_name": {"$regex": term, "$options": "i"}},\n            {"sales_name": {"$regex": term, "$options": "i"}},\n            {"items.description": {"$regex": term, "$options": "i"}},\n        ]\n    counts = {"TOTAL": await db.purchase_orders.count_documents(filters)}'
+          new = '    if eta_filter:\n        filters.update(build_eta_filter(eta_filter))\n    if search.strip():\n        term = search.strip()\n        filters["$or"] = [\n            {"po_number": {"$regex": term, "$options": "i"}},\n            {"customer_name": {"$regex": term, "$options": "i"}},\n            {"sales_name": {"$regex": term, "$options": "i"}},\n            {"items.description": {"$regex": term, "$options": "i"}},\n        ]\n    counts = {"TOTAL": await db.purchase_orders.count_documents(filters)}'
+          if old not in text:
+              raise SystemExit("order monitoring summary search block not found")
+          text = text.replace(old, new, 1)
+          marker = 'def role_name(user: dict) -> str:\n    return str(user.get("role") or "").strip().upper()\n\n\n'
+          helper = '''def role_name(user: dict) -> str:\n    return str(user.get("role") or "").strip().upper()\n\n\ndef build_eta_filter(value: str) -> dict:\n    indicator = value.strip()\n    if indicator not in {"Overdue", "Due Soon", "Selesai"}:\n        raise HTTPException(status_code=422, detail="Indikator ETA tidak valid")\n    if indicator == "Selesai":\n        return {"status": "Completed"}\n    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)\n    eta_date = {"$convert": {"input": "$eta", "to": "date", "onError": None, "onNull": None}}\n    if indicator == "Overdue":\n        return {\n            "status": {"$nin": ["Completed", "Cancelled"]},\n            "$expr": {"$lt": [eta_date, today]},\n        }\n    return {\n        "status": {"$ne": "Completed"},\n        "$or": [\n            {"eta": {"$in": [None, ""]}},\n            {"$expr": {"$gte": [eta_date, today]}},\n        ],\n    }\n\n\n'''
+          if marker not in text:
+              raise SystemExit("order monitoring role marker not found")
+          text = text.replace(marker, helper, 1)
+          backend.write_text(text, encoding="utf-8")
+
+          frontend = Path("frontend/src/pages/OrderMonitoring.tsx")
+          text = frontend.read_text(encoding="utf-8")
+          old = '  if (customerFilter) params.set("customer_id", customerFilter);\n  const summaryParams = new URLSearchParams();'
+          new = '  if (customerFilter) params.set("customer_id", customerFilter);\n  if (etaFilter) params.set("eta_filter", etaFilter);\n  const summaryParams = new URLSearchParams();'
+          if old not in text:
+              raise SystemExit("OrderMonitoring list params block not found")
+          text = text.replace(old, new, 1)
+          old = '  if (customerFilter) summaryParams.set("customer_id", customerFilter);\n\n  const query = useQuery({ queryKey: ["order-monitoring", page, pageSize, search, statusFilter, salesFilter, customerFilter],'
+          new = '  if (customerFilter) summaryParams.set("customer_id", customerFilter);\n  if (etaFilter) summaryParams.set("eta_filter", etaFilter);\n\n  const query = useQuery({ queryKey: ["order-monitoring", page, pageSize, search, statusFilter, etaFilter, salesFilter, customerFilter],'
+          if old not in text:
+              raise SystemExit("OrderMonitoring summary params block not found")
+          text = text.replace(old, new, 1)
+          old = 'queryKey: ["order-monitoring-summary", search, statusFilter, salesFilter, customerFilter],'
+          new = 'queryKey: ["order-monitoring-summary", search, statusFilter, etaFilter, salesFilter, customerFilter],'
+          if old not in text:
+              raise SystemExit("OrderMonitoring summary query key not found")
+          text = text.replace(old, new, 1)
+          frontend.write_text(text, encoding="utf-8")
+      - name: Validate backend
+        run: python -m py_compile backend/routers/order_monitoring.py
+      - name: Validate frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npx tsc --noEmit
+          npm run build
+      - name: Commit and remove workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add backend/routers/order_monitoring.py frontend/src/pages/OrderMonitoring.tsx .github/workflows/one-time-order-monitoring-eta-filter.yml
+          git diff --cached --quiet && { echo "No changes to commit"; exit 0; }
+          git commit -m "fix: wire order monitoring ETA filter"
+          git push origin main
+          git rm .github/workflows/one-time-order-monitoring-eta-filter.yml
+          git commit -m "chore: remove one-time ETA filter workflow"
+          git push origin main
