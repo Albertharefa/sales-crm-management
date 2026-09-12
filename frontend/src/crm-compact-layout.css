@@ -1,0 +1,168 @@
+/* CRM COMPACT LAYOUT — visual-only sizing standard */
+:root {
+  --crm-filter-width: 220px;
+  --crm-filter-height: 40px;
+  --crm-filter-gap: 10px;
+}
+
+[data-testid="pipeline-page"] div.mt-3.grid:has(> div > [data-testid="pipeline-search-input"]),
+[data-testid="activities-page"] div.mt-3.grid:has(> [data-testid="activities-search-input"]),
+[data-testid="quotations-page"] div.grid:has(> [data-testid="quotation-search-input"]),
+[data-testid="customers-page"] div.mb-5:has(> div > [data-testid="customers-search-input"]),
+[data-testid="purchase-orders-page"] div:has(> [placeholder="Cari nomor PO / customer..."]),
+[data-testid="order-monitoring-page"] div:has(> div > input[placeholder="Cari PO / produk / customer..."]),
+[data-testid="sales-targets-page"] div.mb-5:has(> div > [data-testid="sales-target-search-input"]) {
+  gap: var(--crm-filter-gap) !important;
+}
+
+[data-testid="pipeline-page"] [data-testid="pipeline-search-input"],
+[data-testid="pipeline-page"] [data-testid="pipeline-stage-filter"],
+[data-testid="pipeline-page"] [data-testid="pipeline-sales-filter"],
+[data-testid="pipeline-page"] [data-testid="pipeline-customer-filter"],
+[data-testid="activities-page"] [data-testid="activities-search-input"],
+[data-testid="activities-page"] [data-testid="activities-filter"],
+[data-testid="activities-page"] [data-testid="activities-type-filter"],
+[data-testid="activities-page"] [data-testid="activities-status-filter"],
+[data-testid="activities-page"] [data-testid="activities-sales-filter"],
+[data-testid="quotations-page"] [data-testid="quotation-search-input"],
+[data-testid="quotations-page"] [data-testid="quotation-status-filter"],
+[data-testid="quotations-page"] [data-testid="quotation-sales-filter"],
+[data-testid="customers-page"] [data-testid="customers-search-input"],
+[data-testid="customers-page"] div.mb-5:has(> div > [data-testid="customers-search-input"]) select,
+[data-testid="purchase-orders-page"] div:has(> [placeholder="Cari nomor PO / customer..."]) select,
+[data-testid="order-monitoring-page"] input[placeholder="Cari PO / produk / customer..."],
+[data-testid="order-monitoring-page"] div:has(> div > input[placeholder="Cari PO / produk / customer..."]) select,
+[data-testid="sales-targets-page"] [data-testid="sales-target-search-input"],
+[data-testid="sales-targets-page"] div.mb-5:has(> div > [data-testid="sales-target-search-input"]) select {
+  width: var(--crm-filter-width) !important;
+  height: var(--crm-filter-height) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+[data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  width: min(100%, 920px) !important;
+  min-width: 0 !important;
+  gap: var(--crm-filter-gap) !important;
+}
+
+[data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) > select {
+  width: 100% !important;
+  height: var(--crm-filter-height) !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Global CRM tables: fit columns to useful content rather than equal-width stretching. */
+[data-testid="crm-app-shell"] table {
+  width: 100% !important;
+  min-width: 0 !important;
+  table-layout: auto !important;
+  border-collapse: collapse !important;
+}
+
+[data-testid="crm-app-shell"] table th,
+[data-testid="crm-app-shell"] table td {
+  padding: 8px 10px !important;
+  vertical-align: middle !important;
+  line-height: 1.35 !important;
+}
+
+[data-testid="crm-app-shell"] table th {
+  white-space: nowrap !important;
+}
+
+[data-testid="crm-app-shell"] table td {
+  white-space: nowrap !important;
+  max-width: 360px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+[data-testid="crm-app-shell"] table th:first-child,
+[data-testid="crm-app-shell"] table td:first-child {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 64px !important;
+  text-align: center !important;
+}
+
+[data-testid="crm-app-shell"] table th:last-child,
+[data-testid="crm-app-shell"] table td:last-child {
+  width: 96px !important;
+  min-width: 72px !important;
+}
+
+[data-testid="crm-app-shell"] .crm-data-table-cell {
+  max-width: 360px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Dashboard KPI cards: remove accidental child stretching and use compact fixed baselines. */
+[data-testid="dashboard-page"] .crm-summary-grid {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * {
+  min-width: 0 !important;
+  min-height: 124px !important;
+  align-self: start !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > * {
+  min-height: 0 !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * {
+  min-width: 0 !important;
+  min-height: 108px !important;
+}
+
+@media (max-width: 1199px) {
+  [data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-testid="pipeline-page"] div.mt-3.grid:has(> div > [data-testid="pipeline-search-input"]),
+  [data-testid="activities-page"] div.mt-3.grid:has(> [data-testid="activities-search-input"]),
+  [data-testid="quotations-page"] div.grid:has(> [data-testid="quotation-search-input"]),
+  [data-testid="customers-page"] div.mb-5:has(> div > [data-testid="customers-search-input"]),
+  [data-testid="purchase-orders-page"] div:has(> [placeholder="Cari nomor PO / customer..."]),
+  [data-testid="order-monitoring-page"] div:has(> div > input[placeholder="Cari PO / produk / customer..."]),
+  [data-testid="sales-targets-page"] div.mb-5:has(> div > [data-testid="sales-target-search-input"]),
+  [data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: 100% !important;
+  }
+
+  [data-testid="pipeline-page"] [data-testid="pipeline-search-input"],
+  [data-testid="pipeline-page"] [data-testid="pipeline-stage-filter"],
+  [data-testid="pipeline-page"] [data-testid="pipeline-sales-filter"],
+  [data-testid="pipeline-page"] [data-testid="pipeline-customer-filter"],
+  [data-testid="activities-page"] [data-testid="activities-search-input"],
+  [data-testid="activities-page"] [data-testid="activities-filter"],
+  [data-testid="activities-page"] [data-testid="activities-type-filter"],
+  [data-testid="activities-page"] [data-testid="activities-status-filter"],
+  [data-testid="activities-page"] [data-testid="activities-sales-filter"],
+  [data-testid="quotations-page"] [data-testid="quotation-search-input"],
+  [data-testid="quotations-page"] [data-testid="quotation-status-filter"],
+  [data-testid="quotations-page"] [data-testid="quotation-sales-filter"],
+  [data-testid="customers-page"] [data-testid="customers-search-input"],
+  [data-testid="customers-page"] div.mb-5:has(> div > [data-testid="customers-search-input"]) select,
+  [data-testid="purchase-orders-page"] div:has(> [placeholder="Cari nomor PO / customer..."]) select,
+  [data-testid="order-monitoring-page"] input[placeholder="Cari PO / produk / customer..."],
+  [data-testid="order-monitoring-page"] div:has(> div > input[placeholder="Cari PO / produk / customer..."]) select,
+  [data-testid="sales-targets-page"] [data-testid="sales-target-search-input"],
+  [data-testid="sales-targets-page"] div.mb-5:has(> div > [data-testid="sales-target-search-input"]) select {
+    width: 100% !important;
+  }
+}
