@@ -393,3 +393,74 @@
     width: 100%;
   }
 }
+
+
+/* ============================================================
+   CRM GLOBAL UI STANDARD
+   Compact, consistent sizing for summaries, filters and data tables.
+   ============================================================ */
+.crm-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  max-width: 1200px;
+  margin: 0 auto 1.25rem;
+}
+
+.crm-summary-grid > * {
+  min-width: 0;
+}
+
+.crm-summary-grid > * > * {
+  min-height: 132px;
+}
+
+.crm-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.crm-filter-grid > * {
+  min-width: 0;
+  width: 100%;
+}
+
+.crm-data-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.crm-data-table th,
+.crm-data-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crm-data-table th:first-child,
+.crm-data-table td:first-child {
+  width: 5%;
+}
+
+.crm-data-table th:last-child,
+.crm-data-table td:last-child {
+  width: 9%;
+}
+
+@media (max-width: 1023px) {
+  .crm-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .crm-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-filter-grid {
+    grid-template-columns: 1fr;
+  }
+}

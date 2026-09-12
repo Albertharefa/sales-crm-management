@@ -255,7 +255,7 @@ export default function Activities() {
         }
       />
 
-      <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 crm-summary-grid">
         {[
           ["HARI INI", summary.today],
           ["FOLLOW-UP MENDATANG", summary.upcoming],
@@ -295,7 +295,7 @@ export default function Activities() {
 
         {mode === "activities" && (
           <>
-            <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-6">
+            <div className="mt-3 crm-filter-grid">
               <Input
                 value={search}
                 onChange={(e) => {

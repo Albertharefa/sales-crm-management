@@ -270,7 +270,7 @@ export default function Home() {
               <p className="text-sm text-slate-500">Metrik utama penjualan</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="crm-summary-grid">
               <KpiCard label="TOTAL CUSTOMER" value={data.total_customer.toLocaleString("id-ID")} icon={Users} />
               <KpiCard label="OPEN PIPELINE" value={compactMoney(data.open_pipeline)} note="Deal yang masih berjalan" icon={TrendingUp} tone="blue" />
               <KpiCard label="WEIGHTED PIPELINE" value={compactMoney(data.weighted_pipeline)} note="Value × probability" icon={Gauge} />
