@@ -36,25 +36,32 @@ class OptionsResponse(CRMBaseModel):
     users: list[OptionUser] = Field(default_factory=list)
 
 class SalesTeamMetric(CRMBaseModel):
-    sales: str
-    role: str
-    manager: str = "-"
+    sales_id: str
+    sales_name: str
+    role: str = "SALES"
+    manager_id: Optional[str] = None
+    manager_name: Optional[str] = None
     target: float = 0
-    gap_to_target: float = 0
+    won: float = 0
     achievement: float = 0
+    gap: float = 0
     open_pipeline: float = 0
     weighted: float = 0
     coverage: float = 0
-    won: float = 0
-    won_count: int = 0
-    lost_count: int = 0
     win_rate: float = 0
     po: int = 0
     po_value: float = 0
     activities: int = 0
     overdue_activities: int = 0
     indent: int = 0
-    overdue: int = 0
+    overdue_po: int = 0
+
+class UploadResponse(CRMBaseModel):
+    id: str
+    file_name: str
+    content_type: str
+    size: int
+    url: str
 
 class CustomerBase(CRMBaseModel):
     name: str
@@ -279,13 +286,3 @@ class UserInDB(UserBase):
     password_hash: str
     created_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
-class UserPublic(UserBase):
-    id: str
-    user_id: str
-    last_login: Optional[datetime] = None
-    created_at: Optional[datetime] = None
-class Token(CRMBaseModel):
-    access_token: str
-    token_type: str = "bearer"
-class TokenData(CRMBaseModel): email: Optional[str] = None; role: Optional[str] = None
-class LoginRequest(CRMBaseModel): email: str; password: str
