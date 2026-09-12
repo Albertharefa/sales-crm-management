@@ -32,6 +32,14 @@ async def visible_sales_ids(user: dict) -> list[str]:
     return []
 
 
+async def visible_sales_names(user: dict) -> list[str]:
+    ids = await visible_sales_ids(user)
+    if not ids:
+        return []
+    docs = await db.users.find({"id": {"$in": ids}}, {"_id": 0, "name": 1}).to_list(1000)
+    return [str(item["name"]) for item in docs if item.get("name")]
+
+
 @router.get("/users", response_model=Paginated)
 async def list_users(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER"))):
     if user.get("role") == "SUPER_ADMIN":
@@ -125,9 +133,22 @@ async def sales_team(search: str = Query(""), sales_id: str = Query(""), status:
 
 @router.get("/options", response_model=OptionsResponse)
 async def options(user: dict = Depends(current_user)):
-    customers = await db.customers.find({}, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
-    products = await db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
     role = str(user.get("role") or "").strip().upper()
+    visible_ids = await visible_sales_ids(user)
+    visible_names = await visible_sales_names(user)
+
+    if role == "SUPER_ADMIN":
+        customers = await db.customers.find({}, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
+    else:
+        customers = await db.customers.find(
+            {"$or": [
+                {"sales_id": {"$in": visible_ids}},
+                {"sales_name": {"$in": visible_names}},
+            ]},
+            {"id": 1, "name": 1},
+        ).sort("name", 1).to_list(1000)
+
+    products = await db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
     users = await db.users.find({}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100) if role == "SUPER_ADMIN" else await db.users.find({"id": {"$in": await manager_user_ids(user)}}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
     return {"customers": customers, "products": products, "users": users}
 
@@ -147,7 +168,7 @@ async def export_csv(module: str, user: dict = Depends(current_user)):
     if module in {"pipeline", "activities", "quotations", "purchase-orders"}:
         filters = {"sales_id": {"$in": visible_ids}}
     elif module == "customers" and role != "SUPER_ADMIN":
-        filters = {"sales_id": {"$in": visible_ids}}
+        filters = {"$or": [{"sales_id": {"$in": visible_ids}}, {"sales_name": {"$in": await visible_sales_names(user)}}]}
     elif module == "sales-team":
         filters = {"id": {"$in": await manager_user_ids(user) if role == "SALES_MANAGER" else visible_ids}}
     docs = await db[collection].find(filters, {"_id": 0, "password_hash": 0, "content": 0}).limit(5000).to_list(5000)
