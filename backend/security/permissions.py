@@ -35,6 +35,7 @@ def permission_policy(path: str, method: str) -> str | None:
         return "system.options"
     if route.startswith("/docs") or route.startswith("/openapi"):
         return "__admin_only__"
+    if route.startswith("/admin"): return "__admin_only__"
     if route.startswith("/integrity"): return "integrity.audit"
     if route.startswith("/dashboard"): return "dashboard.view"
     if route.startswith("/customers"): return _crud_permission("customers", method)

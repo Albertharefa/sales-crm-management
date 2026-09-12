@@ -172,8 +172,15 @@ async def update_sales_target(
 @router.delete("/sales-targets/{target_id}")
 async def delete_sales_target(
     target_id: str,
-    user: dict = Depends(require_roles("SUPER_ADMIN")),
+    user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER")),
 ):
+    existing = await db.sales_targets.find_one({"id": target_id}, {"_id": 0, "sales_id": 1})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Target tidak ditemukan")
+
+    if user.get("role") == "SALES_MANAGER" and existing.get("sales_id") not in (await visible_sales_ids(user) or []):
+        raise HTTPException(status_code=403, detail="Target tersebut bukan milik team Anda")
+
     result = await db.sales_targets.delete_one({"id": target_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Target tidak ditemukan")
