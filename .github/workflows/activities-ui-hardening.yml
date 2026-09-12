@@ -1,0 +1,101 @@
+name: Activities UI Hardening
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[activities-ui]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Activities filters and relation selector
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('backend/routers/activities.py')
+          s = p.read_text()
+          old = '''    sales_id: str | None = None,\n    user: dict = Depends(current_user),\n):\n'''
+          new = '''    sales_id: str | None = None,\n    customer_id: str | None = None,\n    user: dict = Depends(current_user),\n):\n'''
+          if old not in s: raise SystemExit('activities list signature not found')
+          s = s.replace(old, new, 1)
+          old = '''    if sales_id:\n        if sales_id not in visible_ids:\n            raise HTTPException(status_code=403, detail="Sales tersebut berada di luar scope Anda")\n        query["sales_id"] = sales_id\n\n    if search.strip():\n'''
+          new = '''    if sales_id:\n        if sales_id not in visible_ids:\n            raise HTTPException(status_code=403, detail="Sales tersebut berada di luar scope Anda")\n        query["sales_id"] = sales_id\n\n    if customer_id:\n        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n        query["customer_id"] = str(customer.get("id") or customer_id)\n\n    if search.strip():\n'''
+          if old not in s: raise SystemExit('activities list sales block not found')
+          s = s.replace(old, new, 1)
+          marker = '''@router.get("/customer-options")\n'''
+          endpoint = '''@router.get("/opportunity-options")\nasync def activity_opportunity_options(\n    customer_id: str | None = None,\n    user: dict = Depends(current_user),\n):\n    """Return opportunities in the current sales scope for activity linking."""\n    visible_ids = await visible_activity_sales_ids(user)\n    query: dict = {"sales_id": {"$in": visible_ids}}\n    if customer_id:\n        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n        query["customer_id"] = str(customer.get("id") or customer_id)\n    docs = await db.opportunities.find(\n        query,\n        {"_id": 0, "id": 1, "opportunity_id": 1, "name": 1, "customer_id": 1, "customer_name": 1, "stage": 1},\n    ).sort("created_at", -1).to_list(1000)\n    return [\n        {\n            "id": str(item.get("id")),\n            "opportunity_id": str(item.get("opportunity_id") or ""),\n            "name": str(item.get("name") or item.get("opportunity_id") or "Opportunity"),\n            "customer_id": str(item.get("customer_id") or ""),\n            "stage": str(item.get("stage") or ""),\n        }\n        for item in docs if item.get("id")\n    ]\n\n\n'''
+          if marker not in s: raise SystemExit('activities customer options marker not found')
+          s = s.replace(marker, endpoint + marker, 1)
+          p.write_text(s)
+
+          p = Path('frontend/src/pages/Activities.tsx')
+          s = p.read_text()
+          old = '''  const [status, setStatus] = useState("");\n  const [salesId, setSalesId] = useState("");\n'''
+          new = '''  const [status, setStatus] = useState("");\n  const [salesId, setSalesId] = useState("");\n  const [customerId, setCustomerId] = useState("");\n'''
+          if old not in s: raise SystemExit('activities state block not found')
+          s = s.replace(old, new, 1)
+          old = '''  const [form, setForm] = useState({\n    subject: "",\n    activity_type: "Call",\n    date: new Date().toISOString().slice(0, 10),\n    customer_id: "",\n    next_follow_up: "",\n'''
+          new = '''  const [form, setForm] = useState({\n    subject: "",\n    activity_type: "Call",\n    date: new Date().toISOString().slice(0, 10),\n    customer_id: "",\n    opportunity_id: "",\n    next_follow_up: "",\n'''
+          if old not in s: raise SystemExit('activities form block not found')
+          s = s.replace(old, new, 1)
+          old = '''  if (salesId) activityParams.set("sales_id", salesId);\n'''
+          new = '''  if (salesId) activityParams.set("sales_id", salesId);\n  if (customerId) activityParams.set("customer_id", customerId);\n'''
+          if old not in s: raise SystemExit('activities params block not found')
+          s = s.replace(old, new, 1)
+          old = '''      salesId,\n    ],\n'''
+          new = '''      salesId,\n      customerId,\n    ],\n'''
+          if old not in s: raise SystemExit('activities query key block not found')
+          s = s.replace(old, new, 1)
+          old = '''  const salesOptions = useQuery({\n    queryKey: ["activities-sales-options"],\n'''
+          new = '''  const opportunityOptions = useQuery({\n    queryKey: ["activities-opportunity-options", form.customer_id],\n    queryFn: () => apiGet<{ id: string; opportunity_id: string; name: string; customer_id: string; stage: string }[]>(`/activities/opportunity-options${form.customer_id ? `?customer_id=${encodeURIComponent(form.customer_id)}` : ""}`),\n    staleTime: 30_000,\n    enabled: modal,\n  });\n\n  const salesOptions = useQuery({\n    queryKey: ["activities-sales-options"],\n'''
+          if old not in s: raise SystemExit('activities sales query marker not found')
+          s = s.replace(old, new, 1)
+          old = '''        salesOptions.refetch(),\n        customerOptions.refetch(),\n'''
+          new = '''        salesOptions.refetch(),\n        customerOptions.refetch(),\n        opportunityOptions.refetch(),\n'''
+          if old not in s: raise SystemExit('activities refresh block not found')
+          s = s.replace(old, new, 1)
+          old = '''    setStatus("");\n    setSalesId("");\n    setPage(1);\n'''
+          new = '''    setStatus("");\n    setSalesId("");\n    setCustomerId("");\n    setPage(1);\n'''
+          if old not in s: raise SystemExit('activities reset block not found')
+          s = s.replace(old, new, 1)
+          old = '''              <select\n                className={selectClass}\n                value={salesId}\n'''
+          new = '''              <select\n                className={selectClass}\n                value={customerId}\n                onChange={(e) => {\n                  setCustomerId(e.target.value);\n                  setPage(1);\n                }}\n                data-testid="activities-customer-filter"\n              >\n                <option value="">Semua customer</option>\n                {(customerOptions.data ?? []).map((customer) => (\n                  <option key={customer.id} value={customer.id}>{customer.name}</option>\n                ))}\n              </select>\n\n              <select\n                className={selectClass}\n                value={salesId}\n'''
+          if old not in s: raise SystemExit('activities sales filter marker not found')
+          s = s.replace(old, new, 1)
+          old = '''            {(search || activityFilter || activityType || status || salesId) && (\n'''
+          new = '''            {(search || activityFilter || activityType || status || salesId || customerId) && (\n'''
+          if old not in s: raise SystemExit('activities reset visibility block not found')
+          s = s.replace(old, new, 1)
+          old = '''                <option value="">— Pilih customer —</option>\n                {(customerOptions.data ?? []).map((customer) => (\n'''
+          new = '''                <option value="">— Pilih customer —</option>\n                {(customerOptions.data ?? []).map((customer) => (\n'''
+          # no-op anchor kept intentionally for stable matching
+          old_form = '''            <Field label="Next Follow-up">\n'''
+          new_form = '''            <Field label="Opportunity">\n              <select\n                className={selectClass}\n                value={form.opportunity_id}\n                onChange={(e) => setForm({ ...form, opportunity_id: e.target.value })}\n                data-testid="activity-opportunity-input"\n                disabled={!form.customer_id}\n              >\n                <option value="">— Tanpa opportunity —</option>\n                {(opportunityOptions.data ?? []).map((opportunity) => (\n                  <option key={opportunity.id} value={opportunity.id}>\n                    {opportunity.name} · {opportunity.stage}\n                  </option>\n                ))}\n              </select>\n            </Field>\n\n            <Field label="Next Follow-up">\n'''
+          if old_form not in s: raise SystemExit('activities next followup marker not found')
+          s = s.replace(old_form, new_form, 1)
+          old = '''        ...form,\n        customer_id: form.customer_id || null,\n        next_follow_up: form.next_follow_up || null,\n'''
+          new = '''        ...form,\n        customer_id: form.customer_id || null,\n        opportunity_id: form.opportunity_id || null,\n        next_follow_up: form.next_follow_up || null,\n'''
+          if old not in s: raise SystemExit('activities create payload block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Build and syntax check
+        run: |
+          python -m compileall -q backend
+          cd frontend
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/routers/activities.py frontend/src/pages/Activities.tsx .github/workflows/activities-ui-hardening.yml
+          git commit -m 'fix: harden activities filters and opportunity linking [activities-ui]'
+          git push origin main
