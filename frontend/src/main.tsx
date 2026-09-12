@@ -11,6 +11,7 @@ import './dashboard-reference.css'
 import './dashboard-final.css'
 import './dashboard-kpi-fix.css'
 import './dashboard-auto-repair.css'
+import './dashboard-cleanup.css'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
