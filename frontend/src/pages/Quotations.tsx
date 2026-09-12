@@ -358,7 +358,7 @@ export default function Quotations() {
       />
 
       <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_1fr]">
+        <div className="crm-filter-grid">
           <Input
             placeholder="Cari nomor / customer..."
             value={search}
