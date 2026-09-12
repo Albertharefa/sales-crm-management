@@ -72,9 +72,6 @@ jobs:
           new = '''            {(search || activityFilter || activityType || status || salesId || customerId) && (\n'''
           if old not in s: raise SystemExit('activities reset visibility block not found')
           s = s.replace(old, new, 1)
-          old = '''                <option value="">— Pilih customer —</option>\n                {(customerOptions.data ?? []).map((customer) => (\n'''
-          new = '''                <option value="">— Pilih customer —</option>\n                {(customerOptions.data ?? []).map((customer) => (\n'''
-          # no-op anchor kept intentionally for stable matching
           old_form = '''            <Field label="Next Follow-up">\n'''
           new_form = '''            <Field label="Opportunity">\n              <select\n                className={selectClass}\n                value={form.opportunity_id}\n                onChange={(e) => setForm({ ...form, opportunity_id: e.target.value })}\n                data-testid="activity-opportunity-input"\n                disabled={!form.customer_id}\n              >\n                <option value="">— Tanpa opportunity —</option>\n                {(opportunityOptions.data ?? []).map((opportunity) => (\n                  <option key={opportunity.id} value={opportunity.id}>\n                    {opportunity.name} · {opportunity.stage}\n                  </option>\n                ))}\n              </select>\n            </Field>\n\n            <Field label="Next Follow-up">\n'''
           if old_form not in s: raise SystemExit('activities next followup marker not found')
@@ -91,11 +88,12 @@ jobs:
           cd frontend
           npm install --no-audit --no-fund
           npm run build
-      - name: Commit and remove workflow
+      - name: Commit patch safely
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add backend/routers/activities.py frontend/src/pages/Activities.tsx .github/workflows/activities-ui-hardening.yml
+          git add backend/routers/activities.py frontend/src/pages/Activities.tsx
           git commit -m 'fix: harden activities filters and opportunity linking [activities-ui]'
+          git pull --rebase origin main
           git push origin main
