@@ -117,7 +117,7 @@ export default function SalesTargets() {
   return (
     <div data-testid="sales-targets-page">
       <PageHeader title="Target Sales" description="Master target tahunan per sales sebagai sumber resmi KPI Sales Team" action={{ label: "Tambah / Set Target", onClick: openCreate }} onRefresh={() => window.location.reload()} />
-      <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[360px_220px_240px_200px]">
+      <div className="crm-filter-grid mb-5">
         <div className="relative w-full"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Cari nama sales..." className="h-10 w-full pl-9" data-testid="sales-target-search-input" /></div>
         <select className={selectClass + " h-10"} value={salesFilter} onChange={e => { setSalesFilter(e.target.value); setPage(1); }} data-testid="sales-target-sales-filter"><option value="">Semua sales</option>{salesUsers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
         <select className={selectClass + " h-10"} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} data-testid="sales-target-status-filter"><option value="">Semua status</option><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
