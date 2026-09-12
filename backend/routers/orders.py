@@ -3,6 +3,7 @@ from lib.db import db
 from models.crm import Paginated, PurchaseOrder, PurchaseOrderCreate
 from routers.common import audit, new_id, now, page_collection
 from routers.deps import current_user
+from routers.customers import ensure_customer_access
 
 router = APIRouter(prefix="/purchase-orders", tags=["orders"])
 ORDER_STAGES = ["Received", "Waiting Order", "Confirmed", "Processing", "Indent", "Ready Stock", "Delivery", "Completed", "Cancelled"]
@@ -117,6 +118,17 @@ def calculate_items_total(items):
     return total
 
 
+async def validate_product_items(items) -> None:
+    product_ids = {str(item.product_id).strip() for item in items if item.product_id}
+    if not product_ids:
+        return
+    found = await db.products.find({"id": {"$in": list(product_ids)}}, {"_id": 0, "id": 1}).to_list(1000)
+    found_ids = {str(item.get("id")) for item in found if item.get("id")}
+    missing = sorted(product_ids - found_ids)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Produk tidak ditemukan: {', '.join(missing)}")
+
+
 async def quotation_total(quotation_number: str | None, fallback: float):
     if quotation_number:
         quotation = await db.quotations.find_one({"number": quotation_number}, {"_id": 0, "grand_total": 1})
@@ -165,6 +177,8 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
     customer = await find_customer(payload.customer_id)
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
+    await ensure_customer_access(customer, user)
+    await validate_product_items(payload.items)
     if payload.status not in ALL_STATUSES:
         raise HTTPException(status_code=422, detail="Status order tidak valid")
     po_number = payload.po_number.strip()
@@ -218,6 +232,8 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
     customer = await find_customer(payload.customer_id)
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
+    await ensure_customer_access(customer, user)
+    await validate_product_items(payload.items)
     if payload.status not in ALL_STATUSES:
         raise HTTPException(status_code=422, detail="Status order tidak valid")
     po_number = payload.po_number.strip()

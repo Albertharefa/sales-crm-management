@@ -42,6 +42,13 @@ async def delete_product(
     product_id: str,
     user: dict = Depends(require_roles("SUPER_ADMIN")),
 ):
+    product = await db.products.find_one({"id": product_id}, {"_id": 0, "id": 1, "code": 1, "name": 1})
+    if not product:
+        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")
+    quotation_ref = await db.quotations.find_one({"items.product_id": product_id}, {"_id": 1})
+    order_ref = await db.purchase_orders.find_one({"items.product_id": product_id}, {"_id": 1})
+    if quotation_ref or order_ref:
+        raise HTTPException(status_code=409, detail="Produk sudah digunakan pada quotation atau Purchase Order dan tidak dapat dihapus")
     result = await db.products.delete_one({"id": product_id})
     if not result.deleted_count:
         raise HTTPException(status_code=404, detail="Produk tidak ditemukan")

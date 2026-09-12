@@ -4,6 +4,7 @@ from lib.db import db
 from models.crm import Paginated, Quotation, QuotationCreate, QuotationUpdate
 from routers.common import audit, new_id, next_number, now, page_collection
 from routers.deps import current_user
+from routers.customers import ensure_customer_access
 
 router = APIRouter(prefix="/quotations", tags=["quotations"])
 STATUS_OPTIONS = ["Draft", "Sent", "Negotiation", "Approved", "Rejected", "Expired", "Converted"]
@@ -55,6 +56,36 @@ async def ensure_access(doc: dict, user: dict) -> None:
     raise HTTPException(status_code=403, detail="Anda tidak memiliki akses ke quotation ini")
 
 
+async def validate_product_items(items) -> None:
+    product_ids = {str(item.product_id).strip() for item in items if item.product_id}
+    if not product_ids:
+        return
+    found = await db.products.find({"id": {"$in": list(product_ids)}}, {"_id": 0, "id": 1}).to_list(1000)
+    found_ids = {str(item.get("id")) for item in found if item.get("id")}
+    missing = sorted(product_ids - found_ids)
+    if missing:
+        raise HTTPException(status_code=400, detail=f"Produk tidak ditemukan: {', '.join(missing)}")
+
+
+async def validate_opportunity_link(opportunity_id: str | None, customer: dict, sales: dict, user: dict) -> dict | None:
+    if not opportunity_id:
+        return None
+    opportunity = await db.opportunities.find_one({"id": str(opportunity_id)}) or await db.opportunities.find_one({"opportunity_id": str(opportunity_id)})
+    if not opportunity:
+        raise HTTPException(status_code=400, detail="Opportunity tidak ditemukan")
+    await ensure_access(opportunity, user)
+    canonical_customer = str(customer.get("id") or customer.get("customer_id") or "")
+    opportunity_customer = str(opportunity.get("customer_id") or "")
+    if opportunity_customer and opportunity_customer != canonical_customer:
+        linked = await db.customers.find_one({"id": opportunity_customer}, {"_id": 0, "id": 1})
+        if str((linked or {}).get("id") or opportunity_customer) != canonical_customer:
+            raise HTTPException(status_code=409, detail="Opportunity tidak terkait dengan Customer")
+    opportunity_sales = str(opportunity.get("sales_id") or "")
+    if opportunity_sales and opportunity_sales != str(sales.get("id")):
+        raise HTTPException(status_code=409, detail="Opportunity tidak terkait dengan Sales")
+    return opportunity
+
+
 async def find_customer(customer_ref: str):
     ref = str(customer_ref or "").strip()
     if not ref:
@@ -93,8 +124,11 @@ async def create_quotation(payload: QuotationCreate, user: dict = Depends(curren
     customer = await find_customer(payload.customer_id)
     if not customer:
         raise HTTPException(status_code=400, detail="Customer tidak valid")
+    await ensure_customer_access(customer, user)
     sales_id = payload.sales_id or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
+    opportunity = await validate_opportunity_link(payload.opportunity_id, customer, sales, user)
+    await validate_product_items(payload.items)
     subtotal, discount, tax, grand = totals(payload.items)
     payload_data = payload.model_dump(mode="json")
     payload_data["customer_id"] = str(customer.get("id") or customer.get("customer_id"))

@@ -7,6 +7,7 @@ from models.crm import Activity, ActivityCreate, ActivityUpdate, Paginated, Task
 from routers.common import audit, new_id, now
 from routers.deps import current_user
 from services.sales import get_sales_options
+from routers.customers import ensure_customer_access, customer_scope_query
 
 
 router = APIRouter(
@@ -230,8 +231,9 @@ async def activity_sales_options(user: dict = Depends(current_user)):
 @router.get("/customer-options")
 async def activity_customer_options(user: dict = Depends(current_user)):
     """Return the live Customer master for the activity form."""
+    scope = await customer_scope_query(user)
     customers = await db.customers.find(
-        {},
+        scope,
         {"_id": 0, "id": 1, "customer_id": 1, "name": 1, "company_name": 1},
     ).sort("name", 1).to_list(1000)
 
@@ -270,17 +272,35 @@ async def create_activity(payload: ActivityCreate, user: dict = Depends(current_
             customer = await db.customers.find_one({"customer_id": payload.customer_id})
         if not customer:
             raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+        await ensure_customer_access(customer, user)
 
     role = str(user.get("role") or "").upper()
     if role not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:
         raise HTTPException(status_code=403, detail="Role Anda tidak memiliki akses ke Aktivitas Sales")
 
+    opportunity = None
+    if payload.opportunity_id:
+        opportunity = await db.opportunities.find_one({"id": payload.opportunity_id})
+        if not opportunity:
+            opportunity = await db.opportunities.find_one({"opportunity_id": payload.opportunity_id})
+        if not opportunity:
+            raise HTTPException(status_code=404, detail="Opportunity tidak ditemukan")
+        await ensure_activity_access(opportunity, user)
+        opportunity_customer = str(opportunity.get("customer_id") or "")
+        canonical_customer = str((customer or {}).get("id") or payload.customer_id or "")
+        if opportunity_customer and canonical_customer and opportunity_customer != canonical_customer:
+            linked = await db.customers.find_one({"id": opportunity_customer})
+            linked_id = str((linked or {}).get("id") or opportunity_customer)
+            if linked_id != canonical_customer:
+                raise HTTPException(status_code=409, detail="Opportunity tidak terkait dengan Customer yang dipilih")
+
     activity_id = new_id()
     doc = {
         "id": activity_id,
         "activity_id": new_id()[:8].upper(),
-        "customer_id": payload.customer_id,
-        "customer_name": customer.get("name") if customer else None,
+        "customer_id": (customer or {}).get("id") if customer else payload.customer_id,
+        "opportunity_id": (opportunity or {}).get("id") if opportunity else payload.opportunity_id,
+        "customer_name": (customer or {}).get("name") if customer else None,
         "sales_id": user.get("id"),
         "sales_name": user.get("name"),
         "subject": payload.subject,
@@ -323,6 +343,7 @@ async def list_customer_activities(
         customer = await db.customers.find_one({"customer_id": customer_id})
     if not customer:
         raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+    await ensure_customer_access(customer, user)
 
     visible_ids = await visible_activity_sales_ids(user)
     query = {"customer_id": customer.get("id") or customer_id, "sales_id": {"$in": visible_ids}}
