@@ -9,6 +9,7 @@ import './crm-compact-layout.css'
 import './dashboard-polish.css'
 import './dashboard-reference.css'
 import './dashboard-final.css'
+import './dashboard-kpi-fix.css'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
