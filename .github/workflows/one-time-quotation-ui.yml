@@ -26,7 +26,7 @@ jobs:
       - name: Validate frontend
         working-directory: frontend
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npx tsc --noEmit
           npm run build
       - name: Commit changes and remove workflow
