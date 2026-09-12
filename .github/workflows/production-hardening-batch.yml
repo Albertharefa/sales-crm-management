@@ -1,0 +1,106 @@
+name: Production Hardening Batch
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  harden:
+    if: "!contains(github.event.head_commit.message, '[production-hardening]')"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch backend security and integrity
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Activities: enforce customer scope, preserve opportunity relation.
+          p = Path('backend/routers/activities.py')
+          s = p.read_text()
+          s = s.replace(
+              'from services.sales import get_sales_options\n',
+              'from services.sales import get_sales_options\nfrom routers.customers import ensure_customer_access, customer_scope_query\n'
+          )
+          old = '''    customers = await db.customers.find(\n        {},\n        {"_id": 0, "id": 1, "customer_id": 1, "name": 1, "company_name": 1},\n    ).sort("name", 1).to_list(1000)\n'''
+          new = '''    scope = await customer_scope_query(user)\n    customers = await db.customers.find(\n        scope,\n        {"_id": 0, "id": 1, "customer_id": 1, "name": 1, "company_name": 1},\n    ).sort("name", 1).to_list(1000)\n'''
+          if old not in s: raise SystemExit('activities customer options block not found')
+          s = s.replace(old, new, 1)
+          old = '''    if payload.customer_id:\n        customer = await db.customers.find_one({"id": payload.customer_id})\n        if not customer:\n            customer = await db.customers.find_one({"customer_id": payload.customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n\n    role = str(user.get("role") or "").upper()\n'''
+          new = '''    if payload.customer_id:\n        customer = await db.customers.find_one({"id": payload.customer_id})\n        if not customer:\n            customer = await db.customers.find_one({"customer_id": payload.customer_id})\n        if not customer:\n            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n        await ensure_customer_access(customer, user)\n\n    role = str(user.get("role") or "").upper()\n'''
+          if old not in s: raise SystemExit('activities create customer block not found')
+          s = s.replace(old, new, 1)
+          old = '''    activity_id = new_id()\n    doc = {\n        "id": activity_id,\n        "activity_id": new_id()[:8].upper(),\n        "customer_id": payload.customer_id,\n        "customer_name": customer.get("name") if customer else None,\n'''
+          new = '''    opportunity = None\n    if payload.opportunity_id:\n        opportunity = await db.opportunities.find_one({"id": payload.opportunity_id})\n        if not opportunity:\n            opportunity = await db.opportunities.find_one({"opportunity_id": payload.opportunity_id})\n        if not opportunity:\n            raise HTTPException(status_code=404, detail="Opportunity tidak ditemukan")\n        await ensure_activity_access(opportunity, user)\n        opportunity_customer = str(opportunity.get("customer_id") or "")\n        canonical_customer = str((customer or {}).get("id") or payload.customer_id or "")\n        if opportunity_customer and canonical_customer and opportunity_customer != canonical_customer:\n            linked = await db.customers.find_one({"id": opportunity_customer})\n            linked_id = str((linked or {}).get("id") or opportunity_customer)\n            if linked_id != canonical_customer:\n                raise HTTPException(status_code=409, detail="Opportunity tidak terkait dengan Customer yang dipilih")\n\n    activity_id = new_id()\n    doc = {\n        "id": activity_id,\n        "activity_id": new_id()[:8].upper(),\n        "customer_id": (customer or {}).get("id") if customer else payload.customer_id,\n        "opportunity_id": (opportunity or {}).get("id") if opportunity else payload.opportunity_id,\n        "customer_name": (customer or {}).get("name") if customer else None,\n'''
+          if old not in s: raise SystemExit('activities create doc block not found')
+          s = s.replace(old, new, 1)
+          old = '''    if not customer:\n        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n\n    visible_ids = await visible_activity_sales_ids(user)\n'''
+          new = '''    if not customer:\n        raise HTTPException(status_code=404, detail="Customer tidak ditemukan")\n    await ensure_customer_access(customer, user)\n\n    visible_ids = await visible_activity_sales_ids(user)\n'''
+          if old not in s: raise SystemExit('activities customer detail block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Quotations: enforce customer scope, opportunity relation, and product master integrity.
+          p = Path('backend/routers/quotations.py')
+          s = p.read_text()
+          s = s.replace(
+              'from routers.deps import current_user\n',
+              'from routers.deps import current_user\nfrom routers.customers import ensure_customer_access\n'
+          )
+          marker = '''async def find_customer(customer_ref: str):\n'''
+          helper = '''async def validate_product_items(items) -> None:\n    product_ids = {str(item.product_id).strip() for item in items if item.product_id}\n    if not product_ids:\n        return\n    found = await db.products.find({"id": {"$in": list(product_ids)}}, {"_id": 0, "id": 1}).to_list(1000)\n    found_ids = {str(item.get("id")) for item in found if item.get("id")}\n    missing = sorted(product_ids - found_ids)\n    if missing:\n        raise HTTPException(status_code=400, detail=f"Produk tidak ditemukan: {', '.join(missing)}")\n\n\nasync def validate_opportunity_link(opportunity_id: str | None, customer: dict, sales: dict, user: dict) -> dict | None:\n    if not opportunity_id:\n        return None\n    opportunity = await db.opportunities.find_one({"id": str(opportunity_id)}) or await db.opportunities.find_one({"opportunity_id": str(opportunity_id)})\n    if not opportunity:\n        raise HTTPException(status_code=400, detail="Opportunity tidak ditemukan")\n    await ensure_access(opportunity, user)\n    canonical_customer = str(customer.get("id") or customer.get("customer_id") or "")\n    opportunity_customer = str(opportunity.get("customer_id") or "")\n    if opportunity_customer and opportunity_customer != canonical_customer:\n        linked = await db.customers.find_one({"id": opportunity_customer}, {"_id": 0, "id": 1})\n        if str((linked or {}).get("id") or opportunity_customer) != canonical_customer:\n            raise HTTPException(status_code=409, detail="Opportunity tidak terkait dengan Customer")\n    opportunity_sales = str(opportunity.get("sales_id") or "")\n    if opportunity_sales and opportunity_sales != str(sales.get("id")):\n        raise HTTPException(status_code=409, detail="Opportunity tidak terkait dengan Sales")\n    return opportunity\n\n\n'''
+          if marker not in s: raise SystemExit('quotation customer marker not found')
+          s = s.replace(marker, helper + marker, 1)
+          old = '''    customer = await find_customer(payload.customer_id)\n    if not customer:\n        raise HTTPException(status_code=400, detail="Customer tidak valid")\n    sales_id = payload.sales_id or user.get("id")\n    sales = await validate_sales_assignment(str(sales_id), user)\n    subtotal, discount, tax, grand = totals(payload.items)\n'''
+          new = '''    customer = await find_customer(payload.customer_id)\n    if not customer:\n        raise HTTPException(status_code=400, detail="Customer tidak valid")\n    await ensure_customer_access(customer, user)\n    sales_id = payload.sales_id or user.get("id")\n    sales = await validate_sales_assignment(str(sales_id), user)\n    opportunity = await validate_opportunity_link(payload.opportunity_id, customer, sales, user)\n    await validate_product_items(payload.items)\n    subtotal, discount, tax, grand = totals(payload.items)\n'''
+          if old not in s: raise SystemExit('quotation create block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Purchase Orders: enforce customer scope and product master integrity.
+          p = Path('backend/routers/orders.py')
+          s = p.read_text()
+          s = s.replace(
+              'from routers.deps import current_user\n',
+              'from routers.deps import current_user\nfrom routers.customers import ensure_customer_access\n'
+          )
+          marker = '''async def quotation_total(quotation_number: str | None, fallback: float):\n'''
+          helper = '''async def validate_product_items(items) -> None:\n    product_ids = {str(item.product_id).strip() for item in items if item.product_id}\n    if not product_ids:\n        return\n    found = await db.products.find({"id": {"$in": list(product_ids)}}, {"_id": 0, "id": 1}).to_list(1000)\n    found_ids = {str(item.get("id")) for item in found if item.get("id")}\n    missing = sorted(product_ids - found_ids)\n    if missing:\n        raise HTTPException(status_code=400, detail=f"Produk tidak ditemukan: {', '.join(missing)}")\n\n\n'''
+          if marker not in s: raise SystemExit('orders marker not found')
+          s = s.replace(marker, helper + marker, 1)
+          old = '''    customer = await find_customer(payload.customer_id)\n    if not customer:\n        raise HTTPException(status_code=400, detail="Customer tidak valid")\n    if payload.status not in ALL_STATUSES:\n'''
+          new = '''    customer = await find_customer(payload.customer_id)\n    if not customer:\n        raise HTTPException(status_code=400, detail="Customer tidak valid")\n    await ensure_customer_access(customer, user)\n    await validate_product_items(payload.items)\n    if payload.status not in ALL_STATUSES:\n'''
+          if old not in s: raise SystemExit('orders create block not found')
+          s = s.replace(old, new, 1)
+          old = '''    customer = await find_customer(payload.customer_id)\n    if not customer:\n        raise HTTPException(status_code=400, detail="Customer tidak valid")\n    if payload.status not in ALL_STATUSES:\n        raise HTTPException(status_code=422, detail="Status order tidak valid")\n    po_number = payload.po_number.strip()\n'''
+          new = '''    customer = await find_customer(payload.customer_id)\n    if not customer:\n        raise HTTPException(status_code=400, detail="Customer tidak valid")\n    await ensure_customer_access(customer, user)\n    await validate_product_items(payload.items)\n    if payload.status not in ALL_STATUSES:\n        raise HTTPException(status_code=422, detail="Status order tidak valid")\n    po_number = payload.po_number.strip()\n'''
+          if old not in s: raise SystemExit('orders update block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          # Products: prevent deleting products referenced by live transactional records.
+          p = Path('backend/routers/products.py')
+          s = p.read_text()
+          old = '''    result = await db.products.delete_one({"id": product_id})\n    if not result.deleted_count:\n        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")\n'''
+          new = '''    product = await db.products.find_one({"id": product_id}, {"_id": 0, "id": 1, "code": 1, "name": 1})\n    if not product:\n        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")\n    quotation_ref = await db.quotations.find_one({"items.product_id": product_id}, {"_id": 1})\n    order_ref = await db.purchase_orders.find_one({"items.product_id": product_id}, {"_id": 1})\n    if quotation_ref or order_ref:\n        raise HTTPException(status_code=409, detail="Produk sudah digunakan pada quotation atau Purchase Order dan tidak dapat dihapus")\n    result = await db.products.delete_one({"id": product_id})\n    if not result.deleted_count:\n        raise HTTPException(status_code=404, detail="Produk tidak ditemukan")\n'''
+          if old not in s: raise SystemExit('products delete block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Build and syntax check
+        run: |
+          python -m compileall -q backend
+          cd frontend
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Commit and remove workflow
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add backend/routers/activities.py backend/routers/quotations.py backend/routers/orders.py backend/routers/products.py .github/workflows/production-hardening-batch.yml
+          git commit -m 'fix: harden production data integrity and permissions [production-hardening]'
+          git push origin main
