@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 from bson import ObjectId
+from fastapi import HTTPException
 from lib.db import db
 
 
