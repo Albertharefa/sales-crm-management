@@ -21,6 +21,35 @@
 [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*{height:88px!important;min-height:88px!important;padding:11px 12px!important;border-radius:9px!important}
 [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(2){margin-top:7px!important;font-size:18px!important}
 [data-testid="dashboard-page"] section.grid.gap-5.xl\\:grid-cols-\\[2fr_1fr\\]>div{border-radius:10px!important;box-shadow:0 2px 8px rgba(15,23,42,.045)!important}
-@media(min-width:1024px){[data-testid="crm-app-shell"]>aside[data-testid="sidebar-navigation"]{width:200px!important}[data-testid="crm-app-shell"]>div{padding-left:200px!important}}
+@media(min-width:1024px){[data-testid="crm-app-shell"]>aside[data-testid="sidebar-navigation"]{width:200px!important}[data-testid="crm-app-shell"]>div{padding-left:200px!important}[data-testid="crm-app-shell"] header{height:52px!important}[data-testid="crm-app-shell"] main{padding:16px 28px 28px!important}}
+@media(min-width:1200px){
+[data-testid="dashboard-page"]>div:first-child{min-height:70px!important;padding:0 0 10px!important}
+[data-testid="dashboard-page"]>div:first-child h1{font-size:0!important}
+[data-testid="dashboard-page"]>div:first-child h1:after{content:"Selamat Datang, Albert!";font-size:24px!important;line-height:1.15!important}
+[data-testid="dashboard-page"]>div:first-child p{font-size:13px!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:132px 220px 292px!important;width:654px!important;gap:10px!important;align-self:start!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"])>select{height:36px!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"])>select:nth-child(2){display:none!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"])>select:nth-child(1){grid-column:1!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"])>select:nth-child(3){grid-column:2!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"])>select:nth-child(4){grid-column:3!important}
+[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child{height:140px!important;min-height:140px!important;padding:20px 30px!important}
+[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child h2{font-size:30px!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*{height:112px!important;min-height:112px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*{height:88px!important;min-height:88px!important}
+}
+@media(min-width:1024px){
+[data-testid="dashboard-page"] .crm-summary-grid>*>*{position:relative!important;overflow:hidden!important;padding:14px 16px!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*>div:first-child{margin-left:62px!important;max-width:calc(100% - 112px)!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*>div:nth-child(2){margin-left:62px!important;margin-top:8px!important;font-size:22px!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*>div:nth-child(3){margin-left:62px!important;margin-top:7px!important;font-size:11px!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*>div:nth-child(4){position:absolute!important;left:16px!important;top:14px!important;margin:0!important;width:44px!important;height:44px!important;border-radius:10px!important;display:flex!important;align-items:center!important;justify-content:center!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*::after{right:14px!important;bottom:12px!important;width:120px!important;height:58px!important;opacity:.24!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*{position:relative!important;overflow:hidden!important;padding:12px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:first-child{margin-left:48px!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(2){margin-left:48px!important;margin-top:7px!important;font-size:18px!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(3){margin-left:48px!important;margin-top:5px!important;font-size:10px!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(4){position:absolute!important;left:12px!important;top:12px!important;margin:0!important;width:36px!important;height:36px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:9px!important}
+}
 @media(max-width:1199px){[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(100%,520px)!important}[data-testid="dashboard-page"]>div:first-child:after{display:none!important}}
 @media(max-width:767px){[data-testid="dashboard-page"]>div:first-child{min-height:122px!important}[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:1fr!important;width:100%!important}[data-testid="dashboard-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child{height:auto!important;min-height:132px!important;padding:20px!important}}
