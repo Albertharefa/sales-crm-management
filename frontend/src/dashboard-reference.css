@@ -37,6 +37,7 @@
 [data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child h2{font-size:30px!important}
 [data-testid="dashboard-page"] .crm-summary-grid>*>*{height:112px!important;min-height:112px!important}
 [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*{height:88px!important;min-height:88px!important}
+[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child p:after{content:"Grow\\A Sales\\A Together";white-space:pre;position:absolute;right:28px;top:-54px;font-size:18px;line-height:1.25;color:rgba(255,255,255,.72);font-weight:500;text-align:left}
 }
 @media(min-width:1024px){
 [data-testid="dashboard-page"] .crm-summary-grid>*>*{position:relative!important;overflow:hidden!important;padding:14px 16px!important}
@@ -52,6 +53,16 @@
 [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:first-child>div:nth-child(2){position:absolute!important;left:12px!important;top:12px!important;margin:0!important;width:36px!important;height:36px!important;display:flex!important;align-items:center!important;justify-content:center!important;border-radius:9px!important}
 [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(2){margin:7px 0 0 48px!important;font-size:18px!important;white-space:nowrap!important}
 [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(3){margin:5px 0 0 48px!important;font-size:10px!important;white-space:nowrap!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:first-child>div:nth-child(2){box-shadow:none!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*{background:#fff!important;border:1px solid #e2e8f0!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-7>*>*{border:1px solid #e2e8f0!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(1)>*>div:first-child>div:nth-child(2){background:#fee2e2!important;color:#ef4444!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(2)>*>div:first-child>div:nth-child(2){background:#ffedd5!important;color:#f97316!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(3)>*>div:first-child>div:nth-child(2){background:#dbeafe!important;color:#2563eb!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(4)>*>div:first-child>div:nth-child(2){background:#f3e8ff!important;color:#9333ea!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(5)>*>div:first-child>div:nth-child(2){background:#cffafe!important;color:#0891b2!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(6)>*>div:first-child>div:nth-child(2){background:#d1fae5!important;color:#059669!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*:nth-child(7)>*>div:first-child>div:nth-child(2){background:#fee2e2!important;color:#ef4444!important}
 }
 @media(max-width:1199px){[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(100%,520px)!important}[data-testid="dashboard-page"]>div:first-child:after{display:none!important}}
 @media(max-width:767px){[data-testid="dashboard-page"]>div:first-child{min-height:122px!important}[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:1fr!important;width:100%!important}[data-testid="dashboard-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child{height:auto!important;min-height:132px!important;padding:20px!important}}
