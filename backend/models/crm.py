@@ -15,6 +15,26 @@ class Paginated(BaseModel, Generic[T]):
     page: int
     page_size: int
 
+class OptionCustomer(CRMBaseModel):
+    id: str
+    name: str
+
+class OptionProduct(CRMBaseModel):
+    id: str
+    name: str
+    default_price: Optional[float] = None
+
+class OptionUser(CRMBaseModel):
+    id: str
+    user_id: Optional[str] = None
+    name: str
+    role: str
+
+class OptionsResponse(CRMBaseModel):
+    customers: list[OptionCustomer] = Field(default_factory=list)
+    products: list[OptionProduct] = Field(default_factory=list)
+    users: list[OptionUser] = Field(default_factory=list)
+
 class CustomerBase(CRMBaseModel):
     name: str
     company_name: str = ""
