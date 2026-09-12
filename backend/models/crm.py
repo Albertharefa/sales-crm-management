@@ -36,25 +36,33 @@ class OptionsResponse(CRMBaseModel):
     users: list[OptionUser] = Field(default_factory=list)
 
 class SalesTeamMetric(CRMBaseModel):
-    sales_id: str
-    sales_name: str
+    # Fields used by the current Sales Team frontend/API response.
+    sales: str = ""
     role: str = "SALES"
-    manager_id: Optional[str] = None
-    manager_name: Optional[str] = None
+    manager: str = "-"
     target: float = 0
-    won: float = 0
+    gap_to_target: float = 0
     achievement: float = 0
-    gap: float = 0
     open_pipeline: float = 0
     weighted: float = 0
     coverage: float = 0
+    won: float = 0
+    won_count: int = 0
+    lost_count: int = 0
     win_rate: float = 0
     po: int = 0
     po_value: float = 0
     activities: int = 0
     overdue_activities: int = 0
     indent: int = 0
-    overdue_po: int = 0
+    overdue: int = 0
+
+    # Canonical identifiers retained for compatibility with older callers.
+    sales_id: Optional[str] = None
+    sales_name: Optional[str] = None
+    manager_id: Optional[str] = None
+    manager_name: Optional[str] = None
+    gap: float = 0
 
 class UploadResponse(CRMBaseModel):
     id: str
