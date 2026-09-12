@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, Depends
 
 from lib.db import db
-from routers.auth import get_current_user
+from routers.deps import current_user
 from security.permissions import require_permission
 
 router = APIRouter(prefix="/integrity", tags=["integrity"])
@@ -141,7 +141,7 @@ async def _quotation_number_reference() -> dict[str, Any]:
 
 
 @router.get("", response_model=dict)
-async def database_integrity_audit(user: dict = Depends(get_current_user)):
+async def database_integrity_audit(user: dict = Depends(current_user)):
     require_permission(user, "integrity.audit")
 
     collections = [
