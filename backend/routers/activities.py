@@ -128,6 +128,7 @@ async def list_activities(
     activity_type: str | None = None,
     status: str | None = None,
     sales_id: str | None = None,
+    customer_id: str | None = None,
     user: dict = Depends(current_user),
 ):
     if activity_type and activity_type not in ACTIVITY_TYPES:
@@ -144,6 +145,13 @@ async def list_activities(
         if sales_id not in visible_ids:
             raise HTTPException(status_code=403, detail="Sales tersebut berada di luar scope Anda")
         query["sales_id"] = sales_id
+
+    if customer_id:
+        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+        await ensure_customer_access(customer, user)
+        query["customer_id"] = str(customer.get("id") or customer_id)
 
     if search.strip():
         query["$or"] = [
@@ -226,6 +234,36 @@ async def activity_sales_options(user: dict = Depends(current_user)):
     visible_ids = await visible_activity_sales_ids(user)
     options = await get_sales_options()
     return [item for item in options if str(item.get("id") or "") in visible_ids]
+
+
+@router.get("/opportunity-options")
+async def activity_opportunity_options(
+    customer_id: str | None = None,
+    user: dict = Depends(current_user),
+):
+    """Return opportunities in the current sales scope for activity linking."""
+    visible_ids = await visible_activity_sales_ids(user)
+    query: dict = {"sales_id": {"$in": visible_ids}}
+    if customer_id:
+        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+        await ensure_customer_access(customer, user)
+        query["customer_id"] = str(customer.get("id") or customer_id)
+    docs = await db.opportunities.find(
+        query,
+        {"_id": 0, "id": 1, "opportunity_id": 1, "name": 1, "customer_id": 1, "customer_name": 1, "stage": 1},
+    ).sort("created_at", -1).to_list(1000)
+    return [
+        {
+            "id": str(item.get("id")),
+            "opportunity_id": str(item.get("opportunity_id") or ""),
+            "name": str(item.get("name") or item.get("opportunity_id") or "Opportunity"),
+            "customer_id": str(item.get("customer_id") or ""),
+            "stage": str(item.get("stage") or ""),
+        }
+        for item in docs if item.get("id")
+    ]
 
 
 @router.get("/customer-options")

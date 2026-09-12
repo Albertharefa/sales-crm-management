@@ -39,6 +39,7 @@ export default function Activities() {
   const [activityType, setActivityType] = useState("");
   const [status, setStatus] = useState("");
   const [salesId, setSalesId] = useState("");
+  const [customerId, setCustomerId] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -47,6 +48,7 @@ export default function Activities() {
     activity_type: "Call",
     date: new Date().toISOString().slice(0, 10),
     customer_id: "",
+    opportunity_id: "",
     next_follow_up: "",
     status: "Open",
     description: "",
@@ -64,6 +66,7 @@ export default function Activities() {
   if (activityType) activityParams.set("activity_type", activityType);
   if (status) activityParams.set("status", status);
   if (salesId) activityParams.set("sales_id", salesId);
+  if (customerId) activityParams.set("customer_id", customerId);
 
   const activities = useQuery({
     queryKey: [
@@ -75,6 +78,7 @@ export default function Activities() {
       activityType,
       status,
       salesId,
+      customerId,
     ],
     queryFn: () =>
       apiGet<Paginated<Activity>>(
@@ -134,6 +138,13 @@ export default function Activities() {
     setSelectedActivityId(null);
   };
 
+  const opportunityOptions = useQuery({
+    queryKey: ["activities-opportunity-options", form.customer_id],
+    queryFn: () => apiGet<{ id: string; opportunity_id: string; name: string; customer_id: string; stage: string }[]>(`/activities/opportunity-options${form.customer_id ? `?customer_id=${encodeURIComponent(form.customer_id)}` : ""}`),
+    staleTime: 30_000,
+    enabled: modal,
+  });
+
   const salesOptions = useQuery({
     queryKey: ["activities-sales-options"],
     queryFn: () =>
@@ -177,6 +188,7 @@ export default function Activities() {
       apiPost<Activity>("/activities", {
         ...form,
         customer_id: form.customer_id || null,
+        opportunity_id: form.opportunity_id || null,
         next_follow_up: form.next_follow_up || null,
       }),
     onSuccess: () => {
@@ -202,6 +214,7 @@ export default function Activities() {
         activitySummary.refetch(),
         salesOptions.refetch(),
         customerOptions.refetch(),
+        opportunityOptions.refetch(),
       ]);
       toast.success("Aktivitas Sales berhasil diperbarui");
     } else {
@@ -216,6 +229,7 @@ export default function Activities() {
     setActivityType("");
     setStatus("");
     setSalesId("");
+    setCustomerId("");
     setPage(1);
   };
 
@@ -340,6 +354,21 @@ export default function Activities() {
 
               <select
                 className={selectClass}
+                value={customerId}
+                onChange={(e) => {
+                  setCustomerId(e.target.value);
+                  setPage(1);
+                }}
+                data-testid="activities-customer-filter"
+              >
+                <option value="">Semua customer</option>
+                {(customerOptions.data ?? []).map((customer) => (
+                  <option key={customer.id} value={customer.id}>{customer.name}</option>
+                ))}
+              </select>
+
+              <select
+                className={selectClass}
                 value={salesId}
                 onChange={(e) => {
                   setSalesId(e.target.value);
@@ -356,7 +385,7 @@ export default function Activities() {
               </select>
             </div>
 
-            {(search || activityFilter || activityType || status || salesId) && (
+            {(search || activityFilter || activityType || status || salesId || customerId) && (
               <div className="mt-3 flex justify-end">
                 <Button
                   variant="ghost"
@@ -645,6 +674,23 @@ export default function Activities() {
                 {(customerOptions.data ?? []).map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Opportunity">
+              <select
+                className={selectClass}
+                value={form.opportunity_id}
+                onChange={(e) => setForm({ ...form, opportunity_id: e.target.value })}
+                data-testid="activity-opportunity-input"
+                disabled={!form.customer_id}
+              >
+                <option value="">— Tanpa opportunity —</option>
+                {(opportunityOptions.data ?? []).map((opportunity) => (
+                  <option key={opportunity.id} value={opportunity.id}>
+                    {opportunity.name} · {opportunity.stage}
                   </option>
                 ))}
               </select>
