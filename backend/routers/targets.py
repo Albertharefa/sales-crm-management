@@ -55,13 +55,19 @@ async def list_sales_targets(
 
     sales_ids = [str(item.get("sales_id") or "").strip() for item in docs if item.get("sales_id")]
     users = await db.users.find(
-        {"id": {"$in": sales_ids}},
+        {"id": {"$in": sales_ids}, "role": "SALES"},
         {"_id": 0, "id": 1, "status": 1},
     ).to_list(1000) if sales_ids else []
     status_by_id = {
         str(item.get("id")): str(item.get("status") or "Active").strip().upper()
         for item in users
     }
+    valid_sales_ids = set(status_by_id)
+
+    # A sales target is valid only when its authoritative sales_id still
+    # belongs to a SALES user. Keep inactive SALES users visible so the
+    # existing Active/Inactive filter remains meaningful.
+    docs = [item for item in docs if str(item.get("sales_id") or "") in valid_sales_ids]
 
     for item in docs:
         status = status_by_id.get(str(item.get("sales_id") or ""), "ACTIVE")
