@@ -5,7 +5,7 @@ from routers.common import audit, new_id, now, page_collection
 from routers.deps import current_user
 
 router = APIRouter(prefix="/purchase-orders", tags=["orders"])
-ORDER_STAGES = ["Received", "Waiting Order", "Processing", "Indent", "Ready Stock", "Delivery", "Completed", "Cancelled"]
+ORDER_STAGES = ["Received", "Waiting Order", "Confirmed", "Processing", "Indent", "Ready Stock", "Delivery", "Completed", "Cancelled"]
 ALL_STATUSES = ["Draft", *ORDER_STAGES]
 
 
@@ -60,6 +60,44 @@ async def find_customer(customer_ref: str):
         return None
     customer = await db.customers.find_one({"id": ref})
     return customer or await db.customers.find_one({"customer_id": ref})
+
+
+async def validate_quotation_link(quotation_number: str | None, customer: dict, sales: dict, user: dict) -> dict | None:
+    number = str(quotation_number or "").strip()
+    if not number:
+        return None
+
+    quotation = await db.quotations.find_one({"number": number}, {"_id": 0})
+    if not quotation:
+        raise HTTPException(status_code=400, detail="Quotation tidak ditemukan")
+
+    await ensure_quotation_access(quotation, user)
+
+    quotation_customer = str(quotation.get("customer_id") or "")
+    canonical_customer = str(customer.get("id") or customer.get("customer_id") or "")
+    if quotation_customer and quotation_customer != canonical_customer:
+        linked_customer = await find_customer(quotation_customer)
+        linked_canonical = str((linked_customer or {}).get("id") or (linked_customer or {}).get("customer_id") or quotation_customer)
+        if linked_canonical != canonical_customer:
+            raise HTTPException(status_code=409, detail="Customer PO tidak sama dengan Customer pada quotation")
+
+    quotation_sales = str(quotation.get("sales_id") or "")
+    if quotation_sales and quotation_sales != str(sales.get("id")):
+        raise HTTPException(status_code=409, detail="Sales PO tidak sama dengan Sales pada quotation")
+
+    return quotation
+
+
+async def ensure_quotation_access(doc: dict, user: dict) -> None:
+    role = role_name(user)
+    if role == "SUPER_ADMIN":
+        return
+    sales_id = str(doc.get("sales_id") or "")
+    if role == "SALES" and sales_id == str(user.get("id")):
+        return
+    if role == "SALES_MANAGER" and sales_id in await visible_sales_ids(user):
+        return
+    raise HTTPException(status_code=403, detail="Anda tidak memiliki akses ke quotation ini")
 
 
 def calculate_total(payload):
@@ -117,19 +155,25 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
         raise HTTPException(status_code=400, detail="Customer tidak valid")
     if payload.status not in ALL_STATUSES:
         raise HTTPException(status_code=422, detail="Status order tidak valid")
-    if await db.purchase_orders.find_one({"po_number": payload.po_number.strip()}, {"_id": 1}):
+    po_number = payload.po_number.strip()
+    if not po_number:
+        raise HTTPException(status_code=422, detail="Nomor PO wajib diisi")
+    if await db.purchase_orders.find_one({"po_number": po_number}, {"_id": 1}):
         raise HTTPException(status_code=409, detail="Nomor PO sudah digunakan")
     sales_id = payload.sales_id or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
+    quotation = await validate_quotation_link(payload.quotation_number, customer, sales, user)
     raw_total = calculate_total(payload)
-    total = await quotation_total(payload.quotation_number, raw_total) if payload.quotation_number else raw_total
+    total = float(quotation.get("grand_total")) if quotation and quotation.get("grand_total") is not None else raw_total
     payload_data = payload.model_dump(mode="json")
-    payload_data["po_number"] = payload.po_number.strip()
+    payload_data["po_number"] = po_number
     payload_data["customer_id"] = str(customer.get("id") or customer.get("customer_id"))
     payload_data["sales_id"] = str(sales["id"])
+    if quotation:
+        payload_data["quotation_number"] = quotation["number"]
     doc = {"id": new_id(), "customer_name": customer.get("name") or customer.get("company_name") or "", "sales_name": sales["name"], "total": total, **payload_data, "created_at": now()}
     await db.purchase_orders.insert_one(doc)
-    await audit(user, "Create", "Purchase Orders", doc["id"], {"po_number": doc["po_number"]})
+    await audit(user, "Create", "Purchase Orders", doc["id"], {"po_number": doc["po_number"], "quotation_number": doc.get("quotation_number")})
     return PurchaseOrder(**doc)
 
 
@@ -165,19 +209,24 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
     if payload.status not in ALL_STATUSES:
         raise HTTPException(status_code=422, detail="Status order tidak valid")
     po_number = payload.po_number.strip()
+    if not po_number:
+        raise HTTPException(status_code=422, detail="Nomor PO wajib diisi")
     duplicate = await db.purchase_orders.find_one({"po_number": po_number, "id": {"$ne": order_id}}, {"_id": 1})
     if duplicate:
         raise HTTPException(status_code=409, detail="Nomor PO sudah digunakan")
     sales_id = payload.sales_id or old.get("sales_id") or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
-    total = await quotation_total(payload.quotation_number, calculate_total(payload)) if payload.quotation_number else calculate_total(payload)
+    quotation = await validate_quotation_link(payload.quotation_number, customer, sales, user)
+    total = float(quotation.get("grand_total")) if quotation and quotation.get("grand_total") is not None else calculate_total(payload)
     payload_data = payload.model_dump(mode="json")
     payload_data["po_number"] = po_number
     payload_data["customer_id"] = str(customer.get("id") or customer.get("customer_id"))
     payload_data["sales_id"] = str(sales["id"])
+    if quotation:
+        payload_data["quotation_number"] = quotation["number"]
     doc = {"id": order_id, "customer_name": customer.get("name") or customer.get("company_name") or "", "sales_name": sales["name"], "total": total, **payload_data, "created_at": old.get("created_at", now()), "updated_at": now()}
     await db.purchase_orders.replace_one({"id": order_id}, doc)
-    await audit(user, "Update", "Purchase Orders", order_id, {"po_number": doc["po_number"]})
+    await audit(user, "Update", "Purchase Orders", order_id, {"po_number": doc["po_number"], "quotation_number": doc.get("quotation_number")})
     return PurchaseOrder(**doc)
 
 
