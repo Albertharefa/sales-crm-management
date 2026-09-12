@@ -39,6 +39,7 @@ async def _ensure_indexes():
     """
     indexes = {
         "users": [
+            ([('id', 1)], "users_id"),
             ([('email', 1)], "users_email"),
             ([('user_id', 1)], "users_user_id"),
             ([('role', 1), ('status', 1)], "users_role_status"),
@@ -88,7 +89,7 @@ async def _ensure_indexes():
         ],
         "quotations": [
             ([('id', 1)], "quotations_id"),
-            ([('quotation_number', 1)], "quotations_number"),
+            ([('number', 1)], "quotations_number"),
             ([('customer_id', 1)], "quotations_customer"),
             ([('sales_id', 1)], "quotations_sales"),
             ([('opportunity_id', 1)], "quotations_opportunity"),
