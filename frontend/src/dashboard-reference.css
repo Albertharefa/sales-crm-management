@@ -1,0 +1,25 @@
+/* Dashboard reference visual layer - no logic changes */
+[data-testid="dashboard-page"] > div:first-child{position:relative;min-height:76px!important;padding:4px 0 12px!important;margin-bottom:0!important;border:0!important}
+[data-testid="dashboard-page"] > div:first-child > div:first-child > div:first-child{display:none!important}
+[data-testid="dashboard-page"] > div:first-child h1{font-size:26px!important;line-height:1.15!important;margin-top:0!important;letter-spacing:-.035em!important}
+[data-testid="dashboard-page"] > div:first-child p{font-size:13px!important;margin-top:4px!important}
+[data-testid="dashboard-page"] > div:first-child:after{content:"";position:absolute;right:350px;bottom:8px;width:130px;height:45px;opacity:.16;background:rgba(37,99,235,.5);clip-path:polygon(0 100%,0 70%,8% 70%,8% 52%,16% 52%,16% 66%,25% 66%,25% 40%,34% 40%,34% 55%,43% 55%,43% 25%,52% 25%,52% 42%,61% 42%,61% 10%,70% 10%,70% 30%,79% 30%,79% 0,88% 0,88% 20%,100% 20%,100% 100%);pointer-events:none}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:132px 220px 292px!important;width:660px!important;gap:10px!important}
+[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"])>select{height:36px!important;border-radius:8px!important;font-size:12px!important;padding:0 10px!important}
+[data-testid="dashboard-page"] > div:nth-of-type(2){gap:14px!important}
+[data-testid="dashboard-page"] > div:nth-of-type(2)>section:first-child{height:140px!important;min-height:140px!important;padding:22px 30px!important;border-radius:14px!important;background:linear-gradient(105deg,#12356e 0%,#214f9a 48%,#4b8fe9 100%)!important;box-shadow:0 8px 22px rgba(15,55,110,.16)!important}
+[data-testid="dashboard-page"] > div:nth-of-type(2)>section:first-child:before{content:"";position:absolute;right:70px;bottom:17px;width:315px;height:90px;opacity:.18;background:rgba(255,255,255,.9);clip-path:polygon(0 88%,4% 88%,4% 67%,10% 67%,10% 76%,16% 76%,16% 48%,22% 48%,22% 60%,28% 60%,28% 32%,34% 32%,34% 48%,40% 48%,40% 20%,46% 20%,46% 40%,52% 40%,52% 4%,58% 4%,58% 26%,64% 26%,64% 16%,70% 16%,70% 38%,76% 38%,76% 12%,82% 12%,82% 30%,88% 30%,88% 0,94% 0,94% 24%,100% 24%,100% 100%,0 100%);pointer-events:none}
+[data-testid="dashboard-page"] > div:nth-of-type(2)>section:first-child:after{width:240px!important;height:180px!important;right:-40px!important;top:-80px!important;opacity:.55!important}
+[data-testid="dashboard-page"] > div:nth-of-type(2)>section:first-child h2{font-size:30px!important;line-height:1.1!important;margin-top:7px!important;position:relative;z-index:2}
+[data-testid="dashboard-page"] > div:nth-of-type(2)>section:first-child p{font-size:12px!important;margin-top:5px!important;position:relative;z-index:2}
+[data-testid="dashboard-page"] .crm-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*{min-height:112px!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*{height:112px!important;min-height:112px!important;padding:13px 14px!important;border-radius:9px!important;box-shadow:0 2px 8px rgba(15,23,42,.055)!important}
+[data-testid="dashboard-page"] .crm-summary-grid>*>*>div:nth-child(2){margin-top:9px!important;font-size:22px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7{margin-top:10px!important;gap:10px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7>*{min-height:88px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7>*>*{height:88px!important;min-height:88px!important;padding:11px 12px!important;border-radius:9px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7>*>*>div:nth-child(2){margin-top:7px!important;font-size:18px!important}
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\]>div{border-radius:10px!important;box-shadow:0 2px 8px rgba(15,23,42,.045)!important}
+@media(max-width:1199px){[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(100%,520px)!important}[data-testid="dashboard-page"]>div:first-child:after{display:none!important}}
+@media(max-width:767px){[data-testid="dashboard-page"]>div:first-child{min-height:122px!important}[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:1fr!important;width:100%!important}[data-testid="dashboard-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child{height:auto!important;min-height:132px!important;padding:20px!important}}
