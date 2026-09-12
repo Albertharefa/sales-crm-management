@@ -66,13 +66,10 @@ async def validate_quotation_link(quotation_number: str | None, customer: dict, 
     number = str(quotation_number or "").strip()
     if not number:
         return None
-
     quotation = await db.quotations.find_one({"number": number}, {"_id": 0})
     if not quotation:
         raise HTTPException(status_code=400, detail="Quotation tidak ditemukan")
-
     await ensure_quotation_access(quotation, user)
-
     quotation_customer = str(quotation.get("customer_id") or "")
     canonical_customer = str(customer.get("id") or customer.get("customer_id") or "")
     if quotation_customer and quotation_customer != canonical_customer:
@@ -80,11 +77,9 @@ async def validate_quotation_link(quotation_number: str | None, customer: dict, 
         linked_canonical = str((linked_customer or {}).get("id") or (linked_customer or {}).get("customer_id") or quotation_customer)
         if linked_canonical != canonical_customer:
             raise HTTPException(status_code=409, detail="Customer PO tidak sama dengan Customer pada quotation")
-
     quotation_sales = str(quotation.get("sales_id") or "")
     if quotation_sales and quotation_sales != str(sales.get("id")):
         raise HTTPException(status_code=409, detail="Sales PO tidak sama dengan Sales pada quotation")
-
     return quotation
 
 
@@ -146,6 +141,23 @@ async def list_orders(page: int = Query(1, ge=1), page_size: int = Query(25, ge=
             raise HTTPException(status_code=403, detail="Sales berada di luar scope Anda")
         filters["sales_id"] = sales_user["id"]
     return await page_collection("purchase_orders", page, page_size, search, filters)
+
+
+@router.get("/quotation-options")
+async def quotation_options(search: str = Query("", max_length=100), limit: int = Query(50, ge=1, le=100), user: dict = Depends(current_user)):
+    """Return quotations available to the logged-in sales scope for PO linking."""
+    if role_name(user) not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:
+        raise HTTPException(status_code=403, detail="Role Anda tidak memiliki akses Purchase Order")
+    visible_ids = await visible_sales_ids(user)
+    filters: dict = {"sales_id": {"$in": visible_ids}}
+    term = search.strip()
+    if term:
+        filters["$or"] = [
+            {"number": {"$regex": term, "$options": "i"}},
+            {"customer_name": {"$regex": term, "$options": "i"}},
+        ]
+    docs = await db.quotations.find(filters, {"_id": 0}).sort("created_at", -1).limit(limit).to_list(limit)
+    return docs
 
 
 @router.post("", response_model=PurchaseOrder)
