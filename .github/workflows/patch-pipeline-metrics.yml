@@ -41,8 +41,7 @@ jobs:
     staleTime: 15_000,
   });
 '''
-          if old not in s:
-              raise SystemExit('list block not found')
+          if old not in s: raise SystemExit('list block not found')
           s = s.replace(old, new, 1)
           old = '''  const items = list.data?.items ?? [];
 
@@ -55,8 +54,7 @@ jobs:
   const metrics = useMemo(() => {
     const openItems = metricItems.filter((item) => !["Won", "Lost"].includes(item.stage));
 '''
-          if old not in s:
-              raise SystemExit('metrics start not found')
+          if old not in s: raise SystemExit('metrics start not found')
           s = s.replace(old, new, 1)
           old = '''      won: items
         .filter((item) => item.stage === "Won")
@@ -72,8 +70,7 @@ jobs:
     };
   }, [metricItems]);
 '''
-          if old not in s:
-              raise SystemExit('metrics end not found')
+          if old not in s: raise SystemExit('metrics end not found')
           s = s.replace(old, new, 1)
           old = '''      list.refetch(),
       options.refetch(),
@@ -82,8 +79,7 @@ jobs:
       metricsQuery.refetch(),
       options.refetch(),
 '''
-          if old not in s:
-              raise SystemExit('refresh block not found')
+          if old not in s: raise SystemExit('refresh block not found')
           s = s.replace(old, new, 1)
           p.write_text(s)
           PY
