@@ -20,6 +20,7 @@ export default function Customers() {
   const [status, setStatus] = useState("");
   const [industry, setIndustry] = useState("");
   const [sales, setSales] = useState("");
+  const [customerFilter, setCustomerFilter] = useState("");
   const [modal, setModal] = useState(false);
   const [detailModal, setDetailModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
@@ -54,11 +55,11 @@ export default function Customers() {
   ========================= */
 
   const query = useQuery({
-    queryKey: ["customers", page, pageSize, search, status, industry, sales],
+    queryKey: ["customers", page, pageSize, search, status, industry, sales, customerFilter],
     queryFn: () =>
       apiGet<Paginated<Customer>>(
         `/customers?page=${page}&page_size=${pageSize}&search=${encodeURIComponent(
-          search
+          customerFilter || search
         )}&status=${encodeURIComponent(status)}&industry=${encodeURIComponent(
           industry
         )}&sales_id=${encodeURIComponent(sales)}`
@@ -68,6 +69,12 @@ export default function Customers() {
   const salesOptionsQuery = useQuery({
     queryKey: ["sales-master-options"],
     queryFn: () => apiGet<{ id: string; name: string }[]>("/customers/sales-options"),
+    staleTime: 60_000,
+  });
+
+  const customerOptionsQuery = useQuery({
+    queryKey: ["customer-filter-options"],
+    queryFn: () => apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"),
     staleTime: 60_000,
   });
 
@@ -306,6 +313,23 @@ export default function Customers() {
           {salesOptionsQuery.data?.map((sales) => (
             <option key={sales.id} value={sales.id}>
               {sales.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className={selectClass}
+          value={customerFilter}
+          onChange={(e) => {
+            setCustomerFilter(e.target.value);
+            setPage(1);
+          }}
+          data-testid="customers-customer-filter"
+        >
+          <option value="">Semua customer</option>
+          {customerOptionsQuery.data?.items?.map((customer) => (
+            <option key={customer.id} value={customer.name}>
+              {customer.name}
             </option>
           ))}
         </select>
