@@ -52,20 +52,41 @@ async def _aggregate_one(collection: str, pipeline: list[dict]) -> dict:
 
 
 class DashboardService:
-    async def get_metrics(self, user: dict) -> dict[str, Any]:
+    async def get_metrics(self, user: dict, period: str | None = None, sales_id: str | None = None, stage: str | None = None, customer_id: str | None = None) -> dict[str, Any]:
         current = datetime.now(timezone.utc)
         stalled_before = current - timedelta(days=30)
         year_start = datetime(current.year, 1, 1, tzinfo=timezone.utc)
         next_year = datetime(current.year + 1, 1, 1, tzinfo=timezone.utc)
 
-        customer_filter = await _visibility(user)
-        contact_filter = await _visibility(user)
-        lead_filter = await _visibility(user)
-        opportunity_filter = await _visibility(user)
-        activity_filter = await _visibility(user)
-        quotation_filter = await _visibility(user)
-        order_filter = await _visibility(user)
-        target_filter = await _visibility(user)
+        period_days = {"30d": 30, "90d": 90, "365d": 365}.get(str(period or "").strip().lower())
+        since = current - timedelta(days=period_days) if period_days else None
+        visibility = await _visibility(user)
+
+        def scoped(extra: dict[str, Any] | None = None) -> dict[str, Any]:
+            clauses: list[dict[str, Any]] = [visibility]
+            if sales_id:
+                clauses.append({"sales_id": sales_id})
+            if customer_id:
+                clauses.append({"customer_id": customer_id})
+            if extra:
+                clauses.append(extra)
+            return clauses[0] if len(clauses) == 1 else {"$and": clauses}
+
+        customer_filter = scoped({"created_at": {"$gte": since}}) if since else scoped()
+        contact_filter = scoped({"created_at": {"$gte": since}}) if since else scoped()
+        lead_filter = scoped({"created_at": {"$gte": since}}) if since else scoped()
+        opportunity_extra: dict[str, Any] = {}
+        if stage and stage not in REFERENCE_STAGES:
+            raise HTTPException(status_code=422, detail="Stage dashboard tidak valid")
+        if stage:
+            opportunity_extra["stage"] = stage
+        if since:
+            opportunity_extra["created_at"] = {"$gte": since}
+        opportunity_filter = scoped(opportunity_extra)
+        activity_filter = scoped({"date": {"$gte": since}}) if since else scoped()
+        quotation_filter = scoped({"date": {"$gte": since}}) if since else scoped()
+        order_filter = scoped({"date": {"$gte": since}}) if since else scoped()
+        target_filter = scoped()
 
         opportunity_pipeline = [
             {"$match": opportunity_filter},

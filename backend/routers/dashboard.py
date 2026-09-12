@@ -1,7 +1,7 @@
 import json
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from routers.deps import current_user
@@ -13,9 +13,9 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("")
-async def dashboard(user: dict = Depends(current_user)):
+async def dashboard(period: str | None = Query(None), sales_id: str | None = Query(None), stage: str | None = Query(None), customer_id: str | None = Query(None), user: dict = Depends(current_user)):
     try:
-        metrics = await service.get_metrics(user)
+        metrics = await service.get_metrics(user, period=period, sales_id=sales_id, stage=stage, customer_id=customer_id)
         if metrics is None:
             raise RuntimeError("DashboardService returned no metrics")
 

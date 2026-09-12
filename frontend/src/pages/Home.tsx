@@ -126,8 +126,20 @@ export default function Home() {
   const [customer, setCustomer] = useState("Semua customer");
 
   const query = useQuery({
-    queryKey: ["dashboard", "20260908"],
-    queryFn: async () => normalizeDashboardMetrics(await apiGet<DashboardMetrics>("/dashboard?client_version=20260908")),
+    queryKey: ["dashboard", period, sales, stage, customer],
+    queryFn: async () => {
+      const periodParam = period === "30 hari terakhir" ? "30d" : period === "90 hari terakhir" ? "90d" : period === "1 tahun terakhir" ? "365d" : "";
+      const salesParam = salesOptions.find((item) => item.label === sales)?.value ?? "";
+      const params = new URLSearchParams({ client_version: "20260912" });
+      if (periodParam) params.set("period", periodParam);
+      if (salesParam) params.set("sales_id", salesParam);
+      if (stage !== "Semua stage") params.set("stage", stage);
+      if (customer !== "Semua customer") {
+        const customerParam = customerOptions.find((item) => item.label === customer)?.value ?? "";
+        if (customerParam) params.set("customer_id", customerParam);
+      }
+      return normalizeDashboardMetrics(await apiGet<DashboardMetrics>(`/dashboard?${params.toString()}`));
+    },
     retry: 1,
     staleTime: 30_000,
     refetchOnMount: "always",
@@ -151,13 +163,13 @@ export default function Home() {
 
   const salesOptions = useMemo(
     () => [
-      "Semua sales",
+      { label: "Semua sales", value: "" },
       ...Array.from(
         new Map(
           (salesOptionsQuery.data?.users ?? [])
             .filter((item) => String(item.role ?? "").trim().toUpperCase() === "SALES")
-            .filter((item) => item.name)
-            .map((item) => [item.id, item.name]),
+            .filter((item) => item.name && item.id)
+            .map((item) => [item.id, { label: item.name, value: item.id }]),
         ).values(),
       ),
     ],
@@ -166,10 +178,10 @@ export default function Home() {
 
   const customerOptions = useMemo(
     () => [
-      "Semua customer",
+      { label: "Semua customer", value: "" },
       ...(customersQuery.data?.items
-        ?.map((item) => item.name || item.company_name || item.company || "")
-        .filter(Boolean) ?? []),
+        ?.map((item) => ({ label: item.name || item.company_name || item.company || "", value: item.id }))
+        .filter((item) => item.label && item.value) ?? []),
     ],
     [customersQuery.data],
   );
@@ -241,9 +253,7 @@ export default function Home() {
               className="h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               aria-label={["Periode", "Sales", "Stage", "Customer"][index]}
             >
-              {filter.options.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
+              {filter.options.map((option) => (typeof option === "string" ? <option key={option} value={option}>{option}</option> : <option key={option.value || option.label} value={option.label}>{option.label}</option>))}
             </select>
           ))}
         </div>
