@@ -41,7 +41,6 @@ async def list_order_monitoring(
     valid_customer_ids = {str(c[k]) for c in customers for k in ("id", "customer_id") if c.get(k)}
 
     filters: dict = {
-        "is_demo": {"$ne": True},
         "customer_id": {"$in": list(valid_customer_ids)},
         "sales_id": {"$in": visible_ids},
     }
