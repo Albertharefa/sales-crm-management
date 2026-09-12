@@ -89,7 +89,7 @@ async def _ensure_indexes():
         ],
         "quotations": [
             ([('id', 1)], "quotations_id"),
-            ([('number', 1)], "quotations_number"),
+            ([('number', 1)], "quotations_number_field"),
             ([('customer_id', 1)], "quotations_customer"),
             ([('sales_id', 1)], "quotations_sales"),
             ([('opportunity_id', 1)], "quotations_opportunity"),
