@@ -4,28 +4,23 @@ from fastapi import HTTPException
 
 ROLES = {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}
 PERMISSIONS: dict[str, set[str]] = {
-    "SUPER_ADMIN": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "customers.delete", "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "activities.view", "activities.create", "activities.edit", "activities.delete", "quotations.view", "quotations.create", "quotations.edit", "quotations.approve", "quotations.delete", "quotations.export", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "purchase_orders.export", "order_monitoring.view", "order_monitoring.update", "sales_team.view", "sales_team.manage", "sales_targets.view", "sales_targets.manage", "users.view", "users.create", "users.edit", "users.delete", "users.reset_password", "products.view", "products.create", "products.edit", "products.delete", "audit_log.view", "ai.use", "uploads.use", "system.options"},
+    "SUPER_ADMIN": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "customers.delete", "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "activities.view", "activities.create", "activities.edit", "activities.delete", "quotations.view", "quotations.create", "quotations.edit", "quotations.approve", "quotations.delete", "quotations.export", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "purchase_orders.export", "order_monitoring.view", "order_monitoring.update", "sales_team.view", "sales_team.manage", "sales_targets.view", "sales_targets.manage", "users.view", "users.create", "users.edit", "users.delete", "users.reset_password", "products.view", "products.create", "products.edit", "products.delete", "audit_log.view", "ai.use", "uploads.use", "system.options", "integrity.audit"},
     "SALES_MANAGER": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "pipeline.view", "pipeline.create", "pipeline.edit", "activities.view", "activities.create", "activities.edit", "quotations.view", "quotations.create", "quotations.edit", "quotations.approve", "quotations.export", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.export", "order_monitoring.view", "order_monitoring.update", "sales_team.view", "sales_targets.view", "sales_targets.manage", "users.view", "products.view", "audit_log.view", "ai.use", "uploads.use", "system.options"},
     "SALES": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "pipeline.view", "pipeline.create", "pipeline.edit", "activities.view", "activities.create", "activities.edit", "quotations.view", "quotations.create", "quotations.edit", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "order_monitoring.view", "order_monitoring.update", "products.view", "ai.use", "uploads.use", "system.options"},
 }
 
-
 def normalize_role(user: dict[str, Any]) -> str:
     return str(user.get("role") or "").strip().upper()
 
-
 def has_permission(user: dict[str, Any], permission: str) -> bool:
     return permission in PERMISSIONS.get(normalize_role(user), set())
-
 
 def require_permission(user: dict[str, Any], permission: str) -> None:
     if normalize_role(user) not in ROLES or not has_permission(user, permission):
         raise HTTPException(status_code=403, detail="Anda tidak memiliki izin untuk tindakan ini")
 
-
 def permissions_for_role(role: str) -> list[str]:
     return sorted(PERMISSIONS.get(str(role or "").strip().upper(), set()))
-
 
 def permission_policy(path: str, method: str) -> str | None:
     path = path.rstrip("/") or "/"
@@ -40,6 +35,7 @@ def permission_policy(path: str, method: str) -> str | None:
         return "system.options"
     if route.startswith("/docs") or route.startswith("/openapi"):
         return "__admin_only__"
+    if route.startswith("/integrity"): return "integrity.audit"
     if route.startswith("/dashboard"): return "dashboard.view"
     if route.startswith("/customers"): return _crud_permission("customers", method)
     if route.startswith("/pipeline"): return _crud_permission("pipeline", method)
@@ -84,14 +80,12 @@ def permission_policy(path: str, method: str) -> str | None:
     if route.startswith("/options"): return "system.options"
     return None
 
-
 def _crud_permission(module: str, method: str) -> str:
     if method == "GET": return f"{module}.view"
     if method == "POST": return f"{module}.create"
     if method in {"PUT", "PATCH"}: return f"{module}.edit"
     if method == "DELETE": return f"{module}.delete"
     return f"{module}.view"
-
 
 def role_matrix() -> list[dict[str, Any]]:
     modules = [("Dashboard", "dashboard"), ("Customers", "customers"), ("Sales Pipeline", "pipeline"), ("Aktivitas", "activities"), ("Quotations", "quotations"), ("Purchase Orders", "purchase_orders"), ("Order Monitoring", "order_monitoring"), ("Sales Team", "sales_team"), ("Target Sales", "sales_targets"), ("Users", "users"), ("Products", "products"), ("Audit Log", "audit_log")]
