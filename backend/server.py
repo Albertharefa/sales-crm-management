@@ -12,7 +12,7 @@ from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from fastapi.staticfiles import StaticFiles
 
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
-from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset
+from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset, demo_data
 from routers.dashboard import router as dashboard_router
 from routers.order_monitoring import router as order_monitoring_router
 from security.permissions import has_permission, permission_policy, normalize_role
@@ -120,6 +120,7 @@ app.include_router(order_monitoring_router, prefix="/api/v1")
 app.include_router(activities.router, prefix="/api/v1")
 app.include_router(ai.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(demo_data.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v1")
 app.include_router(uploads.router, prefix="/api/v1")
