@@ -160,6 +160,7 @@ class PurchaseOrderCreate(CRMBaseModel):
     date: date
     status: str = "Received"
     quotation_number: Optional[str] = None
+    quotation_manual: bool = False
     items: list[PurchaseOrderItem] = Field(min_length=1)
     eta: Optional[date] = None
     payment_term: Optional[str] = None
@@ -247,64 +248,3 @@ class Token(CRMBaseModel):
     token_type: str = "bearer"
 class TokenData(CRMBaseModel): email: Optional[str] = None; role: Optional[str] = None
 class LoginRequest(CRMBaseModel): email: str; password: str
-
-class SalesTeamMetric(CRMBaseModel):
-    sales: str
-    role: str
-    manager: str
-    target: float = 0
-    gap_to_target: float = 0
-    achievement: float = 0
-    open_pipeline: float = 0
-    weighted: float = 0
-    coverage: float = 0
-    won: float = 0
-    won_count: int = 0
-    lost_count: int = 0
-    win_rate: float = 0
-    po: int = 0
-    po_value: float = 0
-    activities: int = 0
-    overdue_activities: int = 0
-    indent: int = 0
-    overdue: int = 0
-
-class DashboardMetrics(CRMBaseModel):
-    total_customer: int = 0
-    total_contacts: int = 0
-    total_leads: int = 0
-    total_opportunities: int = 0
-    open_pipeline: float = 0
-    weighted_pipeline: float = 0
-    won_value: float = 0
-    lost_value: float = 0
-    win_rate: float = 0
-    total_quotation: int = 0
-    active_quotations: int = 0
-    quotation_value: float = 0
-    total_po: int = 0
-    po_value: float = 0
-    open_orders: int = 0
-    completed_orders: int = 0
-    overdue_orders: int = 0
-    activities: int = 0
-    overdue_activities: int = 0
-    sales_target: float = 0
-    target_achievement: float = 0
-    pipeline_by_stage: list[dict[str, Any]] = []
-    pipeline_by_salesperson: list[dict[str, Any]] = []
-    monthly_sales_performance: list[dict[str, Any]] = []
-    recent_activities: list[dict[str, Any]] = []
-    deal_risks: list[dict[str, Any]] = []
-    generated_at: datetime
-
-class OptionsResponse(CRMBaseModel):
-    customers: list[dict[str, Any]] = []
-    products: list[dict[str, Any]] = []
-    users: list[dict[str, Any]] = []
-class UploadResponse(CRMBaseModel):
-    id: str
-    file_name: str
-    content_type: str
-    size: int
-    url: str
