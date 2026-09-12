@@ -124,6 +124,234 @@
   min-height: 108px !important;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Dashboard visual layer — presentation only, no data/state changes.        */
+/* -------------------------------------------------------------------------- */
+
+[data-testid="dashboard-page"] {
+  --dash-ink: #0f172a;
+  --dash-muted: #64748b;
+  --dash-line: #e2e8f0;
+}
+
+/* Header / filter area */
+[data-testid="dashboard-page"] > div:first-child {
+  padding-bottom: 16px !important;
+}
+
+[data-testid="dashboard-page"] > div:first-child > div:first-child h1 {
+  letter-spacing: -0.035em !important;
+}
+
+[data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) > select {
+  border-radius: 10px !important;
+  border-color: #dbe3ee !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease !important;
+}
+
+[data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) > select:hover {
+  border-color: #93c5fd !important;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.08) !important;
+}
+
+/* Hero banner */
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child {
+  position: relative !important;
+  min-height: 156px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  border: 1px solid rgba(96, 165, 250, 0.18) !important;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 240px !important;
+  height: 240px !important;
+  right: -70px !important;
+  top: -100px !important;
+  border-radius: 999px !important;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.28) 0%, rgba(59, 130, 246, 0) 68%) !important;
+  pointer-events: none !important;
+}
+
+/* Main KPI cards */
+[data-testid="dashboard-page"] .crm-summary-grid > * > * {
+  position: relative !important;
+  overflow: hidden !important;
+  border-radius: 14px !important;
+  border-color: #e2e8f0 !important;
+  padding: 16px !important;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.055) !important;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > *::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: 4px !important;
+  background: #94a3b8 !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(1) > *::before { background: #3b82f6 !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(2) > *::before { background: #2563eb !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(3) > *::before { background: #8b5cf6 !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(4) > *::before { background: #10b981 !important; }
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > *:hover {
+  transform: translateY(-2px) !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.09) !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > * > div:first-child > div:first-child {
+  color: #64748b !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > * > div:first-child > div:last-child {
+  border-radius: 11px !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > * > div:nth-child(2) {
+  margin-top: 12px !important;
+  font-size: 26px !important;
+}
+
+/* Secondary KPI row: colorful compact tiles */
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > * {
+  position: relative !important;
+  overflow: hidden !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 13px !important;
+  padding: 13px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.045) !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > *::after {
+  content: "" !important;
+  position: absolute !important;
+  width: 58px !important;
+  height: 58px !important;
+  right: -20px !important;
+  bottom: -22px !important;
+  border-radius: 999px !important;
+  background: rgba(59, 130, 246, 0.08) !important;
+  pointer-events: none !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(1) > *::after { background: rgba(59, 130, 246, 0.10) !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(2) > *::after { background: rgba(124, 58, 237, 0.10) !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(3) > *::after { background: rgba(16, 185, 129, 0.10) !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(4) > *::after { background: rgba(245, 158, 11, 0.11) !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(5) > *::after { background: rgba(14, 165, 233, 0.10) !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(6) > *::after { background: rgba(16, 185, 129, 0.10) !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(7) > *::after { background: rgba(244, 63, 94, 0.10) !important; }
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > * > div:first-child > div:last-child {
+  border-radius: 10px !important;
+}
+
+/* Analytics cards below the KPI area */
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div,
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-2 > div {
+  border-radius: 14px !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.045) !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div:first-child {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+}
+
+/* Pipeline chart */
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div:first-child > div:nth-child(2) {
+  padding: 20px !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div:first-child > div:nth-child(2) > div {
+  background: linear-gradient(180deg, rgba(239, 246, 255, 0.55) 0%, rgba(255, 255, 255, 0) 100%) !important;
+  border-radius: 12px !important;
+  padding: 14px 12px 0 !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div:first-child > div:nth-child(2) > div > div > div:nth-child(2) {
+  border-radius: 8px 8px 2px 2px !important;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.14) !important;
+}
+
+/* Stage mix */
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div:last-child {
+  background: linear-gradient(180deg, #ffffff 0%, #faf7ff 100%) !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div:last-child > div:nth-child(2) > div {
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.10) !important;
+}
+
+/* Pipeline detail + dark summary */
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\]:nth-of-type(5) > div:first-child {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%) !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\]:nth-of-type(5) > div:last-child {
+  background: linear-gradient(145deg, #071126 0%, #111d3d 58%, #172a58 100%) !important;
+  border: 1px solid rgba(96, 165, 250, 0.18) !important;
+  box-shadow: 0 14px 30px rgba(2, 8, 23, 0.20) !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\]:nth-of-type(5) > div:last-child .text-3xl {
+  letter-spacing: -0.04em !important;
+}
+
+/* Order health colored status blocks */
+[data-testid="dashboard-page"] section.rounded-xl.border.border-slate-200.bg-white.p-6.shadow-sm {
+  border-radius: 14px !important;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, 0.045) !important;
+}
+
+[data-testid="dashboard-page"] section.rounded-xl.border.border-slate-200.bg-white.p-6.shadow-sm .grid.grid-cols-3 > div {
+  border: 1px solid transparent !important;
+  box-shadow: 0 3px 9px rgba(15, 23, 42, 0.035) !important;
+  transition: transform 160ms ease, box-shadow 160ms ease !important;
+}
+
+[data-testid="dashboard-page"] section.rounded-xl.border.border-slate-200.bg-white.p-6.shadow-sm .grid.grid-cols-3 > div:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 7px 16px rgba(15, 23, 42, 0.07) !important;
+}
+
+/* Recent activities and deal risk rows */
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-2 .divide-y > div {
+  margin: 0 -8px !important;
+  padding: 11px 8px !important;
+  border-radius: 9px !important;
+  transition: background 140ms ease, transform 140ms ease !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-2 .divide-y > div:hover {
+  background: #f8fafc !important;
+  transform: translateX(2px) !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-2 > div:first-child .size-5 {
+  filter: drop-shadow(0 3px 6px rgba(37, 99, 235, 0.18)) !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-2 > div:last-child .size-5 {
+  filter: drop-shadow(0 3px 6px rgba(245, 158, 11, 0.20)) !important;
+}
+
+/* Compact dashboard rhythm */
+[data-testid="dashboard-page"] > div:last-child {
+  border-top-color: #e2e8f0 !important;
+}
+
 @media (max-width: 1199px) {
   [data-testid="dashboard-page"] div:has(> select[aria-label="Periode"]) {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -164,5 +392,10 @@
   [data-testid="sales-targets-page"] [data-testid="sales-target-search-input"],
   [data-testid="sales-targets-page"] div.mb-5:has(> div > [data-testid="sales-target-search-input"]) select {
     width: 100% !important;
+  }
+
+  [data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child {
+    min-height: 132px !important;
+    padding: 22px !important;
   }
 }
