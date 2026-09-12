@@ -1,0 +1,241 @@
+/* Sales Pipeline — compact, premium, white-first presentation */
+
+[data-testid="pipeline-page"] {
+  --pipeline-border: #e5e7eb;
+  --pipeline-muted: #64748b;
+  --pipeline-ink: #0f172a;
+  --pipeline-soft: #f8fafc;
+}
+
+/* Compact KPI strip: information-dense, not oversized */
+[data-testid="pipeline-page"] .crm-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+[data-testid="pipeline-page"] .crm-summary-grid > div {
+  min-width: 0;
+}
+
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"] {
+  padding: 14px 16px !important;
+}
+
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"] > div:last-child {
+  margin-top: 6px !important;
+  font-size: 18px !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Filter / view toolbar */
+[data-testid="pipeline-page"] > .mb-5.rounded-xl {
+  margin-bottom: 12px !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+[data-testid="pipeline-page"] > .mb-5.rounded-xl .mt-3 {
+  margin-top: 8px !important;
+}
+
+[data-testid="pipeline-page"] > .mb-5.rounded-xl input,
+[data-testid="pipeline-page"] > .mb-5.rounded-xl select {
+  height: 34px !important;
+  font-size: 12px !important;
+  border-radius: 7px !important;
+}
+
+/* Table: fixed, intentional widths so columns don't waste screen space */
+[data-testid="pipeline-page"] table {
+  table-layout: fixed !important;
+  min-width: 1080px !important;
+  width: 100% !important;
+}
+
+[data-testid="pipeline-page"] table th,
+[data-testid="pipeline-page"] table td {
+  box-sizing: border-box;
+  vertical-align: middle;
+  padding: 9px 10px !important;
+}
+
+[data-testid="pipeline-page"] table th {
+  height: 36px;
+  font-size: 10px !important;
+  letter-spacing: 0.06em !important;
+  white-space: nowrap;
+}
+
+[data-testid="pipeline-page"] table tbody tr {
+  height: 52px;
+}
+
+[data-testid="pipeline-page"] table tbody td {
+  font-size: 12px !important;
+}
+
+/* No. */
+[data-testid="pipeline-page"] table th:nth-child(1),
+[data-testid="pipeline-page"] table td:nth-child(1) { width: 46px; }
+/* Opportunity */
+[data-testid="pipeline-page"] table th:nth-child(2),
+[data-testid="pipeline-page"] table td:nth-child(2) { width: 190px; }
+/* Customer */
+[data-testid="pipeline-page"] table th:nth-child(3),
+[data-testid="pipeline-page"] table td:nth-child(3) { width: 155px; }
+/* Sales */
+[data-testid="pipeline-page"] table th:nth-child(4),
+[data-testid="pipeline-page"] table td:nth-child(4) { width: 125px; }
+/* Value */
+[data-testid="pipeline-page"] table th:nth-child(5),
+[data-testid="pipeline-page"] table td:nth-child(5) { width: 125px; }
+/* Probability */
+[data-testid="pipeline-page"] table th:nth-child(6),
+[data-testid="pipeline-page"] table td:nth-child(6) { width: 68px; }
+/* Weighted */
+[data-testid="pipeline-page"] table th:nth-child(7),
+[data-testid="pipeline-page"] table td:nth-child(7) { width: 130px; }
+/* Stage */
+[data-testid="pipeline-page"] table th:nth-child(8),
+[data-testid="pipeline-page"] table td:nth-child(8) { width: 118px; }
+/* Target Close */
+[data-testid="pipeline-page"] table th:nth-child(9),
+[data-testid="pipeline-page"] table td:nth-child(9) { width: 105px; }
+/* Actions */
+[data-testid="pipeline-page"] table th:nth-child(10),
+[data-testid="pipeline-page"] table td:nth-child(10) { width: 88px; }
+
+[data-testid="pipeline-page"] table td:nth-child(2) > div:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-testid="pipeline-page"] table td:nth-child(3),
+[data-testid="pipeline-page"] table td:nth-child(4),
+[data-testid="pipeline-page"] table td:nth-child(9) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-testid="pipeline-page"] table td:nth-child(5),
+[data-testid="pipeline-page"] table td:nth-child(7) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-testid="pipeline-page"] table td:nth-child(6) {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-testid="pipeline-page"] table td:nth-child(8) select {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 30px !important;
+  padding: 0 7px !important;
+  font-size: 11px !important;
+}
+
+[data-testid="pipeline-page"] table td:nth-child(10) > div {
+  justify-content: center;
+}
+
+[data-testid="pipeline-page"] table td:nth-child(10) button {
+  width: 30px !important;
+  height: 30px !important;
+}
+
+/* Clean hover — subtle, no visual noise */
+[data-testid="pipeline-page"] table tbody tr:hover {
+  background: #fafafa !important;
+}
+
+/* Compact pagination */
+[data-testid="pipeline-page"] .border-t.border-slate-200 {
+  background: #fff;
+}
+
+/* Kanban: premium cards, restrained colors, compact density */
+[data-testid="pipeline-page"] > .flex.gap-4.overflow-x-auto {
+  gap: 10px !important;
+  padding-bottom: 6px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] {
+  min-width: 205px !important;
+  padding: 10px !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] > div:first-child {
+  margin-bottom: 8px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] > div:first-child h3 {
+  font-size: 12px !important;
+  color: var(--pipeline-ink);
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="badge"] {
+  min-width: 22px !important;
+  height: 22px !important;
+  padding: 0 6px !important;
+  font-size: 10px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] .space-y-3 {
+  display: grid;
+  gap: 8px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="card"] {
+  border-radius: 9px !important;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="card-content"] {
+  padding: 11px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="card-content"] > div:first-child {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="card-content"] .mt-3,
+[data-testid^="pipeline-kanban-column-"] [data-slot="card-content"] .mt-4 {
+  margin-top: 7px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="card-content"] select {
+  height: 30px !important;
+  margin-top: 8px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+}
+
+[data-testid^="pipeline-kanban-column-"] [data-slot="card-content"] button {
+  height: 30px !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 1100px) {
+  [data-testid="pipeline-page"] .crm-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  [data-testid="pipeline-page"] .crm-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
