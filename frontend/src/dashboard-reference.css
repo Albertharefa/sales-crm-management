@@ -16,10 +16,11 @@
 [data-testid="dashboard-page"] .crm-summary-grid>*{min-height:112px!important}
 [data-testid="dashboard-page"] .crm-summary-grid>*>*{height:112px!important;min-height:112px!important;padding:13px 14px!important;border-radius:9px!important;box-shadow:0 2px 8px rgba(15,23,42,.055)!important}
 [data-testid="dashboard-page"] .crm-summary-grid>*>*>div:nth-child(2){margin-top:9px!important;font-size:22px!important}
-[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7{margin-top:10px!important;gap:10px!important}
-[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7>*{min-height:88px!important}
-[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7>*>*{height:88px!important;min-height:88px!important;padding:11px 12px!important;border-radius:9px!important}
-[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7>*>*>div:nth-child(2){margin-top:7px!important;font-size:18px!important}
-[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\]>div{border-radius:10px!important;box-shadow:0 2px 8px rgba(15,23,42,.045)!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7{margin-top:10px!important;gap:10px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*{min-height:88px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*{height:88px!important;min-height:88px!important;padding:11px 12px!important;border-radius:9px!important}
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\\:grid-cols-4.xl\\:grid-cols-7>*>*>div:nth-child(2){margin-top:7px!important;font-size:18px!important}
+[data-testid="dashboard-page"] section.grid.gap-5.xl\\:grid-cols-\\[2fr_1fr\\]>div{border-radius:10px!important;box-shadow:0 2px 8px rgba(15,23,42,.045)!important}
+@media(min-width:1024px){[data-testid="crm-app-shell"]>aside[data-testid="sidebar-navigation"]{width:200px!important}[data-testid="crm-app-shell"]>div{padding-left:200px!important}}
 @media(max-width:1199px){[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:repeat(2,minmax(0,1fr))!important;width:min(100%,520px)!important}[data-testid="dashboard-page"]>div:first-child:after{display:none!important}}
 @media(max-width:767px){[data-testid="dashboard-page"]>div:first-child{min-height:122px!important}[data-testid="dashboard-page"] div:has(>select[aria-label="Periode"]){grid-template-columns:1fr!important;width:100%!important}[data-testid="dashboard-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}[data-testid="dashboard-page"]>div:nth-of-type(2)>section:first-child{height:auto!important;min-height:132px!important;padding:20px!important}}
