@@ -35,6 +35,27 @@ class OptionsResponse(CRMBaseModel):
     products: list[OptionProduct] = Field(default_factory=list)
     users: list[OptionUser] = Field(default_factory=list)
 
+class SalesTeamMetric(CRMBaseModel):
+    sales: str
+    role: str
+    manager: str = "-"
+    target: float = 0
+    gap_to_target: float = 0
+    achievement: float = 0
+    open_pipeline: float = 0
+    weighted: float = 0
+    coverage: float = 0
+    won: float = 0
+    won_count: int = 0
+    lost_count: int = 0
+    win_rate: float = 0
+    po: int = 0
+    po_value: float = 0
+    activities: int = 0
+    overdue_activities: int = 0
+    indent: int = 0
+    overdue: int = 0
+
 class CustomerBase(CRMBaseModel):
     name: str
     company_name: str = ""
