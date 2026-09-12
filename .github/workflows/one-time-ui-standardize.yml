@@ -1,0 +1,100 @@
+name: One-time CRM UI standardize
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  standardize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply compact CRM UI standard
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          root = Path('frontend/src')
+
+          # 1) Global data-table sizing: compact, uniform columns across CRM menus.
+          table = root / 'components' / 'DataTable.tsx'
+          text = table.read_text(encoding='utf-8')
+          text = text.replace(
+              '<table className="w-full text-left text-sm">',
+              '<table className="crm-data-table w-full table-fixed text-left text-sm">'
+          )
+          text = text.replace(
+              '<th className="whitespace-nowrap px-4 py-3 font-semibold">No</th>',
+              '<th className="crm-data-table-no whitespace-nowrap px-3 py-2.5 font-semibold">No</th>'
+          )
+          text = text.replace(
+              '<th key={column.key} className="whitespace-nowrap px-4 py-3 font-semibold">{column.label}</th>',
+              '<th key={column.key} className="whitespace-nowrap px-3 py-2.5 font-semibold">{column.label}</th>'
+          )
+          text = text.replace(
+              '<td className="whitespace-nowrap px-4 py-3 text-slate-500">',
+              '<td className="crm-data-table-no whitespace-nowrap px-3 py-2.5 text-slate-500">'
+          )
+          text = text.replace(
+              '<td key={column.key} className="whitespace-nowrap px-4 py-3">{column.render(item)}</td>',
+              '<td key={column.key} className="crm-data-table-cell whitespace-nowrap px-3 py-2.5">{column.render(item)}</td>'
+          )
+          table.write_text(text, encoding='utf-8')
+
+          # 2) Standardize filter and summary wrappers wherever the common Tailwind patterns exist.
+          for path in root.rglob('*.tsx'):
+              if path.name == 'DataTable.tsx':
+                  continue
+              s = path.read_text(encoding='utf-8')
+              original = s
+              s = s.replace('grid gap-4 md:grid-cols-2 xl:grid-cols-4', 'crm-summary-grid')
+              s = re.sub(r'grid gap-3 md:grid-cols-2 lg:grid-cols-\d+', 'crm-filter-grid', s)
+              s = re.sub(r'grid gap-4 md:grid-cols-2 lg:grid-cols-\d+', 'crm-filter-grid', s)
+              if s != original:
+                  path.write_text(s, encoding='utf-8')
+
+          # 3) Global CSS for the new shared CRM layout classes.
+          css = root / 'index.css'
+          c = css.read_text(encoding='utf-8')
+          marker = '/* ============================================================\n   CRM GLOBAL UI STANDARD\n   ============================================================ */'
+          if marker not in c:
+              c += '''\n\n/* ============================================================\n   CRM GLOBAL UI STANDARD\n   Compact, consistent sizing for summaries, filters and data tables.\n   ============================================================ */\n.crm-summary-grid {\n  display: grid;\n  grid-template-columns: repeat(4, minmax(0, 1fr));\n  gap: 0.75rem;\n  max-width: 1200px;\n  margin: 0 auto 1.25rem;\n}\n\n.crm-summary-grid > * {\n  min-width: 0;\n}\n\n.crm-summary-grid > * > * {\n  min-height: 132px;\n}\n\n.crm-filter-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));\n  gap: 0.75rem;\n  align-items: center;\n}\n\n.crm-filter-grid > * {\n  min-width: 0;\n  width: 100%;\n}\n\n.crm-data-table {\n  width: 100%;\n  table-layout: fixed;\n}\n\n.crm-data-table th,\n.crm-data-table td {\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n.crm-data-table th:first-child,\n.crm-data-table td:first-child {\n  width: 5%;\n}\n\n.crm-data-table th:last-child,\n.crm-data-table td:last-child {\n  width: 9%;\n}\n\n@media (max-width: 1023px) {\n  .crm-summary-grid {\n    grid-template-columns: repeat(2, minmax(0, 1fr));\n    max-width: none;\n  }\n}\n\n@media (max-width: 640px) {\n  .crm-summary-grid {\n    grid-template-columns: 1fr;\n  }\n\n  .crm-filter-grid {\n    grid-template-columns: 1fr;\n  }\n}\n'''
+              css.write_text(c, encoding='utf-8')
+
+      - name: Verify changed files
+        run: |
+          git diff --check
+          git diff --stat
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: standardize compact CRM UI sizing"
+          git push origin main
+
+      - name: Remove one-time workflow
+        if: always()
+        shell: bash
+        run: |
+          git fetch origin main
+          git checkout main
+          git pull --ff-only origin main
+          git rm -f .github/workflows/one-time-ui-standardize.yml || true
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: remove one-time UI workflow"
+            git push origin main
+          fi
