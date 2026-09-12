@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { apiGet } from "@/lib/api";
-import type { Customer, DashboardMetrics, Paginated } from "@/lib/types";
+import type { Customer, DashboardMetrics, Options, Paginated } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 
 const money = (value: number) =>
@@ -140,28 +140,28 @@ export default function Home() {
     staleTime: 60_000,
   });
 
-  const data = query.isError ? undefined : query.data;
+  const salesOptionsQuery = useQuery({
+    queryKey: ["dashboard-sales-options"],
+    queryFn: () => apiGet<Options>("/options"),
+    retry: 1,
+    staleTime: 60_000,
+  });
 
-  const dummySales = [
-    "Admin",
-    "Ahmad Ihwal Fadilah",
-    "Aripin",
-    "Albert Wellkomputindo",
-    "Fery",
-    "Paulus",
-  ];
+  const data = query.isError ? undefined : query.data;
 
   const salesOptions = useMemo(
     () => [
       "Semua sales",
       ...Array.from(
-        new Set([
-          ...dummySales,
-          ...(data?.pipeline_by_salesperson.map((item) => item.name) ?? []),
-        ]),
-      ).filter(Boolean),
+        new Map(
+          (salesOptionsQuery.data?.users ?? [])
+            .filter((item) => String(item.role ?? "").trim().toUpperCase() === "SALES")
+            .filter((item) => item.name)
+            .map((item) => [item.id, item.name]),
+        ).values(),
+      ),
     ],
-    [data],
+    [salesOptionsQuery.data],
   );
 
   const customerOptions = useMemo(
