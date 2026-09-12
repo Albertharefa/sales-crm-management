@@ -16,3 +16,5 @@ Deployment:
 4. Verify /health returns database=ok.
 5. Verify /docs exposes /api routes.
 6. Login with ADMIN_EMAIL / ADMIN_PASSWORD.
+
+Runtime baseline verified 2026-09-12: Dockerfile build and production startup are the canonical Railway path.
