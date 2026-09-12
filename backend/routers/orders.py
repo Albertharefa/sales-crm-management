@@ -138,7 +138,7 @@ async def quotation_total(quotation_number: str | None, fallback: float):
 
 
 @router.get("", response_model=Paginated)
-async def list_orders(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", status: str | None = None, sales: str | None = None, user: dict = Depends(current_user)):
+async def list_orders(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), search: str = "", status: str | None = None, sales: str | None = None, customer: str | None = None, user: dict = Depends(current_user)):
     if role_name(user) not in {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}:
         raise HTTPException(status_code=403, detail="Role Anda tidak memiliki akses Purchase Order")
     visible_ids = await visible_sales_ids(user)
@@ -152,6 +152,12 @@ async def list_orders(page: int = Query(1, ge=1), page_size: int = Query(25, ge=
         if not sales_user:
             raise HTTPException(status_code=403, detail="Sales berada di luar scope Anda")
         filters["sales_id"] = sales_user["id"]
+    if customer:
+        customer_doc = await find_customer(customer)
+        if not customer_doc:
+            raise HTTPException(status_code=403, detail="Customer berada di luar scope Anda")
+        await ensure_customer_access(customer_doc, user)
+        filters["customer_id"] = str(customer_doc.get("id") or customer_doc.get("customer_id"))
     return await page_collection("purchase_orders", page, page_size, search, filters)
 
 
