@@ -1,0 +1,76 @@
+/* DASHBOARD CLEANUP — final visual-only refinement. No business logic changes. */
+
+/* Remove the decorative graph behind the welcome heading. */
+[data-testid="dashboard-page"] > div:first-child > div:first-child::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep the welcome area clean and premium. */
+[data-testid="dashboard-page"] > div:first-child {
+  background: transparent !important;
+}
+
+@media (min-width: 1024px) {
+  /* Main KPI cards: clean white surfaces, no colored/graphic background. */
+  [data-testid="dashboard-page"] .crm-summary-grid > * > *::after,
+  [data-testid="dashboard-page"] .crm-summary-grid > *::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  [data-testid="dashboard-page"] .crm-summary-grid > * > * {
+    background: #ffffff !important;
+    box-shadow: 0 3px 10px rgba(15,23,42,.045) !important;
+  }
+
+  /* Remove colored icon fills; retain color through the icon itself. */
+  [data-testid="dashboard-page"] .crm-summary-grid > * > * > div:first-child > div:nth-child(2) {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  [data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(1) > * > div:first-child > div:nth-child(2) { color: #2563eb !important; }
+  [data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(2) > * > div:first-child > div:nth-child(2) { color: #1d4ed8 !important; }
+  [data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(3) > * > div:first-child > div:nth-child(2) { color: #7c3aed !important; }
+  [data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(4) > * > div:first-child > div:nth-child(2) { color: #059669 !important; }
+
+  /* Secondary KPI cards: remove the large colored circles and any decorative fill. */
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > *::after,
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > * {
+    background: #ffffff !important;
+    box-shadow: 0 3px 9px rgba(15,23,42,.04) !important;
+  }
+
+  /* Clean secondary icons as well; use icon color for the visual identity. */
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > * > div:first-child > div:nth-child(2) {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(1) > * > div:first-child > div:nth-child(2) { color:#2563eb !important; }
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(2) > * > div:first-child > div:nth-child(2) { color:#7c3aed !important; }
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(3) > * > div:first-child > div:nth-child(2) { color:#2563eb !important; }
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(4) > * > div:first-child > div:nth-child(2) { color:#d97706 !important; }
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(5) > * > div:first-child > div:nth-child(2) { color:#0891b2 !important; }
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(6) > * > div:first-child > div:nth-child(2) { color:#059669 !important; }
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(7) > * > div:first-child > div:nth-child(2) { color:#e11d48 !important; }
+
+  /* Make the clean cards feel premium through subtle accent rails only. */
+  [data-testid="dashboard-page"] .crm-summary-grid > * > *::before {
+    opacity: 1 !important;
+    width: 3px !important;
+  }
+
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > *::before {
+    opacity: 1 !important;
+    width: 2px !important;
+  }
+}
