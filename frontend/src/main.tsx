@@ -7,6 +7,7 @@ import './quotation-print-fix.css'
 import './crm-filter-standard.css'
 import './crm-compact-layout.css'
 import './dashboard-polish.css'
+import './dashboard-reference.css'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
