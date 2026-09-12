@@ -1,0 +1,307 @@
+/* DASHBOARD AUTO-REPAIR — fixes KPI card nesting/geometry only. No business logic changes. */
+
+@media (min-width: 1024px) {
+  /* Shell geometry */
+  [data-testid="crm-app-shell"] > aside[data-testid="sidebar-navigation"] {
+    width: 200px !important;
+  }
+
+  [data-testid="crm-app-shell"] > div.lg\:pl-64 {
+    padding-left: 200px !important;
+  }
+
+  [data-testid="crm-app-shell"] > div.lg\:pl-64 > header {
+    height: 52px !important;
+    min-height: 52px !important;
+  }
+
+  [data-testid="crm-app-shell"] > div.lg\:pl-64 > main {
+    padding: 14px 22px 24px !important;
+  }
+
+  /* Dashboard vertical rhythm */
+  [data-testid="dashboard-page"] {
+    gap: 12px !important;
+  }
+
+  [data-testid="dashboard-page"] > div:first-child {
+    min-height: 62px !important;
+    padding-bottom: 8px !important;
+  }
+
+  /* Hero */
+  [data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child {
+    height: 124px !important;
+    min-height: 124px !important;
+    padding: 18px 24px !important;
+  }
+}
+
+/* =========================================================
+   MAIN KPI — the KPI card itself is the grid item.
+   Previous selectors styled the first child inside KpiCard,
+   which visually split every card into separate boxes.
+   ========================================================= */
+[data-testid="dashboard-page"] .crm-summary-grid > * {
+  position: relative !important;
+  min-width: 0 !important;
+  height: 108px !important;
+  min-height: 108px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  padding: 14px 16px !important;
+  border: 1px solid #dfe7f1 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(145deg, #ffffff 0%, #fbfdff 100%) !important;
+  box-shadow: 0 5px 16px rgba(15, 23, 42, .06) !important;
+}
+
+/* Remove the accidental inner card created by earlier CSS. */
+[data-testid="dashboard-page"] .crm-summary-grid > * > * {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Colored accent rail */
+[data-testid="dashboard-page"] .crm-summary-grid > *::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: 3px !important;
+  border-radius: 12px 0 0 12px !important;
+  background: #3b82f6 !important;
+}
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(2)::before { background: #2563eb !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(3)::before { background: #8b5cf6 !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(4)::before { background: #10b981 !important; }
+
+/* Premium mini trend */
+[data-testid="dashboard-page"] .crm-summary-grid > *::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 12px !important;
+  bottom: 10px !important;
+  width: 92px !important;
+  height: 38px !important;
+  opacity: .18 !important;
+  background: repeating-linear-gradient(145deg, transparent 0 13px, #60a5fa 14px 16px, transparent 17px 25px) !important;
+  transform: skewY(-4deg) !important;
+  pointer-events: none !important;
+}
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(3)::after { background: repeating-linear-gradient(145deg, transparent 0 13px, #a78bfa 14px 16px, transparent 17px 25px) !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(4)::after { background: repeating-linear-gradient(145deg, transparent 0 13px, #34d399 14px 16px, transparent 17px 25px) !important; }
+
+/* Main KPI content wrapper */
+[data-testid="dashboard-page"] .crm-summary-grid > * > div:first-child {
+  position: static !important;
+  display: block !important;
+  margin: 0 !important;
+}
+
+/* Label */
+[data-testid="dashboard-page"] .crm-summary-grid > * > div:first-child > div:first-child {
+  margin: 0 0 0 56px !important;
+  max-width: calc(100% - 70px) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .14em !important;
+  color: #64748b !important;
+}
+
+/* Icon */
+[data-testid="dashboard-page"] .crm-summary-grid > * > div:first-child > div:nth-child(2) {
+  position: absolute !important;
+  left: 15px !important;
+  top: 14px !important;
+  width: 40px !important;
+  height: 40px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+/* Value */
+[data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(2) {
+  position: relative !important;
+  z-index: 2 !important;
+  margin: 10px 112px 0 56px !important;
+  font-size: 23px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  color: #0f172a !important;
+}
+
+/* Note */
+[data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(3) {
+  position: relative !important;
+  z-index: 2 !important;
+  margin: 7px 112px 0 56px !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  color: #64748b !important;
+}
+
+/* Icon palette */
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(1) > div:first-child > div:nth-child(2) { background:#eff6ff !important; color:#2563eb !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(2) > div:first-child > div:nth-child(2) { background:#eaf2ff !important; color:#1d4ed8 !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(3) > div:first-child > div:nth-child(2) { background:#f3e8ff !important; color:#7c3aed !important; }
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(4) > div:first-child > div:nth-child(2) { background:#ecfdf5 !important; color:#059669 !important; }
+
+/* =========================================================
+   SECONDARY KPI — same principle: one grid item = one card.
+   ========================================================= */
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 {
+  margin-top: 10px !important;
+  gap: 9px !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * {
+  position: relative !important;
+  min-width: 0 !important;
+  height: 78px !important;
+  min-height: 78px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  padding: 11px 12px !important;
+  border: 1px solid #e1e8f1 !important;
+  border-radius: 11px !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f7faff 100%) !important;
+  box-shadow: 0 4px 12px rgba(15,23,42,.05) !important;
+}
+
+/* Remove accidental inner card */
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > * {
+  position: static !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* Secondary decorative bubble */
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -16px !important;
+  bottom: -25px !important;
+  width: 58px !important;
+  height: 58px !important;
+  border-radius: 50% !important;
+  background: rgba(37,99,235,.08) !important;
+  pointer-events: none !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:first-child {
+  position: static !important;
+  display: block !important;
+  margin: 0 !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:first-child > div:first-child {
+  margin: 0 0 0 44px !important;
+  max-width: calc(100% - 52px) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 8px !important;
+  line-height: 1.2 !important;
+  letter-spacing: .13em !important;
+  color: #64748b !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:first-child > div:nth-child(2) {
+  position: absolute !important;
+  left: 11px !important;
+  top: 11px !important;
+  width: 30px !important;
+  height: 30px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 9px !important;
+  box-shadow: none !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(2) {
+  position: relative !important;
+  z-index: 2 !important;
+  margin: 9px 8px 0 44px !important;
+  font-size: 17px !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  color: #0f172a !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(3) {
+  position: relative !important;
+  z-index: 2 !important;
+  margin: 5px 8px 0 44px !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  color: #64748b !important;
+}
+
+/* Secondary premium icon palette */
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(1) > div:first-child > div:nth-child(2) { background:#eff6ff !important; color:#2563eb !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(2) > div:first-child > div:nth-child(2) { background:#f3e8ff !important; color:#7c3aed !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(3) > div:first-child > div:nth-child(2) { background:#eaf2ff !important; color:#2563eb !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(4) > div:first-child > div:nth-child(2) { background:#fff7ed !important; color:#f59e0b !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(5) > div:first-child > div:nth-child(2) { background:#ecfeff !important; color:#0891b2 !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(6) > div:first-child > div:nth-child(2) { background:#ecfdf5 !important; color:#059669 !important; }
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > *:nth-child(7) > div:first-child > div:nth-child(2) { background:#fff1f2 !important; color:#e11d48 !important; }
+
+/* Analytics: keep charts visible without KPI overlap */
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] {
+  gap: 12px !important;
+  margin-top: 12px !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div {
+  border-radius: 12px !important;
+  border-color: #e1e8f1 !important;
+  box-shadow: 0 4px 14px rgba(15,23,42,.045) !important;
+}
+
+@media (max-width: 1199px) {
+  [data-testid="dashboard-page"] .crm-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-testid="dashboard-page"] .crm-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  [data-testid="dashboard-page"] .crm-summary-grid > * {
+    height: 104px !important;
+    min-height: 104px !important;
+  }
+
+  [data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] {
+    margin-top: 10px !important;
+  }
+}
