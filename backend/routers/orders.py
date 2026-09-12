@@ -174,7 +174,7 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
         raise HTTPException(status_code=409, detail="Nomor PO sudah digunakan")
     sales_id = payload.sales_id or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
-    quotation = await validate_quotation_link(payload.quotation_number, customer, sales, user)
+    quotation = None if payload.quotation_manual else await validate_quotation_link(payload.quotation_number, customer, sales, user)
     raw_total = calculate_total(payload)
     total = float(quotation.get("grand_total")) if quotation and quotation.get("grand_total") is not None else raw_total
     payload_data = payload.model_dump(mode="json")
@@ -185,7 +185,7 @@ async def create_order(payload: PurchaseOrderCreate, user: dict = Depends(curren
         payload_data["quotation_number"] = quotation["number"]
     doc = {"id": new_id(), "customer_name": customer.get("name") or customer.get("company_name") or "", "sales_name": sales["name"], "total": total, **payload_data, "created_at": now()}
     await db.purchase_orders.insert_one(doc)
-    await audit(user, "Create", "Purchase Orders", doc["id"], {"po_number": doc["po_number"], "quotation_number": doc.get("quotation_number")})
+    await audit(user, "Create", "Purchase Orders", doc["id"], {"po_number": doc["po_number"], "quotation_number": doc.get("quotation_number"), "quotation_manual": doc.get("quotation_manual", False)})
     return PurchaseOrder(**doc)
 
 
@@ -202,7 +202,7 @@ async def get_order(order_id: str, user: dict = Depends(current_user)):
     if customer:
         doc["customer_id"] = str(customer.get("id") or customer.get("customer_id") or doc.get("customer_id"))
         doc["customer_name"] = customer.get("name") or customer.get("company_name") or doc.get("customer_name") or ""
-    if doc.get("quotation_number"):
+    if doc.get("quotation_number") and not doc.get("quotation_manual"):
         doc["total"] = await quotation_total(doc.get("quotation_number"), float(doc.get("total") or 0))
     elif doc.get("items"):
         doc["total"] = calculate_items_total(doc["items"])
@@ -228,7 +228,7 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
         raise HTTPException(status_code=409, detail="Nomor PO sudah digunakan")
     sales_id = payload.sales_id or old.get("sales_id") or user.get("id")
     sales = await validate_sales_assignment(str(sales_id), user)
-    quotation = await validate_quotation_link(payload.quotation_number, customer, sales, user)
+    quotation = None if payload.quotation_manual else await validate_quotation_link(payload.quotation_number, customer, sales, user)
     total = float(quotation.get("grand_total")) if quotation and quotation.get("grand_total") is not None else calculate_total(payload)
     payload_data = payload.model_dump(mode="json")
     payload_data["po_number"] = po_number
@@ -238,7 +238,7 @@ async def update_order(order_id: str, payload: PurchaseOrderCreate, user: dict =
         payload_data["quotation_number"] = quotation["number"]
     doc = {"id": order_id, "customer_name": customer.get("name") or customer.get("company_name") or "", "sales_name": sales["name"], "total": total, **payload_data, "created_at": old.get("created_at", now()), "updated_at": now()}
     await db.purchase_orders.replace_one({"id": order_id}, doc)
-    await audit(user, "Update", "Purchase Orders", order_id, {"po_number": doc["po_number"], "quotation_number": doc.get("quotation_number")})
+    await audit(user, "Update", "Purchase Orders", order_id, {"po_number": doc["po_number"], "quotation_number": doc.get("quotation_number"), "quotation_manual": doc.get("quotation_manual", False)})
     return PurchaseOrder(**doc)
 
 
