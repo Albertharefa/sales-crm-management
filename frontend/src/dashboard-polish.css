@@ -1,0 +1,177 @@
+/* DASHBOARD POLISH — visual-only layer. No data, state, API, or business logic changes. */
+
+[data-testid="dashboard-page"] {
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 38%, #f8fafc 100%);
+}
+
+/* Welcome header: clean compact layout like the reference. */
+[data-testid="dashboard-page"] > div:first-child {
+  position: relative !important;
+  overflow: hidden !important;
+  min-height: 82px !important;
+  padding: 10px 0 14px !important;
+  border-bottom: 1px solid #e5eaf2 !important;
+}
+
+[data-testid="dashboard-page"] > div:first-child > div:first-child {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+[data-testid="dashboard-page"] > div:first-child > div:first-child::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 0 !important;
+  bottom: -12px !important;
+  width: 210px !important;
+  height: 48px !important;
+  opacity: 0.16 !important;
+  background:
+    linear-gradient(#60a5fa, #60a5fa) 0 24px / 13px 24px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 20px 14px / 13px 34px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 40px 20px / 13px 28px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 60px 8px / 13px 40px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 80px 18px / 13px 30px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 100px 5px / 13px 43px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 120px 12px / 13px 36px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 140px 2px / 13px 46px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 160px 10px / 13px 38px no-repeat,
+    linear-gradient(#60a5fa, #60a5fa) 180px 0 / 13px 48px no-repeat !important;
+  pointer-events: none !important;
+}
+
+[data-testid="dashboard-page"] > div:first-child h1 {
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+  margin-top: 0 !important;
+}
+
+[data-testid="dashboard-page"] > div:first-child p {
+  font-size: 12px !important;
+}
+
+/* Reference-style blue business performance banner with subtle transparent bar graph. */
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child {
+  min-height: 138px !important;
+  padding: 24px 28px !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  background:
+    radial-gradient(circle at 88% 35%, rgba(96,165,250,0.32), transparent 30%),
+    linear-gradient(100deg, #0b2b68 0%, #123b83 48%, #2563b8 100%) !important;
+}
+
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child::before {
+  content: "" !important;
+  position: absolute !important;
+  z-index: -1 !important;
+  right: 22px !important;
+  bottom: 0 !important;
+  width: 340px !important;
+  height: 108px !important;
+  opacity: 0.28 !important;
+  background:
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 0 54px / 17px 54px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 28px 35px / 17px 73px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 56px 45px / 17px 63px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 84px 20px / 17px 88px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 112px 31px / 17px 77px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 140px 8px / 17px 100px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 168px 25px / 17px 83px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 196px 15px / 17px 93px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 224px 36px / 17px 72px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 252px 22px / 17px 86px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 280px 5px / 17px 103px no-repeat,
+    linear-gradient(rgba(191,219,254,0.45), rgba(191,219,254,0.45)) 308px 30px / 17px 78px no-repeat !important;
+  pointer-events: none !important;
+}
+
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child::after {
+  width: 360px !important;
+  height: 180px !important;
+  right: -90px !important;
+  top: -70px !important;
+  background: radial-gradient(circle, rgba(147,197,253,0.22) 0%, rgba(59,130,246,0) 70%) !important;
+}
+
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child h2 {
+  font-size: 29px !important;
+  line-height: 1.12 !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child p,
+[data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child > div {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Make the main KPI row closer to the reference: icon + value + soft chart area. */
+[data-testid="dashboard-page"] .crm-summary-grid > * > * {
+  min-height: 112px !important;
+  padding: 14px 16px !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > * > *::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 8px !important;
+  bottom: 7px !important;
+  width: 105px !important;
+  height: 48px !important;
+  opacity: 0.24 !important;
+  border-radius: 50% 50% 0 0 !important;
+  background:
+    linear-gradient(150deg, transparent 0 16%, rgba(59,130,246,0.85) 17% 19%, transparent 20% 31%, rgba(59,130,246,0.75) 32% 34%, transparent 35% 49%, rgba(59,130,246,0.85) 50% 52%, transparent 53% 68%, rgba(59,130,246,0.75) 69% 71%, transparent 72%) !important;
+  pointer-events: none !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(3) > *::after {
+  background: linear-gradient(150deg, transparent 0 16%, rgba(139,92,246,0.85) 17% 19%, transparent 20% 31%, rgba(139,92,246,0.75) 32% 34%, transparent 35% 49%, rgba(139,92,246,0.85) 50% 52%, transparent 53% 68%, rgba(139,92,246,0.75) 69% 71%, transparent 72%) !important;
+}
+
+[data-testid="dashboard-page"] .crm-summary-grid > *:nth-child(4) > *::after {
+  background: linear-gradient(150deg, transparent 0 16%, rgba(16,185,129,0.85) 17% 19%, transparent 20% 31%, rgba(16,185,129,0.75) 32% 34%, transparent 35% 49%, rgba(16,185,129,0.85) 50% 52%, transparent 53% 68%, rgba(16,185,129,0.75) 69% 71%, transparent 72%) !important;
+}
+
+/* Keep card text above decorative graphics. */
+[data-testid="dashboard-page"] .crm-summary-grid > * > * > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+/* Stronger color identity for secondary KPI tiles. */
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > * {
+  min-height: 92px !important;
+  transition: transform 160ms ease, box-shadow 160ms ease !important;
+}
+
+[data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > *:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 9px 20px rgba(15,23,42,0.08) !important;
+}
+
+/* Section headings and analytics blocks. */
+[data-testid="dashboard-page"] section h2 {
+  letter-spacing: -0.02em !important;
+}
+
+[data-testid="dashboard-page"] section.grid.gap-5.xl\:grid-cols-\[2fr_1fr\] > div {
+  background-color: rgba(255,255,255,0.96) !important;
+}
+
+@media (max-width: 767px) {
+  [data-testid="dashboard-page"] > div:first-child {
+    min-height: 108px !important;
+  }
+
+  [data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child {
+    min-height: 126px !important;
+    padding: 20px !important;
+  }
+
+  [data-testid="dashboard-page"] > div:nth-of-type(2) > section:first-child h2 {
+    font-size: 23px !important;
+  }
+}
