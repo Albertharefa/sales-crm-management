@@ -12,7 +12,7 @@ from fastapi.exceptions import HTTPException as FastAPIHTTPException
 from fastapi.staticfiles import StaticFiles
 
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
-from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset, demo_data
+from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset, demo_data, integrity
 from routers.dashboard import router as dashboard_router
 from routers.order_monitoring import router as order_monitoring_router
 from security.permissions import has_permission, permission_policy, normalize_role
@@ -51,12 +51,7 @@ app.add_middleware(
 
 @app.middleware("http")
 async def rbac_middleware(request: Request, call_next):
-    """Defense-in-depth authorization for every API request.
-
-    Individual routers still enforce record-level data scope. This middleware
-    adds the centralized role/permission boundary so direct API calls cannot
-    bypass the UI permission model.
-    """
+    """Defense-in-depth authorization for every API request."""
     path = request.url.path
     if request.method == "OPTIONS":
         return await call_next(request)
@@ -80,7 +75,6 @@ async def rbac_middleware(request: Request, call_next):
 
         if not user:
             return JSONResponse(status_code=401, content={"detail": "Sesi tidak ditemukan atau telah berakhir"})
-
         if user.get("status", "Active") != "Active":
             return JSONResponse(status_code=401, content={"detail": "Pengguna tidak aktif"})
 
@@ -125,6 +119,7 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(products.router, prefix="/api/v1")
 app.include_router(uploads.router, prefix="/api/v1")
 app.include_router(targets.router, prefix="/api/v1")
+app.include_router(integrity.router, prefix="/api/v1")
 app.include_router(dashboard_router, prefix="/api/v1")
 
 
