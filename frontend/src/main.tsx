@@ -13,6 +13,8 @@ import './dashboard-kpi-fix.css'
 import './dashboard-auto-repair.css'
 import './dashboard-cleanup.css'
 import './pipeline-premium.css'
+import './pipeline-analytics.css'
+import './pipeline-analytics-enhancer'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
