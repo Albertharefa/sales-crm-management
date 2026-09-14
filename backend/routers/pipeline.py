@@ -101,7 +101,7 @@ async def ensure_opportunity_access(doc: dict, user: dict) -> None:
 @router.get("", response_model=Paginated)
 async def list_opportunities(
     page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
+    page_size: int = Query(25, ge=1, le=5000),
     search: str = "",
     stage: str | None = None,
     sales_id: str | None = None,
@@ -121,12 +121,10 @@ async def list_opportunities(
     if stage:
         filters["stage"] = stage
     if customer_id:
-        filters["customer_id"] = customer_id
-        if customer_id:
-            customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})
-            if not customer:
-                raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
-            await ensure_customer_access(customer, user)
+        customer = await db.customers.find_one({"id": customer_id}) or await db.customers.find_one({"customer_id": customer_id})
+        if not customer:
+            raise HTTPException(status_code=404, detail="Customer tidak ditemukan")
+        await ensure_customer_access(customer, user)
 
     return await page_collection("opportunities", page, page_size, search, filters)
 
