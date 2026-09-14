@@ -19,22 +19,14 @@ type Opportunity = {
   stage?: string;
   value?: number;
   probability?: number;
-  sales_name?: string | null;
 };
 
 type PipelineResponse = { items?: Opportunity[] };
 
-let renderTimer: number | undefined;
 let refreshTimer: number | undefined;
-let observer: MutationObserver | undefined;
-
-const scheduleRender = () => {
-  window.clearTimeout(renderTimer);
-  renderTimer = window.setTimeout(() => {
-    if (window.location.pathname !== "/pipeline") return;
-    void renderAnalytics();
-  }, 180);
-};
+let routeTimer: number | undefined;
+let currentPath = window.location.pathname;
+let rendering = false;
 
 const fetchPipeline = async (): Promise<Opportunity[]> => {
   const response = await fetch("/api/v1/pipeline?page=1&page_size=5000", {
@@ -58,7 +50,7 @@ const buildDonut = (stageValues: number[], total: number) => {
 };
 
 const renderAnalytics = async () => {
-  if (window.location.pathname !== "/pipeline") return;
+  if (window.location.pathname !== "/pipeline" || rendering) return;
   const summary = document.querySelector<HTMLElement>(".crm-summary-grid");
   if (!summary) return;
 
@@ -69,6 +61,7 @@ const renderAnalytics = async () => {
     summary.insertAdjacentElement("afterend", root);
   }
 
+  rendering = true;
   root.classList.add("is-loading");
   try {
     const items = await fetchPipeline();
@@ -144,26 +137,21 @@ const renderAnalytics = async () => {
     `;
   } finally {
     root.classList.remove("is-loading");
+    rendering = false;
   }
 };
 
-const start = () => {
-  const isPipeline = window.location.pathname === "/pipeline";
-  if (!isPipeline) {
+const handleRoute = () => {
+  const path = window.location.pathname;
+  if (path === currentPath) return;
+  currentPath = path;
+  if (path !== "/pipeline") {
     document.querySelector(".crm-pipeline-analytics")?.remove();
-    if (observer) observer.disconnect();
-    observer = undefined;
     if (refreshTimer) window.clearInterval(refreshTimer);
     refreshTimer = undefined;
     return;
   }
-
-  if (!observer) {
-    observer = new MutationObserver(() => scheduleRender());
-    observer.observe(document.body, { childList: true, subtree: true });
-  }
-
-  scheduleRender();
+  void renderAnalytics();
   if (!refreshTimer) {
     refreshTimer = window.setInterval(() => {
       if (window.location.pathname === "/pipeline") void renderAnalytics();
@@ -174,12 +162,17 @@ const start = () => {
 document.addEventListener("change", (event) => {
   if (window.location.pathname !== "/pipeline") return;
   const target = event.target as HTMLElement | null;
-  if (target?.closest("table")) window.setTimeout(() => void renderAnalytics(), 250);
+  if (target?.closest("table")) window.setTimeout(() => void renderAnalytics(), 300);
 });
 
-window.addEventListener("popstate", start);
-window.addEventListener("hashchange", start);
+window.addEventListener("popstate", handleRoute);
+window.addEventListener("hashchange", handleRoute);
 
-const bootObserver = new MutationObserver(start);
-bootObserver.observe(document.body, { childList: true, subtree: true });
-start();
+routeTimer = window.setInterval(handleRoute, 500);
+void renderAnalytics();
+if (window.location.pathname === "/pipeline") {
+  refreshTimer = window.setInterval(() => {
+    if (window.location.pathname === "/pipeline") void renderAnalytics();
+  }, 15000);
+}
+void routeTimer;
