@@ -1,0 +1,24 @@
+/* Dynamic dashboard greeting: use the authenticated user rendered by AppShell. */
+@media (min-width: 1024px) {
+  [data-testid="dashboard-page"] > div:first-child h1 {
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  [data-testid="dashboard-page"] > div:first-child h1::after {
+    content: none !important;
+    display: none !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-testid="dashboard-page"] > div:first-child h1 {
+    font-size: 22px !important;
+  }
+
+  [data-testid="dashboard-page"] > div:first-child h1::after {
+    content: none !important;
+    display: none !important;
+  }
+}
