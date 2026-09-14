@@ -19,8 +19,8 @@ const navGroups = [
 
 const roleAllowedPrefixes: Record<string, string[]> = {
   SUPER_ADMIN: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products", "/settings"],
-  SALES_MANAGER: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products", "/settings"],
-  SALES: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/products", "/settings"],
+  SALES_MANAGER: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products"],
+  SALES: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/products"],
 };
 
 function canAccessPath(pathname: string, role: string) {
@@ -68,6 +68,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     items: group.items.filter(item => {
       if (item.label === "Users") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
       if (item.label === "Audit Log" || item.label === "Sales Team" || item.label === "Target Sales") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
+      if (item.label === "Settings") return user.role === "SUPER_ADMIN";
       return true;
     }),
   })).filter(group => group.items.length > 0);
