@@ -3,6 +3,9 @@ const COLORS = ["#2563eb", "#38bdf8", "#7c3aed", "#f59e0b", "#10b981", "#ef4444"
 
 type Opportunity = { stage?: string; value?: number; probability?: number };
 type PipelineResponse = { items?: Opportunity[] };
+type KanbanStage = { stage?: string; value?: number; count?: number; items?: Opportunity[] };
+
+type AnalyticsStage = { name: string; color: string; count: number; value: number; weighted: number };
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", {
   style: "currency", currency: "IDR", notation: "compact", maximumFractionDigits: 1,
@@ -13,12 +16,16 @@ const escapeHtml = (value: unknown) => String(value ?? "")
   .replace(/\"/g, "&quot;").replace(/'/g, "&#039;");
 
 const fetchPipeline = async (): Promise<Opportunity[]> => {
-  const response = await fetch("/api/v1/pipeline?page=1&page_size=5000", {
+  // The pipeline list endpoint intentionally limits page_size to 100.
+  // Kanban already returns the complete stage buckets needed for analytics,
+  // so use it instead of requesting an invalid page_size such as 5000.
+  const response = await fetch("/api/v1/pipeline/kanban", {
     credentials: "include", headers: { Accept: "application/json" },
   });
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const data = await response.json() as PipelineResponse;
-  return Array.isArray(data.items) ? data.items : [];
+  const data = await response.json() as KanbanStage[];
+  if (!Array.isArray(data)) return [];
+  return data.flatMap((stage) => Array.isArray(stage.items) ? stage.items : []);
 };
 
 const donut = (values: number[], total: number) => {
@@ -33,6 +40,7 @@ const donut = (values: number[], total: number) => {
 
 let rendering = false;
 let refreshTimer: number | undefined;
+let waitTimer: number | undefined;
 
 const renderAnalytics = async () => {
   if (window.location.pathname !== "/pipeline" || rendering) return false;
@@ -50,7 +58,7 @@ const renderAnalytics = async () => {
   root.classList.add("is-loading");
   try {
     const items = await fetchPipeline();
-    const stageData = STAGES.map((name, index) => {
+    const stageData: AnalyticsStage[] = STAGES.map((name, index) => {
       const rows = items.filter((item) => item.stage === name);
       const value = rows.reduce((sum, item) => sum + Number(item.value || 0), 0);
       const weighted = rows.reduce((sum, item) => sum + Number(item.value || 0) * Number(item.probability || 0) / 100, 0);
@@ -113,12 +121,23 @@ const boot = () => {
   }
 };
 
-const waitForPipeline = window.setInterval(() => {
+waitTimer = window.setInterval(() => {
   if (window.location.pathname !== "/pipeline") return;
+  const summary = document.querySelector<HTMLElement>(".crm-summary-grid");
+  if (!summary) return;
+  if (waitTimer) {
+    window.clearInterval(waitTimer);
+    waitTimer = undefined;
+  }
   void renderAnalytics();
 }, 500);
 
-window.setTimeout(() => window.clearInterval(waitForPipeline), 20000);
+window.setTimeout(() => {
+  if (waitTimer) {
+    window.clearInterval(waitTimer);
+    waitTimer = undefined;
+  }
+}, 20000);
 
 document.addEventListener("change", (event) => {
   if (window.location.pathname !== "/pipeline") return;
