@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timezone
 import re
 
@@ -134,22 +135,36 @@ async def sales_team(search: str = Query(""), sales_id: str = Query(""), status:
 @router.get("/options", response_model=OptionsResponse)
 async def options(user: dict = Depends(current_user)):
     role = str(user.get("role") or "").strip().upper()
-    visible_ids = await visible_sales_ids(user)
-    visible_names = await visible_sales_names(user)
 
     if role == "SUPER_ADMIN":
-        customers = await db.customers.find({}, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
-    else:
-        customers = await db.customers.find(
-            {"$or": [
-                {"sales_id": {"$in": visible_ids}},
-                {"sales_name": {"$in": visible_names}},
-            ]},
-            {"id": 1, "name": 1},
-        ).sort("name", 1).to_list(1000)
+        customers_task = db.customers.find({}, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
+        products_task = db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
+        users_task = db.users.find({}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+        customers, products, users = await asyncio.gather(customers_task, products_task, users_task)
+        return {"customers": customers, "products": products, "users": users}
 
-    products = await db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
-    users = await db.users.find({}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100) if role == "SUPER_ADMIN" else await db.users.find({"id": {"$in": await manager_user_ids(user)}}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+    if role == "SALES_MANAGER":
+        team_users = await db.users.find(
+            {"id": {"$in": await manager_user_ids(user)}},
+            {"id": 1, "user_id": 1, "name": 1, "role": 1},
+        ).sort("name", 1).to_list(100)
+        visible_ids = [str(item["id"]) for item in team_users if item.get("role") == "SALES" and item.get("id")]
+        visible_names = [str(item["name"]) for item in team_users if item.get("role") == "SALES" and item.get("name")]
+        customer_filter = {"$or": [{"sales_id": {"$in": visible_ids}}, {"sales_name": {"$in": visible_names}}]}
+        customers_task = db.customers.find(customer_filter, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
+        products_task = db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
+        customers, products = await asyncio.gather(customers_task, products_task)
+        return {"customers": customers, "products": products, "users": team_users}
+
+    user_id = str(user.get("id") or "")
+    user_name = str(user.get("name") or "")
+    customers_task = db.customers.find(
+        {"$or": [{"sales_id": user_id}, {"sales_name": user_name}]},
+        {"id": 1, "name": 1},
+    ).sort("name", 1).to_list(1000)
+    products_task = db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
+    users_task = db.users.find({"id": user_id}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+    customers, products, users = await asyncio.gather(customers_task, products_task, users_task)
     return {"customers": customers, "products": products, "users": users}
 
 
