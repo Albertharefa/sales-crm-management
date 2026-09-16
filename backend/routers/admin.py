@@ -131,8 +131,6 @@ async def sales_team(search: str = Query(""), sales_id: str = Query(""), status:
     current_year = year or datetime.now(timezone.utc).year
     current_date = datetime.now(timezone.utc).date().isoformat()
 
-    # The old implementation performed four sequential MongoDB round-trips per user.
-    # Run each user's independent metric queries concurrently, then restore manager labels.
     metrics = await asyncio.gather(*[_sales_team_metric(person, current_year, current_date) for person in users])
     result = []
     for metric in metrics:
@@ -146,22 +144,31 @@ async def sales_team(search: str = Query(""), sales_id: str = Query(""), status:
 @router.get("/options", response_model=OptionsResponse)
 async def options(user: dict = Depends(current_user)):
     role = str(user.get("role") or "").strip().upper()
+
+    # Resolve sales visibility once. The previous implementation called
+    # visible_sales_ids() twice for non-admin users, adding an unnecessary DB round-trip.
     visible_ids = await visible_sales_ids(user)
-    visible_names = await visible_sales_names(user)
+    visible_names = []
 
     if role == "SUPER_ADMIN":
-        customers = await db.customers.find({}, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
+        customer_filter = {}
     else:
-        customers = await db.customers.find(
-            {"$or": [
-                {"sales_id": {"$in": visible_ids}},
-                {"sales_name": {"$in": visible_names}},
-            ]},
-            {"id": 1, "name": 1},
-        ).sort("name", 1).to_list(1000)
+        # Resolve names in parallel with the customer/product queries below.
+        sales_docs_task = db.users.find({"id": {"$in": visible_ids}}, {"_id": 0, "name": 1}).to_list(1000)
+        customer_filter = {"$or": [{"sales_id": {"$in": visible_ids}}]}
+        sales_docs = await sales_docs_task
+        visible_names = [str(item["name"]) for item in sales_docs if item.get("name")]
+        customer_filter = {"$or": [{"sales_id": {"$in": visible_ids}}, {"sales_name": {"$in": visible_names}}]}
 
-    products = await db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
-    users = await db.users.find({}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100) if role == "SUPER_ADMIN" else await db.users.find({"id": {"$in": await manager_user_ids(user)}}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+    customers_task = db.customers.find(customer_filter, {"id": 1, "name": 1}).sort("name", 1).to_list(1000)
+    products_task = db.products.find({}, {"id": 1, "name": 1, "default_price": 1}).sort("name", 1).to_list(1000)
+
+    if role == "SUPER_ADMIN":
+        users_task = db.users.find({}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+    else:
+        users_task = db.users.find({"id": {"$in": await manager_user_ids(user)}}, {"id": 1, "user_id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(100)
+
+    customers, products, users = await asyncio.gather(customers_task, products_task, users_task)
     return {"customers": customers, "products": products, "users": users}
 
 
@@ -180,7 +187,7 @@ async def export_csv(module: str, user: dict = Depends(current_user)):
     if module in {"pipeline", "activities", "quotations", "purchase-orders"}:
         filters = {"sales_id": {"$in": visible_ids}}
     elif module == "customers" and role != "SUPER_ADMIN":
-        filters = {"$or": [{"sales_id": {"$in": visible_ids}}, {"sales_name": {"$in": await visible_sales_names(user)}}]}
+        filters = {"$or": [{"sales_id": {"$in": visible_ids}}, {"sales_name": {"$in": await visible_sales_names(user)}]}
     elif module == "sales-team":
         filters = {"id": {"$in": await manager_user_ids(user) if role == "SALES_MANAGER" else visible_ids}}
     docs = await db[collection].find(filters, {"_id": 0, "password_hash": 0, "content": 0}).limit(5000).to_list(5000)
