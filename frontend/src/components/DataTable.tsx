@@ -3,6 +3,23 @@ import PaginationControls from "@/components/PaginationControls";
 
 export interface Column<T> { key: string; label: string; render: (item: T) => React.ReactNode }
 
+function TableSkeleton({ columns }: { columns: number }) {
+  return (
+    <>
+      {Array.from({ length: 5 }).map((_, row) => (
+        <tr key={row} className="animate-pulse">
+          <td className="px-3 py-2.5"><div className="h-3 w-6 rounded bg-slate-200" /></td>
+          {Array.from({ length: columns }).map((__, col) => (
+            <td key={col} className="px-3 py-2.5">
+              <div className={`h-3 rounded bg-slate-200 ${col === 0 ? "w-32" : "w-20"}`} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
 export default function DataTable<T extends { id: string }>({
   columns,
   items,
@@ -38,11 +55,11 @@ export default function DataTable<T extends { id: string }>({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {loading ? (
-              <tr><td colSpan={columns.length + 1} className="px-4 py-12 text-center text-slate-400">Memuat data...</td></tr>
+              <TableSkeleton columns={columns.length} />
             ) : items.length ? (
-              items.map(item => (
+              items.map((item, index) => (
                 <tr key={item.id} className="hover:bg-slate-50" data-testid={testId + "-row-" + item.id}>
-                  <td className="crm-data-table-no whitespace-nowrap px-3 py-2.5 text-slate-500">{(page - 1) * pageSize + items.indexOf(item) + 1}</td>
+                  <td className="crm-data-table-no whitespace-nowrap px-3 py-2.5 text-slate-500">{(page - 1) * pageSize + index + 1}</td>
                   {columns.map(column => <td key={column.key} className="crm-data-table-cell whitespace-nowrap px-3 py-2.5">{column.render(item)}</td>)}
                 </tr>
               ))
