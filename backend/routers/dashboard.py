@@ -5,11 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from routers.deps import current_user
-from services.dashboard_ultrafast import UltraFastDashboardService
+from services.dashboard_cache import CachedDashboardService
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
-service = UltraFastDashboardService()
+service = CachedDashboardService()
 logger = logging.getLogger(__name__)
+
+
+async def warm_dashboard_cache(user: dict) -> None:
+    await service.warm(user)
 
 
 @router.get("")
