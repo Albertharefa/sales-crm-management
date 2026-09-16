@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
 from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset, demo_data, integrity
-from routers.dashboard import router as dashboard_router
+from routers.dashboard import router as dashboard_router, warm_dashboard_cache
 from routers.order_monitoring import router as order_monitoring_router
 from security.permissions import has_permission, permission_policy, normalize_role
 
@@ -26,6 +26,19 @@ async def lifespan(app: FastAPI):
     await ensure_admin_user()
     from seed_demo_data import seed_demo_data
     await seed_demo_data()
+
+    # Warm the default dashboard before the first browser request. This keeps
+    # the production page responsive even when MongoDB needs a cold query.
+    try:
+        admin_user = await db.users.find_one(
+            {"role": "SUPER_ADMIN", "status": "Active"},
+            {"_id": 0},
+        )
+        if admin_user:
+            await warm_dashboard_cache(admin_user)
+    except Exception:
+        logging.exception("Dashboard cache warm-up failed; continuing startup")
+
     yield
     await close_mongo_connection()
 
@@ -93,9 +106,6 @@ async def rbac_middleware(request: Request, call_next):
             })
             return JSONResponse(status_code=403, content={"detail": "Anda tidak memiliki izin untuk tindakan ini"})
 
-        # Make the authenticated principal available to FastAPI dependencies.
-        # current_user() reuses this object, avoiding a duplicate session/user
-        # database lookup for the same request.
         request.state.crm_user = user
 
     return await call_next(request)
