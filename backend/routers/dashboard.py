@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 
 from routers.deps import current_user
-from services.dashboard_fast import FastDashboardService
+from services.dashboard_ultrafast import UltraFastDashboardService
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
-service = FastDashboardService()
+service = UltraFastDashboardService()
 logger = logging.getLogger(__name__)
 
 
@@ -22,8 +22,6 @@ async def dashboard(
 ):
     try:
         metrics = await service.get_metrics(user, period=period, sales_id=sales_id, stage=stage, customer_id=customer_id)
-        if metrics is None:
-            raise RuntimeError("FastDashboardService returned no metrics")
         payload_json = json.loads(json.dumps(metrics, default=str))
         return JSONResponse(content=payload_json)
     except HTTPException:
