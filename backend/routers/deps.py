@@ -43,12 +43,11 @@ async def current_user(crm_session: str | None = Cookie(default=None)) -> dict[s
         await db.sessions.delete_one({"token": crm_session})
         raise HTTPException(status_code=403, detail="Role pengguna tidak valid")
 
-    # Keep the session alive for active users, but never beyond the fixed TTL
-    # unless the login endpoint creates a fresh session.
-    await db.sessions.update_one(
-        {"token": crm_session},
-        {"$set": {"last_seen_at": now}},
-    )
+    # Do not write to MongoDB on every authenticated API request.
+    # The previous last_seen_at update added a database write to every request,
+    # which materially increased latency across the whole CRM. last_seen_at is
+    # already written when the user logs in, so session validity remains based
+    # on the fixed expires_at TTL without requiring a per-request write.
     return user
 
 
