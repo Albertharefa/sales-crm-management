@@ -93,6 +93,11 @@ async def rbac_middleware(request: Request, call_next):
             })
             return JSONResponse(status_code=403, content={"detail": "Anda tidak memiliki izin untuk tindakan ini"})
 
+        # Make the authenticated principal available to FastAPI dependencies.
+        # current_user() reuses this object, avoiding a duplicate session/user
+        # database lookup for the same request.
+        request.state.crm_user = user
+
     return await call_next(request)
 
 
