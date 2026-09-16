@@ -101,7 +101,7 @@ async def ensure_opportunity_access(doc: dict, user: dict) -> None:
 @router.get("", response_model=Paginated)
 async def list_opportunities(
     page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
+    page_size: int = Query(25, ge=1, le=5000),
     search: str = "",
     stage: str | None = None,
     sales_id: str | None = None,
