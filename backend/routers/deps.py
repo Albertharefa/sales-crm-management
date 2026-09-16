@@ -1,14 +1,24 @@
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import Cookie, Depends, HTTPException
+from fastapi import Cookie, Depends, HTTPException, Request
 from lib.db import db
 from security.permissions import ROLES, has_permission
 
 SESSION_TTL_SECONDS = 60 * 60 * 8
 
 
-async def current_user(crm_session: str | None = Cookie(default=None)) -> dict[str, Any]:
+async def current_user(
+    request: Request,
+    crm_session: str | None = Cookie(default=None),
+) -> dict[str, Any]:
+    # Reuse the authenticated user loaded by the RBAC middleware. This avoids
+    # a second MongoDB session lookup and user lookup on every protected API
+    # request.
+    middleware_user = getattr(request.state, "crm_user", None)
+    if middleware_user:
+        return middleware_user
+
     if not crm_session:
         raise HTTPException(status_code=401, detail="Sesi tidak ditemukan")
 
@@ -43,11 +53,6 @@ async def current_user(crm_session: str | None = Cookie(default=None)) -> dict[s
         await db.sessions.delete_one({"token": crm_session})
         raise HTTPException(status_code=403, detail="Role pengguna tidak valid")
 
-    # Do not write to MongoDB on every authenticated API request.
-    # The previous last_seen_at update added a database write to every request,
-    # which materially increased latency across the whole CRM. last_seen_at is
-    # already written when the user logs in, so session validity remains based
-    # on the fixed expires_at TTL without requiring a per-request write.
     return user
 
 
