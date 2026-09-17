@@ -47,8 +47,7 @@ class ChangePasswordRequest(BaseModel):
     confirm_password: str = Field(min_length=8, max_length=128)
 
 
-@router.post("/change-password")
-async def change_password(payload: ChangePasswordRequest, response: Response, user: dict = Depends(current_user)):
+async def _change_password(payload: ChangePasswordRequest, response: Response, user: dict):
     if payload.new_password != payload.confirm_password:
         raise HTTPException(status_code=400, detail="Konfirmasi password baru tidak cocok.")
     if payload.current_password == payload.new_password:
@@ -82,6 +81,17 @@ async def change_password(payload: ChangePasswordRequest, response: Response, us
     response.delete_cookie(key="crm_session", path="/")
     await _audit_auth(user, "Change Password", user["id"])
     return {"message": "Password berhasil diubah. Silakan login kembali dengan password baru."}
+
+
+@router.post("/change-password")
+async def change_password(payload: ChangePasswordRequest, response: Response, user: dict = Depends(current_user)):
+    return await _change_password(payload, response, user)
+
+
+# Backward-compatible alias used by the Settings client.
+@router.post("/auth/change-password")
+async def change_password_auth_alias(payload: ChangePasswordRequest, response: Response, user: dict = Depends(current_user)):
+    return await _change_password(payload, response, user)
 
 
 @router.post("/login", response_model=UserPublic)
