@@ -26,8 +26,13 @@ export default function DataTable<T extends { id: string }>({
   return (
     <div className="crm-data-table-card flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-testid={testId}>
       <div
-        className="crm-data-table-viewport min-h-[180px] max-h-[calc(100svh-22rem)] min-w-0 flex-1 overflow-auto overscroll-contain"
-        style={{ scrollbarGutter: "stable both-edges", WebkitOverflowScrolling: "touch" }}
+        className="crm-data-table-viewport min-w-0 overflow-auto overscroll-contain"
+        style={{
+          height: "clamp(240px, calc(100svh - 380px), 520px)",
+          maxHeight: "calc(100svh - 380px)",
+          scrollbarGutter: "stable both-edges",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
         <table className="crm-data-table min-w-full table-auto text-left text-sm">
           <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
