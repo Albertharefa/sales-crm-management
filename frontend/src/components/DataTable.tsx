@@ -24,10 +24,13 @@ export default function DataTable<T extends { id: string }>({
   total?: number; page?: number; pageSize?: number; onPage?: (page: number) => void; onPageSize?: (pageSize: number) => void;
 }) {
   return (
-    <div className="crm-data-table-card overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-testid={testId}>
-      <div className="crm-data-table-viewport overflow-auto">
+    <div className="crm-data-table-card flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-testid={testId}>
+      <div
+        className="crm-data-table-viewport min-h-[180px] max-h-[calc(100svh-22rem)] min-w-0 flex-1 overflow-auto overscroll-contain"
+        style={{ scrollbarGutter: "stable both-edges", WebkitOverflowScrolling: "touch" }}
+      >
         <table className="crm-data-table min-w-full table-auto text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
+          <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
             <tr>
               <th className="crm-data-table-no whitespace-nowrap px-3 py-2.5 font-semibold">No</th>
               {columns.map(column => <th key={column.key} className="whitespace-nowrap px-3 py-2.5 font-semibold">{column.label}</th>)}
