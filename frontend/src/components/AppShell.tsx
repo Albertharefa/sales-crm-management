@@ -54,6 +54,24 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [navigate, queryClient, sessionError]);
 
+  useEffect(() => {
+    if (location.pathname !== "/" || !user?.name) return;
+
+    const syncDashboardWelcome = () => {
+      const expected = `Selamat Datang, ${user.name}!`;
+      document.querySelectorAll<HTMLElement>("h1, h2, div, p, span").forEach((element) => {
+        if (element.childNodes.length === 1 && element.textContent?.trim() === "Selamat Datang, Albert!") {
+          element.textContent = expected;
+        }
+      });
+    };
+
+    syncDashboardWelcome();
+    const observer = new MutationObserver(syncDashboardWelcome);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [location.pathname, user?.name]);
+
   if (sessionLoading) return <div className="flex min-h-svh items-center justify-center bg-slate-50" data-testid="session-loading"><div className="text-center"><div className="mx-auto size-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm text-slate-500">Memverifikasi sesi CRM...</p></div></div>;
   if (sessionFailed) {
     if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) return <Navigate to="/login" replace />;
