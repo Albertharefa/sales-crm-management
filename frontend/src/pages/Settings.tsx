@@ -13,6 +13,15 @@ import { CheckCircle2, Database, DatabaseZap, Eye, EyeOff, Gauge, KeyRound, Lock
 
 type SessionInfo = { authenticated: boolean; role: string; permissions: string[]; session_ttl_seconds: number };
 type DemoResult = { success: boolean; message: string; counts?: Record<string, number>; deleted?: Record<string, number> };
+type PasswordFieldProps = {
+  label: string;
+  value: string;
+  field: "current_password" | "new_password" | "confirm_password";
+  visible: boolean;
+  setVisible: (value: boolean) => void;
+  autoComplete: string;
+  onChange: (field: PasswordFieldProps["field"], value: string) => void;
+};
 
 const matrix = [
   { module: "Dashboard", admin: "Semua data", manager: "Data team", sales: "Data sendiri" },
@@ -28,6 +37,29 @@ const matrix = [
   { module: "Products", admin: "Kelola penuh", manager: "Lihat", sales: "Lihat" },
   { module: "Audit Log", admin: "Lihat penuh", manager: "Lihat team", sales: "Tidak ada akses" },
 ];
+
+function PasswordField({ label, value, field, visible, setVisible, autoComplete, onChange }: PasswordFieldProps) {
+  return (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-slate-700">{label}</label>
+      <div className="relative">
+        <input
+          type={visible ? "text" : "password"}
+          value={value}
+          autoComplete={autoComplete}
+          onChange={(event) => onChange(field, event.target.value)}
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 pr-11 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          minLength={field === "current_password" ? 1 : 8}
+          required
+          data-testid={`settings-${field}`}
+        />
+        <button type="button" onClick={() => setVisible(!visible)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-800" aria-label={visible ? "Sembunyikan password" : "Lihat password"}>
+          {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Settings() {
   const { data: user } = useCurrentUser();
@@ -57,6 +89,10 @@ export default function Settings() {
   ];
   const ttlHours = Math.round((session?.session_ttl_seconds ?? 28800) / 3600);
   const isAdmin = String(user?.role ?? "").toUpperCase() === "SUPER_ADMIN";
+
+  const handlePasswordFieldChange = (field: PasswordFieldProps["field"], value: string) => {
+    setPasswordForm((current) => ({ ...current, [field]: value }));
+  };
 
   const changePassword = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -107,27 +143,6 @@ export default function Settings() {
     }
   };
 
-  const PasswordField = ({ label, value, field, visible, setVisible, autoComplete }: { label: string; value: string; field: "current_password" | "new_password" | "confirm_password"; visible: boolean; setVisible: (value: boolean) => void; autoComplete: string }) => (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-slate-700">{label}</label>
-      <div className="relative">
-        <input
-          type={visible ? "text" : "password"}
-          value={value}
-          autoComplete={autoComplete}
-          onChange={(event) => setPasswordForm((current) => ({ ...current, [field]: event.target.value }))}
-          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 pr-11 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-          minLength={field === "current_password" ? 1 : 8}
-          required
-          data-testid={`settings-${field}`}
-        />
-        <button type="button" onClick={() => setVisible(!visible)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-800" aria-label={visible ? "Sembunyikan password" : "Lihat password"}>
-          {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-        </button>
-      </div>
-    </div>
-  );
-
   return <div data-testid="settings-page">
     <PageHeader title="Pengaturan Sistem" description={isAdmin ? "Profil, keamanan akun, matriks role & permission, dan strategi performa CRM" : "Profil dan keamanan akun CRM"} />
     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
@@ -145,9 +160,9 @@ export default function Settings() {
           </div>
           <form className="mt-6" onSubmit={changePassword}>
             <div className="grid gap-4 md:grid-cols-3">
-              <PasswordField label="Password saat ini" value={passwordForm.current_password} field="current_password" visible={showCurrent} setVisible={setShowCurrent} autoComplete="current-password" />
-              <PasswordField label="Password baru" value={passwordForm.new_password} field="new_password" visible={showNew} setVisible={setShowNew} autoComplete="new-password" />
-              <PasswordField label="Konfirmasi password baru" value={passwordForm.confirm_password} field="confirm_password" visible={showConfirm} setVisible={setShowConfirm} autoComplete="new-password" />
+              <PasswordField label="Password saat ini" value={passwordForm.current_password} field="current_password" visible={showCurrent} setVisible={setShowCurrent} autoComplete="current-password" onChange={handlePasswordFieldChange} />
+              <PasswordField label="Password baru" value={passwordForm.new_password} field="new_password" visible={showNew} setVisible={setShowNew} autoComplete="new-password" onChange={handlePasswordFieldChange} />
+              <PasswordField label="Konfirmasi password baru" value={passwordForm.confirm_password} field="confirm_password" visible={showConfirm} setVisible={setShowConfirm} autoComplete="new-password" onChange={handlePasswordFieldChange} />
             </div>
             <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-xs text-slate-500">Minimal 8 karakter, mengandung huruf dan angka. Setelah berhasil, Anda akan diminta login kembali.</p>
