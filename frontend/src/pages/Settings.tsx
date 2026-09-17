@@ -129,7 +129,7 @@ export default function Settings() {
   );
 
   return <div data-testid="settings-page">
-    <PageHeader title="Pengaturan Sistem" description="Profil, keamanan akun, matriks role & permission, dan strategi performa CRM" />
+    <PageHeader title="Pengaturan Sistem" description={isAdmin ? "Profil, keamanan akun, matriks role & permission, dan strategi performa CRM" : "Profil dan keamanan akun CRM"} />
     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
       <Card className="border-slate-200"><CardContent className="p-6">
         <div className="text-[10px] font-semibold tracking-wider text-slate-400">PROFIL SAYA</div>
@@ -176,7 +176,7 @@ export default function Settings() {
           <div className="mt-4 grid gap-2 text-xs text-slate-500 sm:grid-cols-3"><div>10 Users · 10 Customers · 10 Products</div><div>10 Targets · 10 Opportunities · 10 Activities</div><div>10 Quotations · 10 PO · 10 Tasks</div></div>
         </CardContent></Card>}
 
-        <Card className="border-slate-200"><CardContent className="p-6">
+        {isAdmin && <Card className="border-slate-200"><CardContent className="p-6">
           <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-heading text-xl font-semibold">Matriks Role & Permission</h2><p className="mt-1 text-sm text-slate-500">Akses mengikuti role dan scope data. Enforcement dilakukan di backend.</p></div><Badge variant="outline">RBAC aktif</Badge></div>
           <div className="mt-5 overflow-x-auto">
             <table className="w-full min-w-[900px] table-auto text-left text-sm">
@@ -206,11 +206,11 @@ export default function Settings() {
               </tbody>
             </table>
           </div>
-        </CardContent></Card>
+        </CardContent></Card>}
 
-        <div className="grid gap-4 md:grid-cols-2">
+        {isAdmin && <div className="grid gap-4 md:grid-cols-2">
           {strategies.map(({ icon: Icon, title, text }) => <Card key={title} className="border-slate-200"><CardContent className="p-5"><Icon className="size-5 text-blue-600" /><h3 className="mt-4 font-heading font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-slate-500">{text}</p></CardContent></Card>)}
-        </div>
+        </div>}
       </div>
     </div>
   </div>;
