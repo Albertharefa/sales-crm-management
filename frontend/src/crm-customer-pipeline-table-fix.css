@@ -1,0 +1,43 @@
+/* Customer + Sales Pipeline table viewport
+   Keep pagination outside the scroll area while rows scroll inside a fixed viewport. */
+
+[data-testid="customers-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto,
+[data-testid="pipeline-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto {
+  height: min(52vh, 520px);
+  min-height: 240px;
+  max-height: 520px;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-testid="customers-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto > table > thead,
+[data-testid="pipeline-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto > table > thead {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+[data-testid="customers-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto > table,
+[data-testid="pipeline-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto > table {
+  min-width: max-content;
+}
+
+@media (max-height: 760px) {
+  [data-testid="customers-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto,
+  [data-testid="pipeline-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto {
+    height: 44vh;
+    min-height: 220px;
+  }
+}
+
+@media print {
+  [data-testid="customers-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto,
+  [data-testid="pipeline-page"] > div.overflow-hidden.rounded-xl.border.bg-white.shadow-sm > div.overflow-x-auto {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+}
