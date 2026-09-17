@@ -41,3 +41,47 @@
     overflow: visible;
   }
 }
+
+/* Compact KPI cards for Sales Pipeline and Aktivitas Sales.
+   Keep the label and value on one horizontal line to reduce vertical space. */
+[data-testid="pipeline-page"] .crm-summary-grid > * > *,
+[data-testid="activities-page"] .crm-summary-grid > * > * {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-height: 58px !important;
+  padding: 12px 14px !important;
+  box-sizing: border-box !important;
+}
+
+[data-testid="pipeline-page"] .crm-summary-grid > * > * > div:first-child,
+[data-testid="activities-page"] .crm-summary-grid > * > * > div:first-child {
+  min-width: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+[data-testid="pipeline-page"] .crm-summary-grid > * > * > div:last-child,
+[data-testid="activities-page"] .crm-summary-grid > * > * > div:last-child {
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  line-height: 1 !important;
+  font-size: 20px !important;
+}
+
+@media (max-width: 640px) {
+  [data-testid="pipeline-page"] .crm-summary-grid,
+  [data-testid="activities-page"] .crm-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  [data-testid="pipeline-page"] .crm-summary-grid > * > *,
+  [data-testid="activities-page"] .crm-summary-grid > * > * {
+    min-height: 54px !important;
+    padding: 10px 12px !important;
+  }
+}
