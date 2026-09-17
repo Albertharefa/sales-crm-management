@@ -59,11 +59,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     const syncDashboardWelcome = () => {
       const expected = `Selamat Datang, ${user.name}!`;
-      document.querySelectorAll<HTMLElement>("h1, h2, div, p, span").forEach((element) => {
-        if (element.childNodes.length === 1 && element.textContent?.trim() === "Selamat Datang, Albert!") {
-          element.textContent = expected;
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const welcomePattern = /^Selamat Datang,\s*[^!]+!$/;
+      let node = walker.nextNode();
+      while (node) {
+        const text = node.textContent?.trim() ?? "";
+        if (welcomePattern.test(text) && text !== expected) {
+          node.textContent = expected;
         }
-      });
+        node = walker.nextNode();
+      }
     };
 
     syncDashboardWelcome();
