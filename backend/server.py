@@ -143,6 +143,14 @@ if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
 
 
+@app.get("/wellracom-crm-logo.svg", include_in_schema=False)
+async def frontend_logo():
+    logo = FRONTEND_DIST / "wellracom-crm-logo.svg"
+    if logo.exists():
+        return FileResponse(logo, media_type="image/svg+xml")
+    return JSONResponse({"detail": "Logo tidak ditemukan"}, status_code=404)
+
+
 @app.get("/", include_in_schema=False)
 async def frontend_root():
     index = FRONTEND_DIST / "index.html"
