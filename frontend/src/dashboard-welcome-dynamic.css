@@ -1,0 +1,12 @@
+/* Dashboard welcome must follow the authenticated user's session name. */
+@media (min-width: 1024px) {
+  [data-testid="dashboard-page"] > div:first-child h1::after {
+    content: var(--dashboard-welcome, "") !important;
+  }
+}
+
+@media (max-width: 767px) {
+  [data-testid="dashboard-page"] > div:first-child h1::after {
+    content: var(--dashboard-welcome, "") !important;
+  }
+}
