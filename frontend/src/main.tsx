@@ -16,6 +16,7 @@ import './pipeline-premium.css'
 import './pipeline-analytics.css'
 import './pipeline-analytics-enhancer'
 import './crm-customer-pipeline-table-fix.css'
+import './settings-matrix-polish.css'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
