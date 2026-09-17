@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/components/AppShell";
 import PageHeader from "@/components/PageHeader";
+import AccountPasswordMatrix from "@/components/AccountPasswordMatrix";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,6 +166,8 @@ export default function Settings() {
             <Button asChild><Link to="/users"><Users className="mr-2 size-4" />Kelola Semua Akun</Link></Button>
           </div>
         </CardContent></Card>}
+
+        {isAdmin && <AccountPasswordMatrix />}
 
         {isAdmin && <Card className="border-amber-200 bg-amber-50/30"><CardContent className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
