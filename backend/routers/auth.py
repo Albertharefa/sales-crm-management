@@ -1,12 +1,15 @@
 import os
 import secrets
+import re
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response
 from passlib.context import CryptContext
+from pydantic import BaseModel, Field
 
 from lib.db import db
 from models.crm import LoginRequest, UserPublic
+from routers.common import audit
 from routers.deps import current_user
 from security.permissions import ROLES, permissions_for_role
 
@@ -36,6 +39,49 @@ async def _audit_auth(user: dict | None, action: str, record_id: str | None = No
         "details": details or {},
         "created_at": datetime.now(timezone.utc),
     })
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+    confirm_password: str = Field(min_length=8, max_length=128)
+
+
+@router.post("/change-password")
+async def change_password(payload: ChangePasswordRequest, response: Response, user: dict = Depends(current_user)):
+    if payload.new_password != payload.confirm_password:
+        raise HTTPException(status_code=400, detail="Konfirmasi password baru tidak cocok.")
+    if payload.current_password == payload.new_password:
+        raise HTTPException(status_code=400, detail="Password baru harus berbeda dari password saat ini.")
+    if not re.search(r"[A-Za-z]", payload.new_password) or not re.search(r"\d", payload.new_password):
+        raise HTTPException(status_code=400, detail="Password baru minimal 8 karakter dan harus mengandung huruf serta angka.")
+
+    target = await db.users.find_one({"id": user["id"]})
+    if not target or not target.get("password_hash"):
+        raise HTTPException(status_code=400, detail="Password saat ini tidak dapat diverifikasi.")
+
+    try:
+        current_valid = pwd_context.verify(payload.current_password, target["password_hash"])
+    except Exception:
+        current_valid = False
+    if not current_valid:
+        raise HTTPException(status_code=400, detail="Password saat ini salah.")
+
+    await db.users.update_one(
+        {"id": user["id"]},
+        {
+            "$set": {
+                "password_hash": pwd_context.hash(payload.new_password),
+                "failed_login_attempts": 0,
+                "locked_until": None,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+    await db.sessions.delete_many({"user_id": user["id"]})
+    response.delete_cookie(key="crm_session", path="/")
+    await _audit_auth(user, "Change Password", user["id"])
+    return {"message": "Password berhasil diubah. Silakan login kembali dengan password baru."}
 
 
 @router.post("/login", response_model=UserPublic)
