@@ -57,28 +57,25 @@ export default function AccountPasswordMatrix() {
               Setiap user dapat mengganti password sendiri melalui Keamanan Akun. Hanya SUPER ADMIN yang dapat mereset password user lain.
             </p>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => void usersQuery.refetch()}
-            disabled={usersQuery.isFetching}
-            data-testid="password-reset-matrix-refresh"
-          >
-            <RefreshCw className={`mr-2 size-4 ${usersQuery.isFetching ? "animate-spin" : ""}`} />
-            Refresh
+          <Button type="button" variant="outline" onClick={() => void usersQuery.refetch()} disabled={usersQuery.isFetching} data-testid="password-reset-matrix-refresh">
+            <RefreshCw className={`mr-2 size-4 ${usersQuery.isFetching ? "animate-spin" : ""}`} />Refresh
           </Button>
         </div>
 
         <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200">
-          <table className="w-full min-w-[760px] text-left text-sm" data-testid="password-reset-matrix-table">
+          <table className="w-full min-w-[900px] table-auto text-left text-sm" data-testid="password-reset-matrix-table">
+            <colgroup>
+              <col className="w-[150px]" /><col className="w-[190px]" /><col className="w-[310px]" />
+              <col className="w-[180px]" /><col className="w-[130px]" /><col className="w-[170px]" />
+            </colgroup>
             <thead className="border-b border-slate-200 bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
               <tr>
-                <th className="px-4 py-3">User ID</th>
-                <th className="px-4 py-3">Nama</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Reset Password</th>
+                <th className="w-[150px] min-w-[150px] px-4 py-3 text-left whitespace-nowrap">User ID</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap">Nama</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap">Email</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap">Role</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap">Status</th>
+                <th className="px-4 py-3 text-left whitespace-nowrap">Reset Password</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -86,43 +83,27 @@ export default function AccountPasswordMatrix() {
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Memuat daftar user...</td></tr>
               ) : users.length === 0 ? (
                 <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Belum ada user.</td></tr>
-              ) : (
-                users.map((target) => (
-                  <tr key={target.id}>
-                    <td className="px-4 py-3 font-mono text-xs text-blue-600">{target.user_id}</td>
-                    <td className="px-4 py-3 font-medium text-slate-800">{target.name}</td>
-                    <td className="px-4 py-3 text-slate-600">{target.email}</td>
-                    <td className="px-4 py-3"><Badge variant="outline">{target.role}</Badge></td>
-                    <td className="px-4 py-3"><Badge variant="outline">{target.status}</Badge></td>
-                    <td className="px-4 py-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => void resetPassword(target)}
-                        disabled={busyUserId !== null}
-                        data-testid={`settings-reset-password-${target.id}`}
-                      >
-                        <KeyRound className="mr-2 size-4" />
-                        {busyUserId === target.id ? "Memproses..." : "Reset"}
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ) : users.map((target) => (
+                <tr key={target.id}>
+                  <td className="w-[150px] min-w-[150px] px-4 py-3 text-left font-mono text-xs text-blue-600 whitespace-nowrap">{target.user_id}</td>
+                  <td className="px-4 py-3 text-left font-medium text-slate-800 whitespace-nowrap">{target.name}</td>
+                  <td className="px-4 py-3 text-left text-slate-600 whitespace-nowrap">{target.email}</td>
+                  <td className="px-4 py-3 text-left whitespace-nowrap"><Badge variant="outline">{target.role}</Badge></td>
+                  <td className="px-4 py-3 text-left whitespace-nowrap"><Badge variant="outline">{target.status}</Badge></td>
+                  <td className="px-4 py-3 text-left whitespace-nowrap">
+                    <Button type="button" variant="outline" size="sm" onClick={() => void resetPassword(target)} disabled={busyUserId !== null} data-testid={`settings-reset-password-${target.id}`}>
+                      <KeyRound className="mr-2 size-4" />{busyUserId === target.id ? "Memproses..." : "Reset"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
         <div className="mt-4 grid gap-3 text-xs text-slate-500 md:grid-cols-2">
-          <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
-            <strong className="text-emerald-800">User sendiri</strong><br />
-            Ganti password melalui form Keamanan Akun dengan password saat ini.
-          </div>
-          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3">
-            <strong className="text-blue-800">SUPER ADMIN</strong><br />
-            Dapat mereset password seluruh user. Reset membatalkan semua sesi user tersebut.
-          </div>
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50/60 p-3"><strong className="text-emerald-800">User sendiri</strong><br />Ganti password melalui form Keamanan Akun dengan password saat ini.</div>
+          <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3"><strong className="text-blue-800">SUPER ADMIN</strong><br />Dapat mereset password seluruh user. Reset membatalkan semua sesi user tersebut.</div>
         </div>
       </CardContent>
     </Card>
