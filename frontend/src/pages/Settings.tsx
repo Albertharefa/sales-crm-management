@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/components/AppShell";
@@ -7,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
-import { CheckCircle2, Database, DatabaseZap, Gauge, KeyRound, LockKeyhole, ShieldCheck, Trash2 } from "lucide-react";
+import { CheckCircle2, Database, DatabaseZap, Eye, EyeOff, Gauge, KeyRound, LockKeyhole, ShieldCheck, Trash2, Users } from "lucide-react";
+
 
 type SessionInfo = { authenticated: boolean; role: string; permissions: string[]; session_ttl_seconds: number };
 type DemoResult = { success: boolean; message: string; counts?: Record<string, number>; deleted?: Record<string, number> };
@@ -29,7 +31,14 @@ const matrix = [
 
 export default function Settings() {
   const { data: user } = useCurrentUser();
+  const navigate = useNavigate();
   const [demoBusy, setDemoBusy] = useState(false);
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "", confirm_password: "" });
+
   const { data: session } = useQuery({ queryKey: ["session-info"], queryFn: () => apiGet<SessionInfo>("/session-info"), staleTime: 60_000, retry: false });
   const profile: { label: string; value: string }[] = [
     { label: "USER ID", value: user?.user_id ?? "—" },
@@ -48,6 +57,29 @@ export default function Settings() {
   ];
   const ttlHours = Math.round((session?.session_ttl_seconds ?? 28800) / 3600);
   const isAdmin = String(user?.role ?? "").toUpperCase() === "SUPER_ADMIN";
+
+  const changePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      toast.error("Konfirmasi password baru tidak cocok.");
+      return;
+    }
+    if (passwordForm.new_password.length < 8 || !/[A-Za-z]/.test(passwordForm.new_password) || !/\d/.test(passwordForm.new_password)) {
+      toast.error("Password baru minimal 8 karakter dan harus mengandung huruf serta angka.");
+      return;
+    }
+    setPasswordBusy(true);
+    try {
+      await apiPost<{ message: string }>("/auth/change-password", passwordForm);
+      toast.success("Password berhasil diubah", { description: "Silakan login kembali dengan password baru." });
+      setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
+      window.setTimeout(() => navigate("/login", { replace: true }), 700);
+    } catch (error: any) {
+      toast.error("Ganti password gagal", { description: error?.response?.data?.detail ?? "Silakan periksa password saat ini." });
+    } finally {
+      setPasswordBusy(false);
+    }
+  };
 
   const generateDummy = async () => {
     if (!window.confirm("Generate Dummy akan membuat 10 record untuk setiap entity testing. Lanjutkan?")) return;
@@ -75,8 +107,29 @@ export default function Settings() {
     }
   };
 
+  const PasswordField = ({ label, value, field, visible, setVisible, autoComplete }: { label: string; value: string; field: "current_password" | "new_password" | "confirm_password"; visible: boolean; setVisible: (value: boolean) => void; autoComplete: string }) => (
+    <div>
+      <label className="mb-2 block text-sm font-medium text-slate-700">{label}</label>
+      <div className="relative">
+        <input
+          type={visible ? "text" : "password"}
+          value={value}
+          autoComplete={autoComplete}
+          onChange={(event) => setPasswordForm((current) => ({ ...current, [field]: event.target.value }))}
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 pr-11 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          minLength={field === "current_password" ? 1 : 8}
+          required
+          data-testid={`settings-${field}`}
+        />
+        <button type="button" onClick={() => setVisible(!visible)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-500 hover:text-slate-800" aria-label={visible ? "Sembunyikan password" : "Lihat password"}>
+          {visible ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+        </button>
+      </div>
+    </div>
+  );
+
   return <div data-testid="settings-page">
-    <PageHeader title="Pengaturan Sistem" description="Profil, matriks role & permission, keamanan login, dan strategi performa CRM" />
+    <PageHeader title="Pengaturan Sistem" description="Profil, keamanan akun, matriks role & permission, dan strategi performa CRM" />
     <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
       <Card className="border-slate-200"><CardContent className="p-6">
         <div className="text-[10px] font-semibold tracking-wider text-slate-400">PROFIL SAYA</div>
@@ -85,6 +138,34 @@ export default function Settings() {
         <div className="mt-6 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4"><div className="flex items-center gap-2 text-sm font-semibold text-emerald-800"><ShieldCheck className="size-4" />Session aktif</div><p className="mt-1 text-xs leading-relaxed text-emerald-700">Role: {session?.role ?? user?.role ?? "—"} · TTL maksimum {ttlHours} jam.</p></div>
       </CardContent></Card>
       <div className="space-y-6">
+        <Card className="border-slate-200" data-testid="password-security-card"><CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"><KeyRound className="size-5" /></div>
+            <div><h2 className="font-heading text-xl font-semibold">Keamanan Akun</h2><p className="mt-1 text-sm text-slate-500">Ganti password akun Anda kapan saja tanpa bantuan administrator.</p></div>
+          </div>
+          <form className="mt-6" onSubmit={changePassword}>
+            <div className="grid gap-4 md:grid-cols-3">
+              <PasswordField label="Password saat ini" value={passwordForm.current_password} field="current_password" visible={showCurrent} setVisible={setShowCurrent} autoComplete="current-password" />
+              <PasswordField label="Password baru" value={passwordForm.new_password} field="new_password" visible={showNew} setVisible={setShowNew} autoComplete="new-password" />
+              <PasswordField label="Konfirmasi password baru" value={passwordForm.confirm_password} field="confirm_password" visible={showConfirm} setVisible={setShowConfirm} autoComplete="new-password" />
+            </div>
+            <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-slate-500">Minimal 8 karakter, mengandung huruf dan angka. Setelah berhasil, Anda akan diminta login kembali.</p>
+              <Button type="submit" disabled={passwordBusy} data-testid="change-password-button"><KeyRound className="mr-2 size-4" />{passwordBusy ? "Memproses..." : "Ganti Password"}</Button>
+            </div>
+          </form>
+        </CardContent></Card>
+
+        {isAdmin && <Card className="border-blue-200 bg-blue-50/30"><CardContent className="p-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2"><Users className="size-5 text-blue-600" /><h2 className="font-heading text-xl font-semibold">Administrasi Akun Login</h2><Badge variant="outline">SUPER ADMIN</Badge></div>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">Super Admin dapat membuat akun <strong>SUPER_ADMIN, SALES_MANAGER, dan SALES</strong>, mengubah data user, serta mereset password user lain.</p>
+            </div>
+            <Button asChild><Link to="/users"><Users className="mr-2 size-4" />Kelola Semua Akun</Link></Button>
+          </div>
+        </CardContent></Card>}
+
         {isAdmin && <Card className="border-amber-200 bg-amber-50/30"><CardContent className="p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div><div className="flex items-center gap-2"><DatabaseZap className="size-5 text-amber-600" /><h2 className="font-heading text-xl font-semibold">Dummy Data Testing</h2><Badge variant="outline">SUPER ADMIN</Badge></div><p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-600">Gunakan untuk menguji alur CRM end-to-end. Data yang dibuat ditandai <code className="rounded bg-white px-1.5 py-0.5 text-xs">is_demo=true</code> dan tidak mengganggu data production.</p></div>
