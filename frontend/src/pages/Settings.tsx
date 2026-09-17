@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { apiDelete, apiGet, apiPost } from "@/lib/api";
 import { CheckCircle2, Database, DatabaseZap, Eye, EyeOff, Gauge, KeyRound, LockKeyhole, ShieldCheck, Trash2, Users } from "lucide-react";
 
-
 type SessionInfo = { authenticated: boolean; role: string; permissions: string[]; session_ttl_seconds: number };
 type DemoResult = { success: boolean; message: string; counts?: Record<string, number>; deleted?: Record<string, number> };
 
@@ -176,11 +175,42 @@ export default function Settings() {
           </div>
           <div className="mt-4 grid gap-2 text-xs text-slate-500 sm:grid-cols-3"><div>10 Users · 10 Customers · 10 Products</div><div>10 Targets · 10 Opportunities · 10 Activities</div><div>10 Quotations · 10 PO · 10 Tasks</div></div>
         </CardContent></Card>}
+
         <Card className="border-slate-200"><CardContent className="p-6">
           <div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-heading text-xl font-semibold">Matriks Role & Permission</h2><p className="mt-1 text-sm text-slate-500">Akses mengikuti role dan scope data. Enforcement dilakukan di backend.</p></div><Badge variant="outline">RBAC aktif</Badge></div>
-          <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500"><tr><th className="py-3">Modul</th><th>Super Admin</th><th>Sales Manager</th><th>Sales</th></tr></thead><tbody className="divide-y divide-slate-100">{matrix.map(row => <tr key={row.module}><td className="py-3 font-medium">{row.module}</td><td><Badge variant="outline">{row.admin}</Badge></td><td>{row.manager}</td><td>{row.sales}</td></tr>)}</tbody></table></div>
+          <div className="mt-5 overflow-x-auto">
+            <table className="w-full min-w-[900px] table-auto text-left text-sm">
+              <colgroup>
+                <col className="w-[220px]" />
+                <col className="w-[225px]" />
+                <col className="w-[225px]" />
+                <col className="w-[225px]" />
+              </colgroup>
+              <thead className="border-b border-slate-200 text-[10px] uppercase tracking-wider text-slate-500">
+                <tr>
+                  <th className="w-[220px] min-w-[220px] py-3 pr-6 !whitespace-nowrap !overflow-visible">Modul</th>
+                  <th className="min-w-[180px] py-3 pr-4 !whitespace-nowrap">Super Admin</th>
+                  <th className="min-w-[180px] py-3 pr-4 !whitespace-nowrap">Sales Manager</th>
+                  <th className="min-w-[150px] py-3 !whitespace-nowrap">Sales</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {matrix.map(row => (
+                  <tr key={row.module}>
+                    <td className="w-[220px] min-w-[220px] py-3 pr-6 font-medium text-slate-800 !whitespace-nowrap !overflow-visible !text-clip">{row.module}</td>
+                    <td className="py-3 pr-4 align-top"><Badge variant="outline" className="whitespace-nowrap">{row.admin}</Badge></td>
+                    <td className="py-3 pr-4 align-top whitespace-normal">{row.manager}</td>
+                    <td className="py-3 align-top whitespace-normal">{row.sales}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent></Card>
-        <div className="grid gap-4 md:grid-cols-2">{strategies.map(({ icon: Icon, title, text }) => <Card key={title} className="border-slate-200"><CardContent className="p-5"><Icon className="size-5 text-blue-600" /><h3 className="mt-4 font-heading font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-slate-500">{text}</p></CardContent></Card>)}</div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {strategies.map(({ icon: Icon, title, text }) => <Card key={title} className="border-slate-200"><CardContent className="p-5"><Icon className="size-5 text-blue-600" /><h3 className="mt-4 font-heading font-semibold">{title}</h3><p className="mt-2 text-sm leading-relaxed text-slate-500">{text}</p></CardContent></Card>)}
+        </div>
       </div>
     </div>
   </div>;
