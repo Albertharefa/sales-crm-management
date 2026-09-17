@@ -15,6 +15,7 @@ import './dashboard-cleanup.css'
 import './pipeline-premium.css'
 import './pipeline-analytics.css'
 import './pipeline-analytics-enhancer'
+import './crm-customer-pipeline-table-fix.css'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
