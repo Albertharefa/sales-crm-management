@@ -72,7 +72,21 @@ export default function OrderMonitoring() {
         <select value={salesFilter} onChange={(event) => { setSalesFilter(event.target.value); setPage(1); }} className={`${selectClass} h-10 min-w-0`}><option value="">Semua sales</option>{salesOptions.map((sales) => <option key={sales} value={sales}>{sales}</option>)}</select>
         <select value={customerFilter} onChange={(event) => { setCustomerFilter(event.target.value); setPage(1); }} className={`${selectClass} h-10 min-w-0`}><option value="">Semua customer</option>{customerOptions.map((customer) => <option key={customer.id} value={String(customer.id)}>{customer.name}</option>)}</select>
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">{stats.map((stat) => <div key={stat.label} className="rounded-lg border border-slate-200 bg-white p-4" data-testid={`order-stat-${stat.label.toLowerCase().replaceAll(" ", "-")}`}><div className="text-[10px] font-semibold tracking-wider text-slate-500">{stat.label}</div><div className="mt-2 font-mono text-2xl font-semibold">{stat.value}</div></div>)}</div>
+
+      {/* Compact KPI strip: label and value stay on one line to avoid wasting vertical space. */}
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5"
+            data-testid={`order-stat-${stat.label.toLowerCase().replaceAll(" ", "-")}`}
+          >
+            <div className="min-w-0 truncate text-[10px] font-semibold tracking-wider text-slate-500">{stat.label}</div>
+            <div className="shrink-0 font-mono text-xl font-semibold leading-none">{stat.value}</div>
+          </div>
+        ))}
+      </div>
+
       <DataTable testId="order-monitoring-table" items={items} loading={query.isLoading || summaryQuery.isLoading || customerQuery.isLoading || salesQuery.isLoading} total={query.data?.total ?? 0} page={page} pageSize={pageSize} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1); }} columns={[{ key: "id", label: "Monitoring ID", render: (item) => <span className="font-mono text-[10px] text-slate-500">{monitoringId(item)}</span> }, { key: "po", label: "Nomor PO", render: (item) => <span className="font-medium">{item.po_number}</span> }, { key: "customer", label: "Customer", render: (item) => customerName(item) }, { key: "product", label: "Produk", render: (item) => <div className="w-[420px] max-w-[420px] whitespace-normal break-words leading-5">{item.items[0]?.description ?? "—"}</div> }, { key: "qty", label: "Qty", render: (item) => `${item.items[0]?.quantity ?? 0}` }, { key: "status", label: "Status", render: (item) => <select className={`${selectClass} min-w-36`} value={item.status} onChange={(event) => update.mutate({ id: item.id, status: event.target.value })} data-testid={`order-status-${item.id}`}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select> }, { key: "supplier", label: "Supplier", render: (item) => item.supplier ?? "—" }, { key: "eta", label: "ETA", render: (item) => item.eta ?? "—" }, { key: "indicator", label: "Indikator", render: (item) => { const indicator = etaIndicator(item.eta, item.status); return <Badge variant={indicator === "Overdue" ? "destructive" : "outline"}>{indicator}</Badge>; } }, { key: "sales", label: "Sales", render: (item) => item.sales_name ?? "—" }]} />
     </div>
   );
