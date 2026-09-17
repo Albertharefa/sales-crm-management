@@ -1,0 +1,18 @@
+/* Settings matrix readability: keep the module labels left aligned and fully readable. */
+[data-testid="settings-page"] table.min-w-\[900px\] th:first-child,
+[data-testid="settings-page"] table.min-w-\[900px\] td:first-child {
+  text-align: left !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+[data-testid="settings-page"] table.min-w-\[900px\] th:first-child {
+  width: 220px !important;
+  min-width: 220px !important;
+}
+
+[data-testid="settings-page"] table.min-w-\[900px\] td:first-child {
+  width: 220px !important;
+  min-width: 220px !important;
+}
