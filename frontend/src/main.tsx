@@ -25,7 +25,7 @@ import { queryClient } from './lib/queryClient'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider clientName={undefined}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
