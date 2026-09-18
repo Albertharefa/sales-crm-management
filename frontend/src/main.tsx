@@ -23,6 +23,8 @@ import './dashboard-welcome-sync'
 import './dashboard-business-performance'
 import './customer-custom-options-sync'
 import './customer-source-column'
+import './customer-contact-card-polish.css'
+import './customer-contact-card-polish'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
