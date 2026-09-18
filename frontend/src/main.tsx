@@ -21,7 +21,6 @@ import './settings-matrix-polish.css'
 import './dashboard-welcome-dynamic.css'
 import './dashboard-welcome-sync'
 import './dashboard-business-performance'
-import './customer-source-other'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
