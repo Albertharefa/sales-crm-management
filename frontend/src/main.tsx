@@ -15,11 +15,12 @@ import './dashboard-cleanup.css'
 import './pipeline-premium.css'
 import './pipeline-analytics.css'
 import './pipeline-analytics-enhancer'
+import './pipeline-compact-override.css'
 import './crm-customer-pipeline-table-fix.css'
 import './settings-matrix-polish.css'
 import './dashboard-welcome-dynamic.css'
 import './dashboard-welcome-sync'
-import App from './App.tsx'
+App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
 createRoot(document.getElementById('root')!).render(
