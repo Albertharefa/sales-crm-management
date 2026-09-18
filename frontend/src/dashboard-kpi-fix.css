@@ -92,10 +92,23 @@
     line-height: 1 !important;
     letter-spacing: -.025em !important;
     white-space: nowrap !important;
-    border-left: 0 !important;
-    border-right: 0 !important;
+    border: 0 !important;
     outline: 0 !important;
     box-shadow: none !important;
+  }
+
+  [data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(2) * {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(2)::before,
+  [data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(2)::after,
+  [data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(2) *::before,
+  [data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(2) *::after {
+    content: none !important;
+    display: none !important;
   }
 
   [data-testid="dashboard-page"] .crm-summary-grid > * > div:nth-child(3) {
@@ -195,10 +208,23 @@
     line-height: 1 !important;
     letter-spacing: -.02em !important;
     white-space: nowrap !important;
-    border-left: 0 !important;
-    border-right: 0 !important;
+    border: 0 !important;
     outline: 0 !important;
     box-shadow: none !important;
+  }
+
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(2) * {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(2)::before,
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(2)::after,
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(2) *::before,
+  [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(2) *::after {
+    content: none !important;
+    display: none !important;
   }
 
   [data-testid="dashboard-page"] .mt-4.grid.grid-cols-2.gap-3.md\:grid-cols-4.xl\:grid-cols-7 > * > div:nth-child(3) {
