@@ -7,6 +7,7 @@ MongoDB receives the actual text rather than the placeholder `Lainnya`.
 """
 
 from typing import Any
+import uuid
 
 from fastapi import Depends, HTTPException
 
@@ -94,8 +95,13 @@ async def get_customer_contacts(customer_id: str, user: dict = Depends(current_u
     """Return contacts linked to the selected customer.
 
     Customer detail links by the canonical public customer_id. Legacy contact
-    records that still point at the customer's internal id are also accepted,
-    so existing production data remains visible.
+    records that still point at the customer's internal id are also accepted.
+
+    If a manually-created customer has PIC data stored in the Customer record
+    but no Contact record yet, create the primary Contact from those fields
+    once, then return it. This keeps the Customer -> Contact relationship
+    consistent for both demo and manually-entered customers without changing
+    existing contact records.
     """
     ref = _text(customer_id)
     if not ref:
@@ -107,18 +113,44 @@ async def get_customer_contacts(customer_id: str, user: dict = Depends(current_u
 
     await customers.ensure_customer_access(customer, user)
 
+    canonical_id = _text(customer.get("customer_id")) or _text(customer.get("id"))
+    internal_id = _text(customer.get("id"))
+    if not canonical_id:
+        return []
+
     customer_keys = []
-    for value in (customer.get("customer_id"), customer.get("id")):
-        value = _text(value)
+    for value in (canonical_id, internal_id):
         if value and value not in customer_keys:
             customer_keys.append(value)
-
-    if not customer_keys:
-        return []
 
     contacts = await db.contacts.find(
         {"customer_id": {"$in": customer_keys}},
         {"_id": 0},
     ).sort("created_at", -1).to_list(100)
+
+    # Manual Customer records can contain PIC information without a separate
+    # Contact document. Materialize that primary contact so the DB relationship
+    # is real and future screens can use the same contacts collection.
+    if not contacts and any(_text(customer.get(field)) for field in ("pic_name", "email", "phone")):
+        contact = {
+            "id": str(uuid.uuid4()),
+            "contact_id": f"CON-{canonical_id}",
+            "customer_id": canonical_id,
+            "customer_name": _text(customer.get("name")) or _text(customer.get("company_name")),
+            "first_name": _text(customer.get("pic_name")),
+            "last_name": "",
+            "position": _text(customer.get("pic_position")),
+            "department": "",
+            "email": customer.get("email"),
+            "mobile": customer.get("phone"),
+            "contact_type": "Primary",
+            "is_decision_maker": False,
+            "status": _text(customer.get("status")) or "Active",
+            "notes": "Primary contact created from Customer PIC information.",
+            "created_at": customer.get("updated_at") or customer.get("created_at"),
+        }
+        await db.contacts.insert_one(contact)
+        contact.pop("_id", None)
+        contacts = [contact]
 
     return contacts
