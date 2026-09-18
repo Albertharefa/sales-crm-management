@@ -22,6 +22,7 @@ import './dashboard-welcome-dynamic.css'
 import './dashboard-welcome-sync'
 import './dashboard-business-performance'
 import './customer-custom-options-sync'
+import './customer-source-column'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
