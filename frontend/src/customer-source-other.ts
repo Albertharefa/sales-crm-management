@@ -1,9 +1,12 @@
+import axios from "axios";
+
 const CUSTOM_SOURCE_LABEL = "Lainnya";
 const SOURCE_TEST_ID = "customer-source-input";
 const OTHER_SOURCE_INPUT_ID = "customer-source-other-input";
 
 let customSourceValue = "";
 let observerStarted = false;
+let axiosInterceptorInstalled = false;
 
 function getSourceSelect(): HTMLSelectElement | null {
   return document.querySelector<HTMLSelectElement>(
@@ -63,14 +66,23 @@ function syncOtherSourceField(): void {
   }
 }
 
-function rewriteCustomerCreateBody(body: Document | XMLHttpRequestBodyInit | null): Document | XMLHttpRequestBodyInit | null {
-  if (!customSourceValue.trim() || typeof body !== "string") return body;
+function rewriteCustomerCreateBody(body: unknown): unknown {
+  if (!customSourceValue.trim()) return body;
 
   try {
-    const payload = JSON.parse(body) as Record<string, unknown>;
-    if (payload.source === CUSTOM_SOURCE_LABEL) {
-      payload.source = customSourceValue.trim();
-      return JSON.stringify(payload);
+    if (typeof body === "string") {
+      const payload = JSON.parse(body) as Record<string, unknown>;
+      if (payload.source === CUSTOM_SOURCE_LABEL) {
+        payload.source = customSourceValue.trim();
+        return JSON.stringify(payload);
+      }
+    }
+
+    if (body && typeof body === "object" && "source" in body) {
+      const payload = body as Record<string, unknown>;
+      if (payload.source === CUSTOM_SOURCE_LABEL) {
+        payload.source = customSourceValue.trim();
+      }
     }
   } catch {
     // Leave non-JSON requests untouched.
@@ -79,7 +91,27 @@ function rewriteCustomerCreateBody(body: Document | XMLHttpRequestBodyInit | nul
   return body;
 }
 
-function installRequestGuards(): void {
+function installAxiosRequestGuard(): void {
+  if (axiosInterceptorInstalled) return;
+
+  axios.interceptors.request.use((config) => {
+    const method = String(config.method ?? "get").toUpperCase();
+    const url = String(config.url ?? "");
+
+    if (method === "POST" && /(?:^|\/)customers(?:$|\/)/.test(url)) {
+      const rewritten = rewriteCustomerCreateBody(config.data);
+      if (rewritten !== config.data) {
+        config.data = rewritten;
+      }
+    }
+
+    return config;
+  });
+
+  axiosInterceptorInstalled = true;
+}
+
+function installBrowserRequestGuards(): void {
   if (window.__wellracomCustomerSourceRequestGuard) return;
 
   const originalFetch = window.fetch.bind(window);
@@ -95,9 +127,10 @@ function installRequestGuards(): void {
     ).toUpperCase();
 
     if (method === "POST" && requestUrl.includes("/customers")) {
-      const rewrittenBody = rewriteCustomerCreateBody(init?.body ?? null);
-      if (rewrittenBody !== (init?.body ?? null)) {
-        return originalFetch(input, { ...init, body: rewrittenBody });
+      const originalBody = init?.body ?? null;
+      const rewrittenBody = rewriteCustomerCreateBody(originalBody);
+      if (rewrittenBody !== originalBody) {
+        return originalFetch(input, { ...init, body: rewrittenBody as BodyInit });
       }
     }
 
@@ -116,13 +149,22 @@ function installRequestGuards(): void {
     password?: string | null,
   ) {
     requestMeta.set(this, { method: method.toUpperCase(), url: String(url) });
-    return originalOpen.call(this, method, url, async ?? true, username ?? null, password ?? null);
+    return originalOpen.call(
+      this,
+      method,
+      url,
+      async ?? true,
+      username ?? null,
+      password ?? null,
+    );
   };
 
-  XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+  XMLHttpRequest.prototype.send = function (
+    body?: Document | XMLHttpRequestBodyInit | null,
+  ) {
     const meta = requestMeta.get(this);
     if (meta?.method === "POST" && meta.url.includes("/customers")) {
-      body = rewriteCustomerCreateBody(body ?? null);
+      body = rewriteCustomerCreateBody(body) as Document | XMLHttpRequestBodyInit | null;
     }
     return originalSend.call(this, body);
   };
@@ -140,7 +182,8 @@ function startCustomerSourceEnhancement(): void {
   if (observerStarted) return;
   observerStarted = true;
 
-  installRequestGuards();
+  installAxiosRequestGuard();
+  installBrowserRequestGuards();
   syncOtherSourceField();
 
   const observer = new MutationObserver(() => {
