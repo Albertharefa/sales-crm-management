@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from lib.db import connect_to_mongo, close_mongo_connection, ensure_admin_user, db
 from routers import auth, customers, pipeline, quotations, orders, activities, ai, admin, products, uploads, targets, users, password_reset, demo_data, integrity
+from lib import custom_customer_patch
 from routers.dashboard import router as dashboard_router
 from routers.order_monitoring import router as order_monitoring_router
 from security.permissions import has_permission, permission_policy, normalize_role
