@@ -16,6 +16,7 @@ from routers import auth, customers, pipeline, quotations, orders, activities, a
 from lib import custom_customer_patch
 from routers.dashboard import router as dashboard_router
 from routers.order_monitoring import router as order_monitoring_router
+from routers.deps import get_authenticated_user
 from security.permissions import has_permission, permission_policy, normalize_role
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -60,24 +61,10 @@ async def rbac_middleware(request: Request, call_next):
     permission = permission_policy(path, request.method)
     if permission is not None:
         token = request.cookies.get("crm_session")
-        user = None
-        if token:
-            session = await db.sessions.find_one({"token": token})
-            if session:
-                expires_at = session.get("expires_at")
-                now = datetime.now(timezone.utc)
-                if expires_at:
-                    if expires_at.tzinfo is None:
-                        expires_at = expires_at.replace(tzinfo=timezone.utc)
-                    if expires_at > now:
-                        user = await db.users.find_one({"id": session.get("user_id")})
-                else:
-                    user = await db.users.find_one({"id": session.get("user_id")})
-
-        if not user:
-            return JSONResponse(status_code=401, content={"detail": "Sesi tidak ditemukan atau telah berakhir"})
-        if user.get("status", "Active") != "Active":
-            return JSONResponse(status_code=401, content={"detail": "Pengguna tidak aktif"})
+        try:
+            user = await get_authenticated_user(token)
+        except FastAPIHTTPException as exc:
+            return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail}, headers=exc.headers)
 
         role = normalize_role(user)
         allowed = permission == "__admin_only__" and role == "SUPER_ADMIN" or has_permission(user, permission)
