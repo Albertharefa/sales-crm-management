@@ -151,6 +151,14 @@ async def frontend_logo():
     return JSONResponse({"detail": "Logo tidak ditemukan"}, status_code=404)
 
 
+@app.get("/wellracom-w-logo.png", include_in_schema=False)
+async def frontend_w_logo():
+    logo = FRONTEND_DIST / "wellracom-w-logo.png"
+    if logo.exists():
+        return FileResponse(logo, media_type="image/png")
+    return JSONResponse({"detail": "Logo W tidak ditemukan"}, status_code=404)
+
+
 @app.get("/", include_in_schema=False)
 async def frontend_root():
     index = FRONTEND_DIST / "index.html"
