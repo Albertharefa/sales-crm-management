@@ -1,15 +1,17 @@
 import { QueryClient } from "@tanstack/react-query";
 
-// Exported so lib/session can wipe it at session boundaries — cached data outlives logout.
+// Shared query client for the CRM. Keep list/master data fresh whenever a user
+// opens a menu again or returns to the browser after another user has changed data.
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Master data (customers/products/users/options) stays warm for 10 minutes.
-      // List query keys include page/filter state, so changing a filter still fetches
-      // the correct server-side result without browser-side filtering.
-      staleTime: 10 * 60 * 1000,
+      // Do not treat CRM records as fresh for long periods. Each mounted menu
+      // should request the latest server state instead of showing an old cache.
+      staleTime: 0,
       gcTime: 30 * 60 * 1000,
-      refetchOnWindowFocus: false,
+      refetchOnMount: "always",
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 });
