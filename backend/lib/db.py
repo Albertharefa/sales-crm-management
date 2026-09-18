@@ -65,6 +65,9 @@ async def _ensure_indexes():
             ([('name', 1)], "customers_name"),
             ([('is_demo', 1)], "customers_demo"),
         ],
+        "contacts": [
+            ([('customer_id', 1), ('created_at', -1)], "contacts_customer_created"),
+        ],
         "products": [
             ([('id', 1)], "products_id"),
             ([('code', 1)], "products_code"),
