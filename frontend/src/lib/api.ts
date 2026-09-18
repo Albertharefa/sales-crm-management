@@ -20,8 +20,40 @@ api.interceptors.response.use(
   },
 );
 
+function normalizeCustomerCustomValues(url: string, data: unknown): unknown {
+  // Customer -> Tambah Customer -> Lainnya uses a visible manual input.
+  // Read the DOM value at submit time as a final guard so the manually
+  // entered value cannot be lost if the controlled UI state is stale.
+  if (url !== '/customers' || typeof document === 'undefined' || !data || typeof data !== 'object') {
+    return data;
+  }
+
+  const payload = { ...(data as Record<string, unknown>) };
+
+  const industryInput = document.querySelector<HTMLInputElement>(
+    '[data-testid="customer-industry-other-input"]',
+  );
+  const sourceInput = document.querySelector<HTMLInputElement>(
+    '[data-testid="customer-source-other-input"]',
+  );
+
+  const industryOther = industryInput?.value?.trim() || '';
+  const sourceOther = sourceInput?.value?.trim() || '';
+
+  if (payload.industry === 'Lainnya' && industryOther) {
+    payload.industry = industryOther;
+  }
+
+  if (payload.source === 'Lainnya' && sourceOther) {
+    payload.source = sourceOther;
+  }
+
+  return payload;
+}
+
 export const apiGet = <T>(url: string) => api.get<T>(url).then(r => r.data);
-export const apiPost = <T>(url: string, data?: unknown) => api.post<T>(url, data).then(r => r.data);
+export const apiPost = <T>(url: string, data?: unknown) =>
+  api.post<T>(url, normalizeCustomerCustomValues(url, data)).then(r => r.data);
 export const apiPut = <T>(url: string, data?: unknown) => api.put<T>(url, data).then(r => r.data);
 export const apiPatch = <T>(url: string, data?: unknown) => api.patch<T>(url, data).then(r => r.data);
 export const apiDelete = <T = unknown>(url: string) => api.delete<T>(url).then(r => r.data);
