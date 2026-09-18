@@ -33,19 +33,19 @@ const injectStyles = () => {
       transform: translateY(-50%);
       z-index: 4;
       display: grid;
-      grid-template-columns: repeat(3, minmax(76px, 1fr));
+      grid-template-columns: 82px 102px 82px;
       gap: 4px;
-      width: min(252px, 29%);
+      width: 274px;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card {
       min-width: 0;
-      height: 42px;
-      padding: 5px 7px;
+      height: 38px;
+      padding: 4px 6px;
       box-sizing: border-box;
       border: 1px solid rgba(255,255,255,.9);
-      border-radius: 7px;
+      border-radius: 6px;
       background: rgba(255,255,255,.96);
-      box-shadow: 0 2px 7px rgba(15,23,42,.12);
+      box-shadow: 0 2px 6px rgba(15,23,42,.11);
       color: #0f172a;
       backdrop-filter: blur(6px);
     }
@@ -54,18 +54,19 @@ const injectStyles = () => {
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      font-size: 8px;
+      font-size: 7px;
       font-weight: 700;
-      letter-spacing: .09em;
+      letter-spacing: .07em;
+      line-height: 1;
       color: #64748b;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card strong {
       display: block;
-      margin-top: 3px;
+      margin-top: 4px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      font-size: 14px;
+      font-size: 12px;
       line-height: 1;
       font-weight: 750;
       letter-spacing: -.02em;
@@ -89,7 +90,8 @@ const injectStyles = () => {
         top: auto;
         bottom: auto;
         transform: none;
-        width: min(100%, 400px);
+        grid-template-columns: 82px 102px 82px;
+        width: 274px;
         margin: 8px 0 0 auto;
       }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
@@ -101,7 +103,7 @@ const injectStyles = () => {
         grid-template-columns: 1fr;
         width: 100%;
       }
-      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 48px; }
+      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 42px; }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
         min-height: 0 !important;
         padding: 16px !important;
