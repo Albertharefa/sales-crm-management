@@ -1,23 +1,17 @@
 import { QueryClient } from "@tanstack/react-query";
 
 // Shared query client for the CRM.
-//
-// The previous global policy used staleTime=0 + refetchOnMount="always".
-// That forced almost every menu navigation to wait for another database
-// request, even when the same data had just been loaded. Keep a short freshness
-// window instead: cached data renders immediately, while stale data can refresh
-// in the background when appropriate.
+// Cached data should be rendered immediately when users move between menus.
+// Freshness is maintained by explicit invalidation after writes and by
+// background refetches, rather than blocking every route mount on MongoDB.
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // CRM master/list data changes, but normally does not need a round-trip
-      // on every route mount. This makes menu-to-menu navigation instant when
-      // the query is already cached.
-      staleTime: 15_000,
+      staleTime: 60_000,
       gcTime: 30 * 60 * 1000,
-      refetchOnMount: true,
+      refetchOnMount: false,
       refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
+      refetchOnReconnect: false,
       retry: 1,
       retryDelay: 250,
     },
