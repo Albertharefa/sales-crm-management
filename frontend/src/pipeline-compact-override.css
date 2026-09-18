@@ -3,8 +3,8 @@
 [data-testid="pipeline-page"] .crm-summary-grid>*{height:70px!important;min-height:70px!important;max-height:70px!important}
 [data-testid="pipeline-page"] .crm-summary-grid>*>*{height:70px!important;min-height:70px!important;max-height:70px!important;padding:8px 10px 8px 13px!important}
 [data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]{padding:8px 10px 8px 13px!important}
-[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:first-child{font-size:9px!important;line-height:1.1!important;letter-spacing:.12em!important}
-[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:last-child{margin-top:2px!important;font-size:15px!important;line-height:1.15!important}
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:first-child{font-size:11px!important;line-height:1.1!important;letter-spacing:.11em!important;font-weight:600!important}
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:last-child{margin-top:3px!important;font-size:20px!important;line-height:1.15!important;font-weight:700!important}
 [data-testid="pipeline-page"]>.mb-5.rounded-xl{margin-bottom:8px!important;padding:5px 8px!important;min-height:29px!important}
 [data-testid="pipeline-page"]>.mb-5.rounded-xl *{line-height:1.15!important}
 [data-testid="pipeline-page"] table{table-layout:fixed!important;width:100%!important}
