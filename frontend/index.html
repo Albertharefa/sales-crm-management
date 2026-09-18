@@ -10,6 +10,26 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Dashboard/Pipeline chart first-render stabilization only.
+      // Some visual components calculate their dimensions before async data/layout settles.
+      // Re-issue resize after the data-driven DOM has mounted; other CRM pages are untouched.
+      (() => {
+        const targetPath = () => window.location.pathname === "/" || window.location.pathname === "/pipeline";
+        let timer;
+        const stabilize = () => {
+          if (!targetPath()) return;
+          window.dispatchEvent(new Event("resize"));
+          clearTimeout(timer);
+          timer = window.setTimeout(() => window.dispatchEvent(new Event("resize")), 250);
+        };
+        window.addEventListener("load", stabilize, { once: true });
+        const observer = new MutationObserver(() => {
+          if (targetPath()) stabilize();
+        });
+        observer.observe(document.getElementById("root") || document.body, { childList: true, subtree: true });
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
