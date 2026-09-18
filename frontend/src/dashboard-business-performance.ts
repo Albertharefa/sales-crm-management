@@ -16,33 +16,36 @@ const injectStyles = () => {
     [data-testid="dashboard-page"] .dashboard-business-performance-hero {
       position: relative !important;
       min-width: 0 !important;
-      min-height: 172px !important;
-      padding: 28px 34px !important;
+      min-height: 148px !important;
+      padding: 22px 30px !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
-      border-radius: 20px !important;
+      border-radius: 18px !important;
+      background: linear-gradient(115deg, #fff7ed 0%, #ffedd5 48%, #fff1e6 100%) !important;
+      border: 1px solid rgba(234,88,12,.12) !important;
+      box-shadow: 0 8px 24px rgba(154,52,18,.08) !important;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
       position: absolute;
-      right: 28px;
+      right: 22px;
       top: 50%;
       bottom: auto;
       transform: translateY(-50%);
       z-index: 4;
       display: grid;
-      grid-template-columns: repeat(3, minmax(112px, 1fr));
-      gap: 8px;
-      width: min(372px, 40%);
+      grid-template-columns: repeat(3, minmax(92px, 1fr));
+      gap: 6px;
+      width: min(318px, 36%);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card {
       min-width: 0;
-      height: 64px;
-      padding: 9px 11px;
+      height: 52px;
+      padding: 7px 9px;
       box-sizing: border-box;
-      border: 1px solid rgba(255,255,255,.58);
-      border-radius: 10px;
-      background: rgba(255,255,255,.94);
-      box-shadow: 0 3px 10px rgba(15,23,42,.07);
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: 8px;
+      background: rgba(255,255,255,.9);
+      box-shadow: 0 3px 9px rgba(154,52,18,.08);
       color: #0f172a;
       backdrop-filter: blur(8px);
     }
@@ -58,7 +61,7 @@ const injectStyles = () => {
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card strong {
       display: block;
-      margin-top: 6px;
+      margin-top: 5px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
@@ -68,7 +71,7 @@ const injectStyles = () => {
       letter-spacing: -.02em;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage {
-      background: rgba(239,246,255,.96);
+      background: rgba(239,246,255,.94);
       border-color: rgba(96,165,250,.5);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage strong { color: #2563eb; }
@@ -76,7 +79,7 @@ const injectStyles = () => {
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > h2,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > p,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > div:first-child {
-        max-width: calc(100% - 405px) !important;
+        max-width: calc(100% - 350px) !important;
       }
     }
     @media (max-width: 1199px) {
@@ -86,11 +89,11 @@ const injectStyles = () => {
         top: auto;
         bottom: auto;
         transform: none;
-        width: min(100%, 520px);
-        margin: 12px 0 0 auto;
+        width: min(100%, 470px);
+        margin: 10px 0 0 auto;
       }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-        min-height: 190px !important;
+        min-height: 174px !important;
       }
     }
     @media (max-width: 767px) {
@@ -98,10 +101,10 @@ const injectStyles = () => {
         grid-template-columns: 1fr;
         width: 100%;
       }
-      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 60px; }
+      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 52px; }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
         min-height: 0 !important;
-        padding: 22px !important;
+        padding: 18px !important;
       }
     }
   `;
