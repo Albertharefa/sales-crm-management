@@ -2,8 +2,8 @@ import { apiGet } from './lib/api';
 import type { Customer, Paginated } from './lib/types';
 
 // Backend /customers currently accepts a maximum page_size of 100.
-// Keep this lookup within the API contract so the Sumber column can load
-// the real customer.source values instead of falling back to an empty map.
+// Keep this lookup within the API contract so the Sumber column reads the
+// real customer.source values.
 const PAGE_SIZE = 100;
 const HEADER_ATTR = 'data-customer-source-header';
 const CELL_ATTR = 'data-customer-source-cell';
@@ -16,17 +16,31 @@ function isCustomersPage() {
   return window.location.pathname.replace(/\/+$/, '') === '/customers';
 }
 
-async function getSources() {
-  const response = await apiGet<Paginated<Customer>>(
-    `/customers?page=1&page_size=${PAGE_SIZE}`,
-  );
+let sourceMapCache: Map<string, string> | null = null;
+let sourceMapPromise: Promise<Map<string, string>> | null = null;
 
-  return new Map(
-    (response?.items ?? []).map((customer) => [
-      text(customer.customer_id),
-      text(customer.source),
-    ]),
-  );
+async function getSources() {
+  if (sourceMapCache) return sourceMapCache;
+
+  if (!sourceMapPromise) {
+    sourceMapPromise = apiGet<Paginated<Customer>>(
+      `/customers?page=1&page_size=${PAGE_SIZE}`,
+    )
+      .then((response) => {
+        sourceMapCache = new Map(
+          (response?.items ?? []).map((customer) => [
+            text(customer.customer_id),
+            text(customer.source),
+          ]),
+        );
+        return sourceMapCache;
+      })
+      .finally(() => {
+        sourceMapPromise = null;
+      });
+  }
+
+  return sourceMapPromise;
 }
 
 function findCustomersTable() {
@@ -86,24 +100,22 @@ async function patchCustomerTable() {
   const table = findCustomersTable();
   if (!table) return;
 
-  // IMPORTANT: render the column first. The UI must not depend on the
-  // secondary source lookup succeeding.
-  const headerReady = ensureSourceHeader(table);
-  if (!headerReady) return;
-
+  // IMPORTANT: load the real Sumber data BEFORE modifying the DOM.
+  // This prevents the existing Kota cell from ever appearing under Sumber.
   try {
     const sourceMap = await getSources();
+    const headerReady = ensureSourceHeader(table);
+    if (!headerReady) return;
     ensureSourceCells(table, sourceMap);
   } catch {
-    // Keep the Sumber column visible even if the secondary lookup fails.
-    ensureSourceCells(table, new Map());
+    // Do not inject a misleading/empty Sumber column when the source lookup fails.
+    // The existing Customers table remains untouched in that case.
   }
 }
 
 let observer: MutationObserver | undefined;
-let timer: number | undefined;
-let running = false;
 let queued = false;
+let running = false;
 
 function schedulePatch() {
   if (queued) return;
@@ -115,17 +127,15 @@ function schedulePatch() {
     void patchCustomerTable().finally(() => {
       running = false;
     });
-  }, 50);
+  }, 0);
 }
 
 function start() {
   observer?.disconnect();
-  if (timer !== undefined) window.clearInterval(timer);
 
   observer = new MutationObserver(() => schedulePatch());
   observer.observe(document.body, { childList: true, subtree: true });
 
-  timer = window.setInterval(schedulePatch, 2000);
   schedulePatch();
 }
 
