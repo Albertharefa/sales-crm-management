@@ -1,10 +1,12 @@
 /* Sales Pipeline only — compact, responsive, space-efficient visual override */
-[data-testid="pipeline-page"] .crm-summary-grid{gap:10px!important;margin-bottom:10px!important;padding-bottom:10px!important}
-[data-testid="pipeline-page"] .crm-summary-grid>*{height:82px!important;min-height:82px!important;max-height:82px!important}
-[data-testid="pipeline-page"] .crm-summary-grid>*>*{height:82px!important;min-height:82px!important;max-height:82px!important;padding:10px 12px 10px 15px!important}
-[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]{padding:10px 12px 10px 15px!important}
-[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:last-child{margin-top:3px!important;font-size:16px!important}
-[data-testid="pipeline-page"]>.mb-5.rounded-xl{margin-bottom:10px!important;padding:8px 10px!important}
+[data-testid="pipeline-page"] .crm-summary-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;margin-bottom:7px!important;padding-bottom:7px!important}
+[data-testid="pipeline-page"] .crm-summary-grid>*{height:70px!important;min-height:70px!important;max-height:70px!important}
+[data-testid="pipeline-page"] .crm-summary-grid>*>*{height:70px!important;min-height:70px!important;max-height:70px!important;padding:8px 10px 8px 13px!important}
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]{padding:8px 10px 8px 13px!important}
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:first-child{font-size:9px!important;line-height:1.1!important;letter-spacing:.12em!important}
+[data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:last-child{margin-top:2px!important;font-size:15px!important;line-height:1.15!important}
+[data-testid="pipeline-page"]>.mb-5.rounded-xl{margin-bottom:8px!important;padding:5px 8px!important;min-height:29px!important}
+[data-testid="pipeline-page"]>.mb-5.rounded-xl *{line-height:1.15!important}
 [data-testid="pipeline-page"] table{table-layout:fixed!important;width:100%!important}
 [data-testid="pipeline-page"] table th,[data-testid="pipeline-page"] table td{padding:6px 8px!important;font-size:11px!important}
 [data-testid="pipeline-page"] table th{height:32px!important;font-size:9px!important}
@@ -33,4 +35,5 @@
 [data-testid="pipeline-page"] .crm-pipeline-analytics-footer{gap:16px!important;padding:8px 14px!important}
 [data-testid="pipeline-page"] [data-testid^="pipeline-kanban-column-"]{min-width:185px!important;padding:8px!important}
 [data-testid="pipeline-page"] [data-testid^="pipeline-kanban-column-"] [data-slot="card-content"]{padding:9px!important}
-@media(max-width:900px){[data-testid="pipeline-page"] .crm-pipeline-analytics-grid{grid-template-columns:1fr!important}}
+@media(max-width:900px){[data-testid="pipeline-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}[data-testid="pipeline-page"] .crm-pipeline-analytics-grid{grid-template-columns:1fr!important}}
+@media(max-width:560px){[data-testid="pipeline-page"] .crm-summary-grid{grid-template-columns:1fr!important}}
