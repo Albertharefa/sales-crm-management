@@ -48,8 +48,16 @@ export default function OrderMonitoring() {
   if (customerFilter) summaryParams.set("customer_id", customerFilter);
   if (etaFilter) summaryParams.set("eta_filter", etaFilter);
 
-  const query = useQuery({ queryKey: ["order-monitoring", page, pageSize, search, statusFilter, etaFilter, salesFilter, customerFilter], queryFn: () => apiGet<Paginated<MonitoringOrder>>(`/order-monitoring?${params.toString()}`) });
-  const summaryQuery = useQuery({ queryKey: ["order-monitoring-summary", search, statusFilter, etaFilter, salesFilter, customerFilter], queryFn: () => apiGet<Record<string, number>>(`/order-monitoring/summary?${summaryParams.toString()}`) });
+  const query = useQuery({
+    queryKey: ["order-monitoring", page, pageSize, search, statusFilter, etaFilter, salesFilter, customerFilter],
+    queryFn: () => apiGet<Paginated<MonitoringOrder>>(`/order-monitoring?${params.toString()}`),
+    staleTime: 60_000,
+  });
+  const summaryQuery = useQuery({
+    queryKey: ["order-monitoring-summary", search, statusFilter, etaFilter, salesFilter, customerFilter],
+    queryFn: () => apiGet<Record<string, number>>(`/order-monitoring/summary?${summaryParams.toString()}`),
+    staleTime: 60_000,
+  });
   const customerQuery = useQuery({ queryKey: ["order-monitoring-customers"], queryFn: () => apiGet<Paginated<Customer>>("/customers?page=1&page_size=100"), staleTime: 60_000 });
   const salesQuery = useQuery({ queryKey: ["order-monitoring-sales"], queryFn: () => apiGet<SalesTeamMetric[]>("/sales-team"), staleTime: 60_000 });
   const update = useMutation({ mutationFn: ({ id, status }: { id: string; status: string }) => apiPatch<PurchaseOrder>(`/purchase-orders/${id}/status?status=${encodeURIComponent(status)}`), onSuccess: () => { qc.invalidateQueries({ queryKey: ["order-monitoring"] }); qc.invalidateQueries({ queryKey: ["dashboard"] }); toast.success("Status order diperbarui"); }, onError: () => toast.error("Status order gagal diperbarui") });
@@ -73,21 +81,18 @@ export default function OrderMonitoring() {
         <select value={customerFilter} onChange={(event) => { setCustomerFilter(event.target.value); setPage(1); }} className={`${selectClass} h-10 min-w-0`}><option value="">Semua customer</option>{customerOptions.map((customer) => <option key={customer.id} value={String(customer.id)}>{customer.name}</option>)}</select>
       </div>
 
-      {/* Compact KPI strip: label and value stay on one line to avoid wasting vertical space. */}
       <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5 xl:grid-cols-9">
         {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5"
-            data-testid={`order-stat-${stat.label.toLowerCase().replaceAll(" ", "-")}`}
-          >
+          <div key={stat.label} className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2.5" data-testid={`order-stat-${stat.label.toLowerCase().replaceAll(" ", "-")}`}>
             <div className="min-w-0 truncate text-[10px] font-semibold tracking-wider text-slate-500">{stat.label}</div>
             <div className="shrink-0 font-mono text-xl font-semibold leading-none">{stat.value}</div>
           </div>
         ))}
       </div>
 
-      <DataTable testId="order-monitoring-table" items={items} loading={query.isLoading || summaryQuery.isLoading || customerQuery.isLoading || salesQuery.isLoading} total={query.data?.total ?? 0} page={page} pageSize={pageSize} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1); }} columns={[{ key: "id", label: "Monitoring ID", render: (item) => <span className="font-mono text-[10px] text-slate-500">{monitoringId(item)}</span> }, { key: "po", label: "Nomor PO", render: (item) => <span className="font-medium">{item.po_number}</span> }, { key: "customer", label: "Customer", render: (item) => customerName(item) }, { key: "product", label: "Produk", render: (item) => <div className="w-[420px] max-w-[420px] whitespace-normal break-words leading-5">{item.items[0]?.description ?? "—"}</div> }, { key: "qty", label: "Qty", render: (item) => `${item.items[0]?.quantity ?? 0}` }, { key: "status", label: "Status", render: (item) => <select className={`${selectClass} min-w-36`} value={item.status} onChange={(event) => update.mutate({ id: item.id, status: event.target.value })} data-testid={`order-status-${item.id}`}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select> }, { key: "supplier", label: "Supplier", render: (item) => item.supplier ?? "—" }, { key: "eta", label: "ETA", render: (item) => item.eta ?? "—" }, { key: "indicator", label: "Indikator", render: (item) => { const indicator = etaIndicator(item.eta, item.status); return <Badge variant={indicator === "Overdue" ? "destructive" : "outline"}>{indicator}</Badge>; } }, { key: "sales", label: "Sales", render: (item) => item.sales_name ?? "—" }]} />
+      {/* The table is ready as soon as the primary order query is ready.
+          Summary/filter helper queries never block the main data render. */}
+      <DataTable testId="order-monitoring-table" items={items} loading={query.isLoading} total={query.data?.total ?? 0} page={page} pageSize={pageSize} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1); }} columns={[{ key: "id", label: "Monitoring ID", render: (item) => <span className="font-mono text-[10px] text-slate-500">{monitoringId(item)}</span> }, { key: "po", label: "Nomor PO", render: (item) => <span className="font-medium">{item.po_number}</span> }, { key: "customer", label: "Customer", render: (item) => customerName(item) }, { key: "product", label: "Produk", render: (item) => <div className="w-[420px] max-w-[420px] whitespace-normal break-words leading-5">{item.items[0]?.description ?? "—"}</div> }, { key: "qty", label: "Qty", render: (item) => `${item.items[0]?.quantity ?? 0}` }, { key: "status", label: "Status", render: (item) => <select className={`${selectClass} min-w-36`} value={item.status} onChange={(event) => update.mutate({ id: item.id, status: event.target.value })} data-testid={`order-status-${item.id}`}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select> }, { key: "supplier", label: "Supplier", render: (item) => item.supplier ?? "—" }, { key: "eta", label: "ETA", render: (item) => item.eta ?? "—" }, { key: "indicator", label: "Indikator", render: (item) => { const indicator = etaIndicator(item.eta, item.status); return <Badge variant={indicator === "Overdue" ? "destructive" : "outline"}>{indicator}</Badge>; } }, { key: "sales", label: "Sales", render: (item) => item.sales_name ?? "—" }]} />
     </div>
   );
 }
