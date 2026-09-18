@@ -125,7 +125,15 @@ const ensureMetrics = async () => {
     const data = await response.json();
     const target = Number(data?.sales_target) || 0;
     const achievement = Number(data?.target_achievement) || 0;
-    const percentage = target > 0 ? (achievement / target) * 100 : 0;
+
+    // The dashboard target is returned in IDR, while target_achievement is
+    // returned in millions when it is below 1 billion. Normalize only for the
+    // percentage calculation so 53.5 against 16.5 billion becomes ~0.32%.
+    const achievementForPercentage =
+      target >= 1_000_000_000 && achievement > 0 && achievement < 1_000_000_000
+        ? achievement * 1_000_000
+        : achievement;
+    const percentage = target > 0 ? (achievementForPercentage / target) * 100 : 0;
 
     const metrics = document.createElement("div");
     metrics.className = "dashboard-business-performance-metrics";
@@ -140,7 +148,7 @@ const ensureMetrics = async () => {
       </div>
       <div class="dashboard-business-performance-card dashboard-business-performance-percentage">
         <span>PENCAPAIAN %</span>
-        <strong>${percentage.toFixed(1)}%</strong>
+        <strong>${percentage.toFixed(2)}%</strong>
       </div>
     `;
 
