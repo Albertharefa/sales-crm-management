@@ -13,13 +13,20 @@ const injectStyles = () => {
   const style = document.createElement("style");
   style.id = "dashboard-business-performance-style";
   style.textContent = `
+    [data-testid="dashboard-page"] .dashboard-business-performance-hero {
+      position: relative !important;
+      min-width: 0 !important;
+      overflow: hidden !important;
+    }
     [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
       position: absolute;
       right: 24px;
-      bottom: 16px;
+      top: 50%;
+      bottom: auto;
+      transform: translateY(-50%);
       z-index: 4;
       display: grid;
-      grid-template-columns: repeat(3, minmax(112px, 1fr));
+      grid-template-columns: repeat(3, minmax(108px, 1fr));
       gap: 8px;
       width: min(390px, 42%);
     }
@@ -27,9 +34,10 @@ const injectStyles = () => {
       min-width: 0;
       height: 68px;
       padding: 10px 12px;
+      box-sizing: border-box;
       border: 1px solid rgba(255,255,255,.55);
       border-radius: 10px;
-      background: rgba(255,255,255,.88);
+      background: rgba(255,255,255,.92);
       box-shadow: 0 4px 12px rgba(15,23,42,.08);
       color: #0f172a;
       backdrop-filter: blur(8px);
@@ -56,17 +64,29 @@ const injectStyles = () => {
       letter-spacing: -.02em;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage {
-      background: rgba(239,246,255,.94);
+      background: rgba(239,246,255,.96);
       border-color: rgba(96,165,250,.5);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage strong { color: #2563eb; }
-    @media (max-width: 1100px) {
+    @media (min-width: 1200px) {
+      [data-testid="dashboard-page"] .dashboard-business-performance-hero > h2,
+      [data-testid="dashboard-page"] .dashboard-business-performance-hero > p,
+      [data-testid="dashboard-page"] .dashboard-business-performance-hero > div:first-child {
+        max-width: calc(100% - 430px) !important;
+      }
+    }
+    @media (max-width: 1199px) {
       [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
         position: relative;
         right: auto;
+        top: auto;
         bottom: auto;
+        transform: none;
         width: min(100%, 520px);
-        margin: 12px 0 0 auto;
+        margin: 14px 0 0 auto;
+      }
+      [data-testid="dashboard-page"] .dashboard-business-performance-hero {
+        min-height: 200px !important;
       }
     }
     @media (max-width: 767px) {
@@ -75,6 +95,9 @@ const injectStyles = () => {
         width: 100%;
       }
       [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 60px; }
+      [data-testid="dashboard-page"] .dashboard-business-performance-hero {
+        min-height: 0 !important;
+      }
     }
   `;
   document.head.appendChild(style);
@@ -90,6 +113,7 @@ const ensureMetrics = async () => {
 
   const hero = findHero();
   if (!hero || hero.querySelector(".dashboard-business-performance-metrics")) return;
+  hero.classList.add("dashboard-business-performance-hero");
   injectStyles();
 
   try {
