@@ -1,4 +1,5 @@
 import { api } from "./lib/api";
+import { toast } from "sonner";
 
 const CUSTOM_LABEL = "Lainnya";
 const SOURCE_TEST_ID = "customer-source-input";
@@ -10,6 +11,7 @@ let customSourceValue = "";
 let customIndustryValue = "";
 let observerStarted = false;
 let apiInterceptorInstalled = false;
+let createSubmitHandlerInstalled = false;
 
 function getCreateForm(): HTMLFormElement | null {
   return document.querySelector<HTMLFormElement>(
@@ -202,6 +204,86 @@ function rewriteCustomerPayload(data: unknown): unknown {
   return wasJsonString ? JSON.stringify(payload) : payload;
 }
 
+function readCreateInput(testId: string): string {
+  const element = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+    `[data-testid="${testId}"]`,
+  );
+  return element?.value?.trim() ?? "";
+}
+
+function installCreateSubmitGuard(): void {
+  if (createSubmitHandlerInstalled) return;
+  createSubmitHandlerInstalled = true;
+
+  document.addEventListener(
+    "submit",
+    async (event) => {
+      const form = event.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      if (form.getAttribute("data-testid") !== "customer-create-form") return;
+
+      const sourceSelect = getSelect(SOURCE_TEST_ID);
+      const industrySelect = getSelect(INDUSTRY_TEST_ID);
+      const sourceOther = getOtherInput(OTHER_SOURCE_INPUT_ID)?.value.trim() ?? "";
+      const industryOther = getOtherInput(OTHER_INDUSTRY_INPUT_ID)?.value.trim() ?? "";
+
+      const hasCustomValue =
+        sourceSelect?.value === CUSTOM_LABEL ||
+        industrySelect?.value === CUSTOM_LABEL;
+
+      if (!hasCustomValue) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const salesSelect = form.querySelector<HTMLSelectElement>(
+        '[data-testid="customer-sales-input"]',
+      );
+      const payload = {
+        name: readCreateInput("customer-name-input"),
+        company_name: readCreateInput("customer-company-input"),
+        industry:
+          industrySelect?.value === CUSTOM_LABEL
+            ? industryOther
+            : industrySelect?.value ?? "",
+        source:
+          sourceSelect?.value === CUSTOM_LABEL
+            ? sourceOther
+            : sourceSelect?.value ?? "",
+        city: readCreateInput("customer-city-input"),
+        province: readCreateInput("customer-province-input"),
+        phone: readCreateInput("customer-phone-input"),
+        email: readCreateInput("customer-email-input") || null,
+        pic_name: readCreateInput("customer-pic-input"),
+        pic_position: readCreateInput("customer-pic-position-input"),
+        status: readCreateInput("customer-status-input"),
+        sales_id: salesSelect?.value ?? "",
+        sales_name:
+          salesSelect?.selectedOptions?.[0]?.textContent?.trim() ?? "",
+        address: readCreateInput("customer-address-input"),
+        notes: readCreateInput("customer-notes-input"),
+      };
+
+      if (
+        (sourceSelect?.value === CUSTOM_LABEL && !sourceOther) ||
+        (industrySelect?.value === CUSTOM_LABEL && !industryOther)
+      ) {
+        toast.error("Isi nilai manual untuk field Lainnya terlebih dahulu");
+        return;
+      }
+
+      try {
+        await api.post("/customers", payload);
+        toast.success("Customer berhasil ditambahkan");
+        window.location.reload();
+      } catch {
+        toast.error("Customer gagal disimpan");
+      }
+    },
+    true,
+  );
+}
+
 function installApiRequestGuard(): void {
   if (apiInterceptorInstalled) return;
 
@@ -227,6 +309,7 @@ function startCustomerCustomFieldEnhancement(): void {
   observerStarted = true;
 
   installApiRequestGuard();
+  installCreateSubmitGuard();
   syncCustomerCustomFields();
 
   const observer = new MutationObserver(() => {
