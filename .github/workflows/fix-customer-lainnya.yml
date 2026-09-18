@@ -20,54 +20,32 @@ jobs:
           import re
           p = Path('frontend/src/pages/Customers.tsx')
           s = p.read_text()
-
-          # Add explicit state once.
           marker = '  const [pageSize, setPageSize] = useState(25);\n'
           if 'const [industryOther, setIndustryOther]' not in s:
               s = s.replace(marker, marker + '  const [industryOther, setIndustryOther] = useState("");\n  const [sourceOther, setSourceOther] = useState("");\n', 1)
-
-          # Persist manual values in create/update payloads.
           s = s.replace('''apiPut<Customer>(`/customers/${selectedCustomerId}`, {\n        ...form,\n        email: form.email || null,\n      })''', '''apiPut<Customer>(`/customers/${selectedCustomerId}`, {\n        ...form,\n        industry: form.industry === "Lainnya" ? industryOther.trim() : form.industry,\n        source: form.source === "Lainnya" ? sourceOther.trim() : form.source,\n        email: form.email || null,\n      })''', 1)
           s = s.replace('''apiPost<Customer>("/customers", {\n        ...form,\n        email: form.email || null,\n      })''', '''apiPost<Customer>("/customers", {\n        ...form,\n        industry: form.industry === "Lainnya" ? industryOther.trim() : form.industry,\n        source: form.source === "Lainnya" ? sourceOther.trim() : form.source,\n        email: form.email || null,\n      })''', 1)
-
-          # Add Lainnya to every Customer industry/source select and render a controlled input.
-          industry_select = r'''(<Field label="Industri">\s*<select\s+className=\{selectClass\}\s+value=\{form\.industry\}\s+onChange=\{\(e\) => setForm\(\{ \.\.\.form, industry: e\.target\.value \}\)\}\s*(?:data-testid="customer-industry-input")?\s*>)(.*?)(</select>\s*</Field>)'''
-          def repl_ind(m):
-              body=m.group(2)
-              if '<option>Lainnya</option>' not in body:
-                  body += '\n                <option>Lainnya</option>'
-              handler='''onChange={(e) => {\n                  const value = e.target.value;\n                  setForm({ ...form, industry: value });\n                  if (value !== "Lainnya") setIndustryOther("");\n                }}'''
-              head=re.sub(r'onChange=\{\(e\) => setForm\(\{ \.\.\.form, industry: e\.target\.value \}\)\}', handler, m.group(1))
-              return head+body+m.group(3).replace('</Field>', '''</select>\n                {form.industry === "Lainnya" && (\n                  <Input\n                    className="mt-2"\n                    value={industryOther}\n                    onChange={(e) => setIndustryOther(e.target.value)}\n                    placeholder="Tulis industri lainnya..."\n                    data-testid="customer-industry-other-input"\n                  />\n                )}\n              </Field>''').replace('</select>\n              </select>','</select>')
-          s,n1=re.subn(industry_select,repl_ind,s,flags=re.S)
-
-          source_select = r'''(<Field label="Sumber">\s*<select\s+className=\{selectClass\}\s+value=\{form\.source\}\s+onChange=\{\(e\) => setForm\(\{ \.\.\.form, source: e\.target\.value \}\)\}\s*(?:data-testid="customer-source-input")?\s*>)(.*?)(</select>\s*</Field>)'''
-          def repl_src(m):
-              body=m.group(2)
-              if '<option>Lainnya</option>' not in body:
-                  body += '\n                <option>Lainnya</option>'
-              handler='''onChange={(e) => {\n                  const value = e.target.value;\n                  setForm({ ...form, source: value });\n                  if (value !== "Lainnya") setSourceOther("");\n                }}'''
-              head=re.sub(r'onChange=\{\(e\) => setForm\(\{ \.\.\.form, source: e\.target\.value \}\)\}', handler, m.group(1))
-              return head+body+'''</select>\n                {form.source === "Lainnya" && (\n                  <Input\n                    className="mt-2"\n                    value={sourceOther}\n                    onChange={(e) => setSourceOther(e.target.value)}\n                    placeholder="Tulis sumber lainnya..."\n                    data-testid="customer-source-other-input"\n                  />\n                )}\n              </Field>'''
-          s,n2=re.subn(source_select,repl_src,s,flags=re.S)
-
-          # Reset custom state after successful create.
-          if 'setIndustryOther("");' not in s:
-              pass
+          # Replace the simple controlled selects with React-controlled custom fields.
+          pattern_i = r'(<Field label="Industri">\s*<select\s+className=\{selectClass\}\s+value=\{form\.industry\}\s+)onChange=\{\(e\) => setForm\(\{ \.\.\.form, industry: e\.target\.value \}\)\}(\s*(?:data-testid="customer-industry-input"\s*)?>)(.*?)(</select>\s*</Field>)'
+          def ri(m):
+              body=m.group(3)
+              if '<option>Lainnya</option>' not in body: body += '\n                <option>Lainnya</option>'
+              return m.group(1) + '''onChange={(e) => { const value=e.target.value; setForm({ ...form, industry:value }); if(value!=="Lainnya") setIndustryOther(""); }}''' + m.group(2) + body + '''</select>\n                {form.industry === "Lainnya" && <Input className="mt-2" value={industryOther} onChange={(e)=>setIndustryOther(e.target.value)} placeholder="Tulis industri lainnya..." data-testid="customer-industry-other-input" />}\n              </Field>'''
+          s,n1=re.subn(pattern_i,ri,s,flags=re.S)
+          pattern_s = r'(<Field label="Sumber">\s*<select\s+className=\{selectClass\}\s+value=\{form\.source\}\s+)onChange=\{\(e\) => setForm\(\{ \.\.\.form, source: e\.target\.value \}\)\}(\s*(?:data-testid="customer-source-input"\s*)?>)(.*?)(</select>\s*</Field>)'
+          def rs(m):
+              body=m.group(3)
+              if '<option>Lainnya</option>' not in body: body += '\n                <option>Lainnya</option>'
+              return m.group(1) + '''onChange={(e) => { const value=e.target.value; setForm({ ...form, source:value }); if(value!=="Lainnya") setSourceOther(""); }}''' + m.group(2) + body + '''</select>\n                {form.source === "Lainnya" && <Input className="mt-2" value={sourceOther} onChange={(e)=>setSourceOther(e.target.value)} placeholder="Tulis sumber lainnya..." data-testid="customer-source-other-input" />}\n              </Field>'''
+          s,n2=re.subn(pattern_s,rs,s,flags=re.S)
           s=s.replace('''      setModal(false);\n\n      setForm({''','''      setModal(false);\n      setIndustryOther("");\n      setSourceOther("");\n\n      setForm({''',1)
-
           p.write_text(s)
-          print('industry blocks:', n1, 'source blocks:', n2)
-
-      - name: Validate and commit
+          print('patched industry/source blocks', n1, n2)
+      - name: Commit patched source
         run: |
-          cd frontend
-          npm ci
-          npm run build
-          cd ..
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add frontend/src/pages/Customers.tsx
           git diff --cached --quiet && exit 0
-          git commit -m "fix(customer): persist manual Lainnya values in React state"
+          git commit -m "fix(customer): persist manual Lainnya values"
           git push
