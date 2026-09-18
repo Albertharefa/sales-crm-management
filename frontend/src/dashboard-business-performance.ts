@@ -16,29 +16,33 @@ const injectStyles = () => {
     [data-testid="dashboard-page"] .dashboard-business-performance-hero {
       position: relative !important;
       min-width: 0 !important;
+      min-height: 172px !important;
+      padding: 28px 34px !important;
       overflow: hidden !important;
+      box-sizing: border-box !important;
+      border-radius: 20px !important;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
       position: absolute;
-      right: 24px;
+      right: 28px;
       top: 50%;
       bottom: auto;
       transform: translateY(-50%);
       z-index: 4;
       display: grid;
-      grid-template-columns: repeat(3, minmax(108px, 1fr));
+      grid-template-columns: repeat(3, minmax(112px, 1fr));
       gap: 8px;
-      width: min(390px, 42%);
+      width: min(372px, 40%);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card {
       min-width: 0;
-      height: 68px;
-      padding: 10px 12px;
+      height: 64px;
+      padding: 9px 11px;
       box-sizing: border-box;
-      border: 1px solid rgba(255,255,255,.55);
+      border: 1px solid rgba(255,255,255,.58);
       border-radius: 10px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 4px 12px rgba(15,23,42,.08);
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 3px 10px rgba(15,23,42,.07);
       color: #0f172a;
       backdrop-filter: blur(8px);
     }
@@ -49,16 +53,16 @@ const injectStyles = () => {
       text-overflow: ellipsis;
       font-size: 9px;
       font-weight: 700;
-      letter-spacing: .12em;
+      letter-spacing: .1em;
       color: #64748b;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card strong {
       display: block;
-      margin-top: 7px;
+      margin-top: 6px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      font-size: 17px;
+      font-size: 16px;
       line-height: 1;
       font-weight: 750;
       letter-spacing: -.02em;
@@ -72,7 +76,7 @@ const injectStyles = () => {
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > h2,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > p,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > div:first-child {
-        max-width: calc(100% - 430px) !important;
+        max-width: calc(100% - 405px) !important;
       }
     }
     @media (max-width: 1199px) {
@@ -83,10 +87,10 @@ const injectStyles = () => {
         bottom: auto;
         transform: none;
         width: min(100%, 520px);
-        margin: 14px 0 0 auto;
+        margin: 12px 0 0 auto;
       }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-        min-height: 200px !important;
+        min-height: 190px !important;
       }
     }
     @media (max-width: 767px) {
@@ -97,6 +101,7 @@ const injectStyles = () => {
       [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 60px; }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
         min-height: 0 !important;
+        padding: 22px !important;
       }
     }
   `;
@@ -126,9 +131,6 @@ const ensureMetrics = async () => {
     const target = Number(data?.sales_target) || 0;
     const achievement = Number(data?.target_achievement) || 0;
 
-    // The dashboard target is returned in IDR, while target_achievement is
-    // returned in millions when it is below 1 billion. Normalize only for the
-    // percentage calculation so 53.5 against 16.5 billion becomes ~0.32%.
     const achievementForPercentage =
       target >= 1_000_000_000 && achievement > 0 && achievement < 1_000_000_000
         ? achievement * 1_000_000
