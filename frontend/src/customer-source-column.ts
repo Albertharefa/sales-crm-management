@@ -1,7 +1,10 @@
 import { apiGet } from './lib/api';
 import type { Customer, Paginated } from './lib/types';
 
-const PAGE_SIZE = 1000;
+// Backend /customers currently accepts a maximum page_size of 100.
+// Keep this lookup within the API contract so the Sumber column can load
+// the real customer.source values instead of falling back to an empty map.
+const PAGE_SIZE = 100;
 const HEADER_ATTR = 'data-customer-source-header';
 const CELL_ATTR = 'data-customer-source-cell';
 
