@@ -2,12 +2,7 @@
   <title id="title">CRM Sales Management</title>
   <desc id="desc">Wellracom CRM Sales Management logo</desc>
   <rect width="430" height="120" fill="#fff"/>
-  <circle cx="60" cy="60" r="48" fill="#fff" stroke="#111" stroke-width="4"/>
-  <path fill="#ff9800" d="M28 30h10l16 33 6-12 6 12 16-33h10L72 75 60 51 48 75z"/>
-  <path fill="#111" d="M48 28h24l-5 11-7 10-7-10zm7 5 5 10 5-10z"/>
-  <path fill="#111" d="M58 48h4v30h-4z"/>
-  <path fill="#111" d="M46 79h28l-3 6H49z"/>
-  <path fill="#111" d="M54 91h12l-6 12z"/>
+  <image href="/wellracom-w-logo.png" x="0" y="0" width="120" height="120" preserveAspectRatio="xMidYMid meet"/>
   <text x="125" y="51" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#06142f">CRM SALES</text>
   <text x="125" y="79" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="700" fill="#06142f">MANAGEMENT</text>
 </svg>
