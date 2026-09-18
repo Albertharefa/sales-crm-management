@@ -29,6 +29,64 @@ function canAccessPath(pathname: string, role: string) {
   return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+function CroppedWellracomLogo() {
+  const [src, setSrc] = useState<string>("/wellracom-w-logo.png");
+
+  useEffect(() => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context || !image.naturalWidth || !image.naturalHeight) return;
+
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      context.drawImage(image, 0, 0);
+
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let minX = canvas.width;
+      let minY = canvas.height;
+      let maxX = -1;
+      let maxY = -1;
+
+      for (let y = 0; y < canvas.height; y += 1) {
+        for (let x = 0; x < canvas.width; x += 1) {
+          const i = (y * canvas.width + x) * 4;
+          const alpha = pixels[i + 3];
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          const isVisibleLogoPixel = alpha > 12 && (r < 245 || g < 245 || b < 245);
+          if (!isVisibleLogoPixel) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+
+      if (maxX < minX || maxY < minY) return;
+
+      const padding = Math.max(2, Math.round(Math.max(maxX - minX + 1, maxY - minY + 1) * 0.04));
+      minX = Math.max(0, minX - padding);
+      minY = Math.max(0, minY - padding);
+      maxX = Math.min(canvas.width - 1, maxX + padding);
+      maxY = Math.min(canvas.height - 1, maxY + padding);
+
+      const cropWidth = maxX - minX + 1;
+      const cropHeight = maxY - minY + 1;
+      const cropCanvas = document.createElement("canvas");
+      cropCanvas.width = cropWidth;
+      cropCanvas.height = cropHeight;
+      cropCanvas.getContext("2d")?.drawImage(image, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+      setSrc(cropCanvas.toDataURL("image/png"));
+    };
+    image.src = "/wellracom-w-logo.png";
+  }, []);
+
+  return <img src={src} alt="Wellracom" className="h-[76px] w-[76px] object-contain" />;
+}
+
 export function useCurrentUser() {
   return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/me"), retry: false, staleTime: 60_000 });
 }
@@ -64,9 +122,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       let node = walker.nextNode();
       while (node) {
         const text = node.textContent?.trim() ?? "";
-        if (welcomePattern.test(text) && text !== expected) {
-          node.textContent = expected;
-        }
+        if (welcomePattern.test(text) && text !== expected) node.textContent = expected;
         node = walker.nextNode();
       }
     };
@@ -100,7 +156,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[radial-gradient(circle_at_18%_8%,rgba(255,193,7,.34),transparent_22%),radial-gradient(circle_at_78%_28%,rgba(255,94,0,.38),transparent_28%),radial-gradient(circle_at_45%_72%,rgba(220,38,38,.34),transparent_32%),linear-gradient(155deg,#4a0909_0%,#7f1d1d_34%,#c2410c_68%,#8a4b08_100%)] text-white shadow-2xl shadow-slate-950/30 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`} data-testid="sidebar-navigation">
       <div className="relative flex h-[96px] w-full items-center justify-center border-b border-slate-200 bg-white px-3 py-3">
         <div className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden bg-white">
-          <img src="/wellracom-w-logo.png" alt="Wellracom" className="h-[76px] w-[76px] object-contain" />
+          <CroppedWellracomLogo />
         </div>
         <button className="absolute right-3 top-3 ml-auto text-slate-700 lg:hidden" onClick={() => setMobileOpen(false)} data-testid="sidebar-close-button"><X className="size-5" /></button>
       </div>
