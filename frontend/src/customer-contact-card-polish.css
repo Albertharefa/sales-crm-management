@@ -1,13 +1,25 @@
-/* Customer detail > Contacts: clean field/value presentation */
+/* Customer detail > Contacts: stable vertical field/value layout */
 [data-crm-contact-section="true"] {
   min-height: 100%;
 }
 
 [data-crm-contact-section="true"] [data-crm-contact-card="true"] {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
   border: 0 !important;
   background: transparent !important;
   padding: 0 !important;
   box-shadow: none !important;
+  min-width: 0;
+}
+
+[data-crm-contact-section="true"] [data-crm-contact-card="true"] > div:not([data-crm-contact-label]) {
+  min-width: 0;
+  color: rgb(15 23 42);
+  font-size: 1rem;
+  line-height: 1.5rem;
+  overflow-wrap: anywhere;
 }
 
 [data-crm-contact-section="true"] [data-crm-contact-label] {
@@ -24,33 +36,28 @@
   margin-top: 0;
 }
 
-[data-crm-contact-section="true"] [data-crm-contact-card] > div:not([data-crm-contact-label]) {
-  color: rgb(15 23 42);
-  font-size: 1rem;
+/* Phone/email rows keep their own clean spacing and never overlap. */
+[data-crm-contact-section="true"] [data-crm-contact-card="true"] > div:not([data-crm-contact-label]) > div {
+  min-width: 0;
+  margin-top: 0 !important;
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  color: rgb(30 41 59);
   line-height: 1.5rem;
+  overflow-wrap: anywhere;
 }
 
-[data-crm-contact-section="true"] [data-crm-contact-card] > div:nth-of-type(2) {
-  color: rgb(30 41 59);
+[data-crm-contact-section="true"] [data-crm-contact-card="true"] > div:not([data-crm-contact-label]) > div + div {
+  margin-top: 0.35rem !important;
 }
 
-[data-crm-contact-section="true"] [data-crm-contact-card] > div:nth-of-type(3) {
-  margin-top: 0;
-  display: block;
-}
-
-[data-crm-contact-section="true"] [data-crm-contact-card] > div:nth-of-type(3) > div {
-  margin-top: 0;
-  display: block;
-  color: rgb(30 41 59);
-}
-
-[data-crm-contact-section="true"] [data-crm-contact-card] > div:nth-of-type(3) > div svg {
-  display: none;
+[data-crm-contact-section="true"] [data-crm-contact-card="true"] > div:not([data-crm-contact-label]) > div svg {
+  flex: 0 0 auto;
 }
 
 @media (min-width: 640px) {
-  [data-crm-contact-section="true"] [data-crm-contact-card] {
+  [data-crm-contact-section="true"] [data-crm-contact-card="true"] {
     padding-right: 0.5rem !important;
   }
 }
