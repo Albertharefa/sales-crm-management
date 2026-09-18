@@ -20,7 +20,7 @@ import './crm-customer-pipeline-table-fix.css'
 import './settings-matrix-polish.css'
 import './dashboard-welcome-dynamic.css'
 import './dashboard-welcome-sync'
-App from './App.tsx'
+import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
 createRoot(document.getElementById('root')!).render(
