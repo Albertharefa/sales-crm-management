@@ -10,6 +10,7 @@ function clean(value: unknown) {
 async function addCustomerSourceColumn() {
   if (window.location.pathname !== '/customers') return;
 
+  // customers-page is the wrapper div; the table itself does not carry that data-testid.
   const table = document.querySelector<HTMLTableElement>('[data-testid="customers-page"] table');
   if (!table) return;
 
