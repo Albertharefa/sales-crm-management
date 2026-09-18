@@ -11,10 +11,27 @@ let customIndustryValue = "";
 let observerStarted = false;
 let apiInterceptorInstalled = false;
 
+function findSelectByOptions(optionValues: string[]): HTMLSelectElement | null {
+  const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select"));
+  return (
+    selects.find((select) => {
+      const values = Array.from(select.options).map((option) => option.value);
+      return optionValues.every((value) => values.includes(value));
+    }) ?? null
+  );
+}
+
 function getSelect(testId: string): HTMLSelectElement | null {
-  return document.querySelector<HTMLSelectElement>(
+  const byTestId = document.querySelector<HTMLSelectElement>(
     `select[data-testid="${testId}"]`,
   );
+  if (byTestId) return byTestId;
+
+  if (testId === SOURCE_TEST_ID) {
+    return findSelectByOptions(["Referral", "Website", "Pameran", "Cold Call", "Partner"]);
+  }
+
+  return findSelectByOptions(["Manufacturing", "Oil & Gas", "Mining"]);
 }
 
 function getOtherInput(inputId: string): HTMLInputElement | null {
@@ -83,7 +100,6 @@ function syncOtherField(
       setValue,
     );
 
-    // Keep the local value synchronized with the actual field shown to the user.
     if (input.value !== value) setValue(input.value);
   } else {
     setValue("");
@@ -113,15 +129,12 @@ function syncCustomerCustomFields(): void {
   );
 }
 
-function rewriteCustomerCreatePayload(data: unknown): unknown {
+function rewriteCustomerPayload(data: unknown): unknown {
   if (!data || typeof data !== "object") return data;
 
   const payload = data as Record<string, unknown>;
   const next = { ...payload };
-  let changed = false;
 
-  // Read the visible inputs at the exact moment the POST is sent.
-  // This avoids relying only on the React/DOM synchronization timing.
   const sourceSelect = getSelect(SOURCE_TEST_ID);
   const industrySelect = getSelect(INDUSTRY_TEST_ID);
   const sourceInput = getOtherInput(OTHER_SOURCE_INPUT_ID);
@@ -137,23 +150,15 @@ function rewriteCustomerCreatePayload(data: unknown): unknown {
       ? (industryInput?.value.trim() || customIndustryValue.trim())
       : String(next.industry ?? "").trim();
 
-  if (
-    sourceSelect?.value === CUSTOM_LABEL &&
-    sourceValue
-  ) {
+  if (sourceSelect?.value === CUSTOM_LABEL && sourceValue) {
     next.source = sourceValue;
-    changed = true;
   }
 
-  if (
-    industrySelect?.value === CUSTOM_LABEL &&
-    industryValue
-  ) {
+  if (industrySelect?.value === CUSTOM_LABEL && industryValue) {
     next.industry = industryValue;
-    changed = true;
   }
 
-  return changed ? next : data;
+  return next;
 }
 
 function installApiRequestGuard(): void {
@@ -163,8 +168,11 @@ function installApiRequestGuard(): void {
     const method = String(config.method ?? "get").toUpperCase();
     const url = String(config.url ?? "");
 
-    if (method === "POST" && /(?:^|\/)customers(?:$|\/)/.test(url)) {
-      config.data = rewriteCustomerCreatePayload(config.data);
+    if (
+      (method === "POST" || method === "PUT" || method === "PATCH") &&
+      /(?:^|\/)customers(?:$|\/)/.test(url)
+    ) {
+      config.data = rewriteCustomerPayload(config.data);
     }
 
     return config;
@@ -191,12 +199,12 @@ function startCustomerCustomFieldEnhancement(): void {
 
   document.addEventListener("change", (event) => {
     const target = event.target;
-    if (
-      target instanceof HTMLSelectElement &&
-      (target.dataset.testid === SOURCE_TEST_ID ||
-        target.dataset.testid === INDUSTRY_TEST_ID)
-    ) {
-      syncCustomerCustomFields();
+    if (target instanceof HTMLSelectElement) {
+      const source = getSelect(SOURCE_TEST_ID);
+      const industry = getSelect(INDUSTRY_TEST_ID);
+      if (target === source || target === industry) {
+        syncCustomerCustomFields();
+      }
     }
   });
 }
