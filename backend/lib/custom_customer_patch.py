@@ -1,13 +1,18 @@
-"""Compatibility patch for custom Customer Industry/Source values.
+"""Compatibility patch for custom Customer Industry/Source values and
+customer-detail contact loading.
 
 The Customer form uses the special option `Lainnya` and a manually entered
-value.  Normalize that value before FastAPI/Pydantic validates the request so
+value. Normalize that value before FastAPI/Pydantic validates the request so
 MongoDB receives the actual text rather than the placeholder `Lainnya`.
 """
 
 from typing import Any
 
+from fastapi import Depends, HTTPException
+
+from lib.db import db
 from routers import customers
+from routers.deps import current_user
 
 
 _CUSTOM_KEYS = {
@@ -78,3 +83,42 @@ def _patch_model(model: type) -> None:
 
 _patch_model(customers.CustomerCreate)
 _patch_model(customers.CustomerUpdate)
+
+
+# ============================================================
+# CUSTOMER DETAIL CONTACTS
+# ============================================================
+
+@customers.router.get("/{customer_id}/contacts", summary="Get Customer Contacts")
+async def get_customer_contacts(customer_id: str, user: dict = Depends(current_user)):
+    """Return contacts linked to the selected customer.
+
+    Customer detail links by the canonical public customer_id. Legacy contact
+    records that still point at the customer's internal id are also accepted,
+    so existing production data remains visible.
+    """
+    ref = _text(customer_id)
+    if not ref:
+        raise HTTPException(status_code=400, detail="Customer ID wajib diisi")
+
+    customer = await customers.find_customer(ref)
+    if not customer:
+        raise HTTPException(status_code=404, detail=f"Customer {ref} not found")
+
+    await customers.ensure_customer_access(customer, user)
+
+    customer_keys = []
+    for value in (customer.get("customer_id"), customer.get("id")):
+        value = _text(value)
+        if value and value not in customer_keys:
+            customer_keys.append(value)
+
+    if not customer_keys:
+        return []
+
+    contacts = await db.contacts.find(
+        {"customer_id": {"$in": customer_keys}},
+        {"_id": 0},
+    ).sort("created_at", -1).to_list(100)
+
+    return contacts
