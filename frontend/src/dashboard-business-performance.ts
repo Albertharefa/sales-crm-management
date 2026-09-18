@@ -16,70 +16,70 @@ const injectStyles = () => {
     [data-testid="dashboard-page"] .dashboard-business-performance-hero {
       position: relative !important;
       min-width: 0 !important;
-      min-height: 148px !important;
-      padding: 22px 30px !important;
+      min-height: 136px !important;
+      padding: 18px 26px !important;
       overflow: hidden !important;
       box-sizing: border-box !important;
-      border-radius: 18px !important;
-      background: linear-gradient(115deg, #fff7ed 0%, #ffedd5 48%, #fff1e6 100%) !important;
-      border: 1px solid rgba(234,88,12,.12) !important;
-      box-shadow: 0 8px 24px rgba(154,52,18,.08) !important;
+      border-radius: 16px !important;
+      background: linear-gradient(115deg, #fef08a 0%, #fde68a 48%, #fef3c7 100%) !important;
+      border: 1px solid rgba(234,179,8,.28) !important;
+      box-shadow: 0 7px 20px rgba(161,98,7,.10) !important;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
       position: absolute;
-      right: 22px;
+      right: 18px;
       top: 50%;
       bottom: auto;
       transform: translateY(-50%);
       z-index: 4;
       display: grid;
-      grid-template-columns: repeat(3, minmax(92px, 1fr));
-      gap: 6px;
-      width: min(318px, 36%);
+      grid-template-columns: repeat(3, minmax(82px, 1fr));
+      gap: 5px;
+      width: min(276px, 32%);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card {
       min-width: 0;
-      height: 52px;
-      padding: 7px 9px;
+      height: 46px;
+      padding: 6px 8px;
       box-sizing: border-box;
-      border: 1px solid rgba(255,255,255,.8);
-      border-radius: 8px;
-      background: rgba(255,255,255,.9);
-      box-shadow: 0 3px 9px rgba(154,52,18,.08);
+      border: 1px solid rgba(255,255,255,.9);
+      border-radius: 7px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 2px 7px rgba(120,78,5,.10);
       color: #0f172a;
-      backdrop-filter: blur(8px);
+      backdrop-filter: blur(6px);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card span {
       display: block;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 700;
-      letter-spacing: .1em;
+      letter-spacing: .09em;
       color: #64748b;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card strong {
       display: block;
-      margin-top: 5px;
+      margin-top: 4px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      font-size: 16px;
+      font-size: 15px;
       line-height: 1;
       font-weight: 750;
       letter-spacing: -.02em;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage {
       background: rgba(239,246,255,.94);
-      border-color: rgba(96,165,250,.5);
+      border-color: rgba(96,165,250,.55);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage strong { color: #2563eb; }
     @media (min-width: 1200px) {
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > h2,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > p,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > div:first-child {
-        max-width: calc(100% - 350px) !important;
+        max-width: calc(100% - 305px) !important;
       }
     }
     @media (max-width: 1199px) {
@@ -89,11 +89,11 @@ const injectStyles = () => {
         top: auto;
         bottom: auto;
         transform: none;
-        width: min(100%, 470px);
-        margin: 10px 0 0 auto;
+        width: min(100%, 430px);
+        margin: 8px 0 0 auto;
       }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-        min-height: 174px !important;
+        min-height: 160px !important;
       }
     }
     @media (max-width: 767px) {
@@ -101,10 +101,10 @@ const injectStyles = () => {
         grid-template-columns: 1fr;
         width: 100%;
       }
-      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 52px; }
+      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 50px; }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
         min-height: 0 !important;
-        padding: 18px !important;
+        padding: 16px !important;
       }
     }
   `;
