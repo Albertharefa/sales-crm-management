@@ -17,6 +17,10 @@ function getSelect(testId: string): HTMLSelectElement | null {
   );
 }
 
+function getOtherInput(inputId: string): HTMLInputElement | null {
+  return document.getElementById(inputId) as HTMLInputElement | null;
+}
+
 function getOrCreateOtherInput(
   select: HTMLSelectElement,
   inputId: string,
@@ -24,7 +28,7 @@ function getOrCreateOtherInput(
   value: string,
   onInput: (value: string) => void,
 ): HTMLInputElement {
-  const existing = document.getElementById(inputId) as HTMLInputElement | null;
+  const existing = getOtherInput(inputId);
   if (existing) return existing;
 
   const input = document.createElement("input");
@@ -60,7 +64,7 @@ function syncOtherField(
   value: string,
   setValue: (next: string) => void,
 ): void {
-  const existing = document.getElementById(inputId);
+  const existing = getOtherInput(inputId);
 
   if (!select) {
     setValue("");
@@ -71,13 +75,16 @@ function syncOtherField(
   ensureOtherOption(select);
 
   if (select.value === CUSTOM_LABEL) {
-    getOrCreateOtherInput(
+    const input = getOrCreateOtherInput(
       select,
       inputId,
       placeholder,
       value,
       setValue,
     );
+
+    // Keep the local value synchronized with the actual field shown to the user.
+    if (input.value !== value) setValue(input.value);
   } else {
     setValue("");
     existing?.remove();
@@ -110,22 +117,39 @@ function rewriteCustomerCreatePayload(data: unknown): unknown {
   if (!data || typeof data !== "object") return data;
 
   const payload = data as Record<string, unknown>;
-  let changed = false;
   const next = { ...payload };
+  let changed = false;
+
+  // Read the visible inputs at the exact moment the POST is sent.
+  // This avoids relying only on the React/DOM synchronization timing.
+  const sourceSelect = getSelect(SOURCE_TEST_ID);
+  const industrySelect = getSelect(INDUSTRY_TEST_ID);
+  const sourceInput = getOtherInput(OTHER_SOURCE_INPUT_ID);
+  const industryInput = getOtherInput(OTHER_INDUSTRY_INPUT_ID);
+
+  const sourceValue =
+    sourceSelect?.value === CUSTOM_LABEL
+      ? (sourceInput?.value.trim() || customSourceValue.trim())
+      : String(next.source ?? "").trim();
+
+  const industryValue =
+    industrySelect?.value === CUSTOM_LABEL
+      ? (industryInput?.value.trim() || customIndustryValue.trim())
+      : String(next.industry ?? "").trim();
 
   if (
-    next.source === CUSTOM_LABEL &&
-    customSourceValue.trim()
+    sourceSelect?.value === CUSTOM_LABEL &&
+    sourceValue
   ) {
-    next.source = customSourceValue.trim();
+    next.source = sourceValue;
     changed = true;
   }
 
   if (
-    next.industry === CUSTOM_LABEL &&
-    customIndustryValue.trim()
+    industrySelect?.value === CUSTOM_LABEL &&
+    industryValue
   ) {
-    next.industry = customIndustryValue.trim();
+    next.industry = industryValue;
     changed = true;
   }
 
@@ -153,7 +177,6 @@ function startCustomerCustomFieldEnhancement(): void {
   if (observerStarted) return;
   observerStarted = true;
 
-  // IMPORTANT: use the same axios instance as apiPost/apiPut.
   installApiRequestGuard();
   syncCustomerCustomFields();
 
