@@ -20,11 +20,6 @@ import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
 
-// Customer "Lainnya" enhancement: registers the API request guard and
-// dynamically shows the manual Industry/Source inputs. This is intentionally
-// imported for its side effect and does not alter any other menu.
-import './customer-source-other';
-
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
 }
