@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from lib.db import db
 from models.crm import LoginRequest, UserPublic
 from routers.common import audit
-from routers.deps import current_user
+from routers.deps import current_user, invalidate_session_cache
 from security.permissions import ROLES, permissions_for_role
 
 router = APIRouter(tags=["auth"])
@@ -78,6 +78,7 @@ async def _change_password(payload: ChangePasswordRequest, response: Response, u
         },
     )
     await db.sessions.delete_many({"user_id": user["id"]})
+    invalidate_session_cache()
     response.delete_cookie(key="crm_session", path="/")
     await _audit_auth(user, "Change Password", user["id"])
     return {"message": "Password berhasil diubah. Silakan login kembali dengan password baru."}
@@ -165,6 +166,7 @@ async def login(payload: LoginRequest, response: Response):
         "last_seen_at": now,
     })
 
+    invalidate_session_cache()
     await _audit_auth(user, "Login Success", user["id"], {"role": role})
 
     secure_cookie = os.getenv("COOKIE_SECURE", "true").strip().lower() in {"1", "true", "yes", "on"}
@@ -204,5 +206,6 @@ async def logout(response: Response, crm_session: str | None = Cookie(default=No
             user = await db.users.find_one({"id": session.get("user_id")})
             await _audit_auth(user, "Logout", session.get("user_id"))
         await db.sessions.delete_one({"token": crm_session})
+        invalidate_session_cache(crm_session)
     response.delete_cookie(key="crm_session", path="/")
     return Response(status_code=204)
