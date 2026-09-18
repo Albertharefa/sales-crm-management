@@ -99,8 +99,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <Toaster position="top-right" richColors />
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[radial-gradient(circle_at_18%_8%,rgba(255,193,7,.34),transparent_22%),radial-gradient(circle_at_78%_28%,rgba(255,94,0,.38),transparent_28%),radial-gradient(circle_at_45%_72%,rgba(220,38,38,.34),transparent_32%),linear-gradient(155deg,#4a0909_0%,#7f1d1d_34%,#c2410c_68%,#8a4b08_100%)] text-white shadow-2xl shadow-slate-950/30 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`} data-testid="sidebar-navigation">
       <div className="relative flex h-[96px] w-full items-center justify-center border-b border-slate-200 bg-white px-3 py-3">
-        <div className="flex h-full w-full items-center justify-center overflow-hidden bg-white">
-          <img src="/wellracom-w-logo.png" alt="Wellracom" className="h-full w-auto max-w-full object-contain" />
+        <div className="flex h-[76px] w-[76px] items-center justify-center overflow-hidden bg-white">
+          <img src="/wellracom-w-logo.png" alt="Wellracom" className="h-[76px] w-[76px] object-contain" />
         </div>
         <button className="absolute right-3 top-3 ml-auto text-slate-700 lg:hidden" onClick={() => setMobileOpen(false)} data-testid="sidebar-close-button"><X className="size-5" /></button>
       </div>
