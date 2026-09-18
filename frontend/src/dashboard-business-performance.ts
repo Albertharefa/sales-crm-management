@@ -21,9 +21,9 @@ const injectStyles = () => {
       overflow: hidden !important;
       box-sizing: border-box !important;
       border-radius: 16px !important;
-      background: linear-gradient(115deg, #fef08a 0%, #fde68a 48%, #fef3c7 100%) !important;
-      border: 1px solid rgba(234,179,8,.28) !important;
-      box-shadow: 0 7px 20px rgba(161,98,7,.10) !important;
+      background: linear-gradient(115deg, #173b78 0%, #1f4f98 52%, #285fa8 100%) !important;
+      border: 1px solid rgba(37,99,235,.28) !important;
+      box-shadow: 0 7px 20px rgba(15,23,42,.16) !important;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
       position: absolute;
@@ -33,19 +33,19 @@ const injectStyles = () => {
       transform: translateY(-50%);
       z-index: 4;
       display: grid;
-      grid-template-columns: repeat(3, minmax(82px, 1fr));
-      gap: 5px;
-      width: min(276px, 32%);
+      grid-template-columns: repeat(3, minmax(76px, 1fr));
+      gap: 4px;
+      width: min(252px, 29%);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card {
       min-width: 0;
-      height: 46px;
-      padding: 6px 8px;
+      height: 42px;
+      padding: 5px 7px;
       box-sizing: border-box;
       border: 1px solid rgba(255,255,255,.9);
       border-radius: 7px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 2px 7px rgba(120,78,5,.10);
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 2px 7px rgba(15,23,42,.12);
       color: #0f172a;
       backdrop-filter: blur(6px);
     }
@@ -61,25 +61,25 @@ const injectStyles = () => {
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-card strong {
       display: block;
-      margin-top: 4px;
+      margin-top: 3px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1;
       font-weight: 750;
       letter-spacing: -.02em;
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage {
-      background: rgba(239,246,255,.94);
-      border-color: rgba(96,165,250,.55);
+      background: rgba(239,246,255,.98);
+      border-color: rgba(147,197,253,.85);
     }
     [data-testid="dashboard-page"] .dashboard-business-performance-percentage strong { color: #2563eb; }
     @media (min-width: 1200px) {
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > h2,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > p,
       [data-testid="dashboard-page"] .dashboard-business-performance-hero > div:first-child {
-        max-width: calc(100% - 305px) !important;
+        max-width: calc(100% - 280px) !important;
       }
     }
     @media (max-width: 1199px) {
@@ -89,11 +89,11 @@ const injectStyles = () => {
         top: auto;
         bottom: auto;
         transform: none;
-        width: min(100%, 430px);
+        width: min(100%, 400px);
         margin: 8px 0 0 auto;
       }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-        min-height: 160px !important;
+        min-height: 158px !important;
       }
     }
     @media (max-width: 767px) {
@@ -101,7 +101,7 @@ const injectStyles = () => {
         grid-template-columns: 1fr;
         width: 100%;
       }
-      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 50px; }
+      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 48px; }
       [data-testid="dashboard-page"] .dashboard-business-performance-hero {
         min-height: 0 !important;
         padding: 16px !important;
