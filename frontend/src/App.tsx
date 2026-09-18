@@ -19,6 +19,7 @@ import SalesTargets from './pages/SalesTargets';
 import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
+import './customer-source-column';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
