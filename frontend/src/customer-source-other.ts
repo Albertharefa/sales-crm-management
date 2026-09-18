@@ -11,6 +11,18 @@ let customIndustryValue = "";
 let observerStarted = false;
 let apiInterceptorInstalled = false;
 
+function getCreateForm(): HTMLFormElement | null {
+  return document.querySelector<HTMLFormElement>(
+    'form[data-testid="customer-create-form"]',
+  );
+}
+
+function getEditForm(): HTMLFormElement | null {
+  return document.querySelector<HTMLFormElement>(
+    'form[data-testid="customer-edit-form"]',
+  );
+}
+
 function findSelectByOptions(optionValues: string[]): HTMLSelectElement | null {
   const selects = Array.from(document.querySelectorAll<HTMLSelectElement>("select"));
   return (
@@ -22,6 +34,19 @@ function findSelectByOptions(optionValues: string[]): HTMLSelectElement | null {
 }
 
 function getSelect(testId: string): HTMLSelectElement | null {
+  const createForm = getCreateForm();
+  const editForm = getEditForm();
+
+  const scoped =
+    createForm?.querySelector<HTMLSelectElement>(
+      `select[data-testid="${testId}"]`,
+    ) ??
+    editForm?.querySelector<HTMLSelectElement>(
+      `select[data-testid="${testId}"]`,
+    );
+
+  if (scoped) return scoped;
+
   const byTestId = document.querySelector<HTMLSelectElement>(
     `select[data-testid="${testId}"]`,
   );
@@ -130,10 +155,24 @@ function syncCustomerCustomFields(): void {
 }
 
 function rewriteCustomerPayload(data: unknown): unknown {
-  if (!data || typeof data !== "object") return data;
+  let payload: Record<string, unknown> | null = null;
+  let wasJsonString = false;
 
-  const payload = data as Record<string, unknown>;
-  const next = { ...payload };
+  if (data && typeof data === "object") {
+    payload = { ...(data as Record<string, unknown>) };
+  } else if (typeof data === "string") {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed === "object") {
+        payload = { ...(parsed as Record<string, unknown>) };
+        wasJsonString = true;
+      }
+    } catch {
+      return data;
+    }
+  }
+
+  if (!payload) return data;
 
   const sourceSelect = getSelect(SOURCE_TEST_ID);
   const industrySelect = getSelect(INDUSTRY_TEST_ID);
@@ -143,22 +182,24 @@ function rewriteCustomerPayload(data: unknown): unknown {
   const sourceValue =
     sourceSelect?.value === CUSTOM_LABEL
       ? (sourceInput?.value.trim() || customSourceValue.trim())
-      : String(next.source ?? "").trim();
+      : String(payload.source ?? "").trim();
 
   const industryValue =
     industrySelect?.value === CUSTOM_LABEL
       ? (industryInput?.value.trim() || customIndustryValue.trim())
-      : String(next.industry ?? "").trim();
+      : String(payload.industry ?? "").trim();
 
   if (sourceSelect?.value === CUSTOM_LABEL && sourceValue) {
-    next.source = sourceValue;
+    payload.source = sourceValue;
+    payload.source_other = sourceValue;
   }
 
   if (industrySelect?.value === CUSTOM_LABEL && industryValue) {
-    next.industry = industryValue;
+    payload.industry = industryValue;
+    payload.industry_other = industryValue;
   }
 
-  return next;
+  return wasJsonString ? JSON.stringify(payload) : payload;
 }
 
 function installApiRequestGuard(): void {
