@@ -26,36 +26,39 @@ async function getSources() {
   );
 }
 
-async function patchCustomerTable() {
-  if (!isCustomersPage()) return;
+function findCustomersTable() {
+  return document.querySelector<HTMLTableElement>(
+    '[data-testid="customers-page"] table',
+  );
+}
 
-  const table = document.querySelector<HTMLTableElement>('[data-testid="customers-page"] table');
-  if (!table) return;
-
+function ensureSourceHeader(table: HTMLTableElement) {
   const headerRow = table.querySelector('thead tr');
-  if (!headerRow) return;
+  if (!headerRow) return false;
 
-  let sourceMap: Map<string, string>;
-  try {
-    sourceMap = await getSources();
-  } catch {
-    return;
-  }
+  if (headerRow.querySelector(`[${HEADER_ATTR}]`)) return true;
 
   const headers = Array.from(headerRow.children) as HTMLElement[];
   const industryHeader = headers.find(
     (cell) => text(cell.textContent).toLowerCase() === 'industri',
   );
 
-  if (industryHeader && !headerRow.querySelector(`[${HEADER_ATTR}]`)) {
-    const sourceHeader = document.createElement('th');
-    sourceHeader.className = industryHeader.className;
-    sourceHeader.textContent = 'Sumber';
-    sourceHeader.setAttribute(HEADER_ATTR, 'true');
-    industryHeader.insertAdjacentElement('afterend', sourceHeader);
-  }
+  if (!industryHeader) return false;
 
+  const sourceHeader = document.createElement('th');
+  sourceHeader.className = industryHeader.className;
+  sourceHeader.textContent = 'Sumber';
+  sourceHeader.setAttribute(HEADER_ATTR, 'true');
+  industryHeader.insertAdjacentElement('afterend', sourceHeader);
+  return true;
+}
+
+function ensureSourceCells(
+  table: HTMLTableElement,
+  sourceMap: Map<string, string>,
+) {
   const rows = table.querySelectorAll<HTMLTableRowElement>('tbody tr');
+
   rows.forEach((row) => {
     if (row.querySelector(`[${CELL_ATTR}]`)) return;
 
@@ -72,6 +75,26 @@ async function patchCustomerTable() {
     sourceCell.setAttribute(CELL_ATTR, 'true');
     industryCell.insertAdjacentElement('afterend', sourceCell);
   });
+}
+
+async function patchCustomerTable() {
+  if (!isCustomersPage()) return;
+
+  const table = findCustomersTable();
+  if (!table) return;
+
+  // IMPORTANT: render the column first. The UI must not depend on the
+  // secondary source lookup succeeding.
+  const headerReady = ensureSourceHeader(table);
+  if (!headerReady) return;
+
+  try {
+    const sourceMap = await getSources();
+    ensureSourceCells(table, sourceMap);
+  } catch {
+    // Keep the Sumber column visible even if the secondary lookup fails.
+    ensureSourceCells(table, new Map());
+  }
 }
 
 let observer: MutationObserver | undefined;
