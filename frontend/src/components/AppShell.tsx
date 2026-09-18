@@ -73,7 +73,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
     syncDashboardWelcome();
     const observer = new MutationObserver(syncDashboardWelcome);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     return () => observer.disconnect();
   }, [location.pathname, user?.name]);
 
