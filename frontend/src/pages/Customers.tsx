@@ -29,6 +29,8 @@ export default function Customers() {
   );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [industryOther, setIndustryOther] = useState("");
+  const [sourceOther, setSourceOther] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -123,6 +125,8 @@ export default function Customers() {
     mutationFn: () =>
       apiPut<Customer>(`/customers/${selectedCustomerId}`, {
         ...form,
+        industry: form.industry === "Lainnya" ? industryOther.trim() : form.industry,
+        source: form.source === "Lainnya" ? sourceOther.trim() : form.source,
         email: form.email || null,
       }),
     onSuccess: () => {
@@ -176,6 +180,8 @@ export default function Customers() {
     mutationFn: () =>
       apiPost<Customer>("/customers", {
         ...form,
+        industry: form.industry === "Lainnya" ? industryOther.trim() : form.industry,
+        source: form.source === "Lainnya" ? sourceOther.trim() : form.source,
         email: form.email || null,
       }),
 
@@ -183,6 +189,8 @@ export default function Customers() {
       qc.invalidateQueries({ queryKey: ["customers"] });
 
       setModal(false);
+      setIndustryOther("");
+      setSourceOther("");
 
       setForm({
         name: "",
@@ -1069,7 +1077,7 @@ export default function Customers() {
               <select
                 className={selectClass}
                 value={form.industry}
-                onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                onChange={(e) => { const value=e.target.value; setForm({ ...form, industry:value }); if(value!=="Lainnya") setIndustryOther(""); }}
                 data-testid="customer-industry-input"
               >
                 <option>Manufacturing</option>
@@ -1081,14 +1089,16 @@ export default function Customers() {
                 <option>Konstruksi</option>
                 <option>EPC</option>
                 <option>Power Generation</option>
-              </select>
-            </Field>
+              
+                <option>Lainnya</option></select>
+                {form.industry === "Lainnya" && <Input className="mt-2" value={industryOther} onChange={(e)=>setIndustryOther(e.target.value)} placeholder="Tulis industri lainnya..." data-testid="customer-industry-other-input" />}
+              </Field>
 
             <Field label="Sumber">
               <select
                 className={selectClass}
                 value={form.source}
-                onChange={(e) => setForm({ ...form, source: e.target.value })}
+                onChange={(e) => { const value=e.target.value; setForm({ ...form, source:value }); if(value!=="Lainnya") setSourceOther(""); }}
                 data-testid="customer-source-input"
               >
                 <option>Referral</option>
@@ -1096,8 +1106,10 @@ export default function Customers() {
                 <option>Pameran</option>
                 <option>Cold Call</option>
                 <option>Partner</option>
-              </select>
-            </Field>
+              
+                <option>Lainnya</option></select>
+                {form.source === "Lainnya" && <Input className="mt-2" value={sourceOther} onChange={(e)=>setSourceOther(e.target.value)} placeholder="Tulis sumber lainnya..." data-testid="customer-source-other-input" />}
+              </Field>
 
             <Field label="Kota">
               <Input
