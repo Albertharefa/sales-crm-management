@@ -1,182 +1,23 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
-const compactMoney = (value: number) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(Number(value) || 0).replace("IDR", "Rp");
+const compactMoney = (value: number) => new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", notation:"compact", maximumFractionDigits:1 }).format(Number(value)||0).replace("IDR","Rp");
 
 const injectStyles = () => {
   if (document.getElementById("dashboard-business-performance-style")) return;
-  const style = document.createElement("style");
-  style.id = "dashboard-business-performance-style";
-  style.textContent = `
-    [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-      position: relative !important;
-      min-width: 0 !important;
-      min-height: 136px !important;
-      padding: 18px 26px !important;
-      overflow: hidden !important;
-      box-sizing: border-box !important;
-      border-radius: 16px !important;
-      background: linear-gradient(115deg, #173b78 0%, #1f4f98 52%, #285fa8 100%) !important;
-      border: 1px solid rgba(37,99,235,.28) !important;
-      box-shadow: 0 7px 20px rgba(15,23,42,.16) !important;
-    }
-    [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
-      position: absolute;
-      right: 18px;
-      top: 50%;
-      bottom: auto;
-      transform: translateY(-50%);
-      z-index: 4;
-      display: grid;
-      grid-template-columns: 82px 102px 82px;
-      gap: 4px;
-      width: 274px;
-    }
-    [data-testid="dashboard-page"] .dashboard-business-performance-card {
-      min-width: 0;
-      height: 38px;
-      padding: 4px 6px;
-      box-sizing: border-box;
-      border: 1px solid rgba(255,255,255,.9);
-      border-radius: 6px;
-      background: rgba(255,255,255,.96);
-      box-shadow: 0 2px 6px rgba(15,23,42,.11);
-      color: #0f172a;
-      backdrop-filter: blur(6px);
-    }
-    [data-testid="dashboard-page"] .dashboard-business-performance-card span {
-      display: block;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      font-size: 7px;
-      font-weight: 700;
-      letter-spacing: .07em;
-      line-height: 1;
-      color: #64748b;
-    }
-    [data-testid="dashboard-page"] .dashboard-business-performance-card strong {
-      display: block;
-      margin-top: 4px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      font-size: 12px;
-      line-height: 1;
-      font-weight: 750;
-      letter-spacing: -.02em;
-    }
-    [data-testid="dashboard-page"] .dashboard-business-performance-percentage {
-      background: rgba(239,246,255,.98);
-      border-color: rgba(147,197,253,.85);
-    }
-    [data-testid="dashboard-page"] .dashboard-business-performance-percentage strong { color: #2563eb; }
-    @media (min-width: 1200px) {
-      [data-testid="dashboard-page"] .dashboard-business-performance-hero > h2,
-      [data-testid="dashboard-page"] .dashboard-business-performance-hero > p,
-      [data-testid="dashboard-page"] .dashboard-business-performance-hero > div:first-child {
-        max-width: calc(100% - 280px) !important;
-      }
-    }
-    @media (max-width: 1199px) {
-      [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
-        position: relative;
-        right: auto;
-        top: auto;
-        bottom: auto;
-        transform: none;
-        grid-template-columns: 82px 102px 82px;
-        width: 274px;
-        margin: 8px 0 0 auto;
-      }
-      [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-        min-height: 158px !important;
-      }
-    }
-    @media (max-width: 767px) {
-      [data-testid="dashboard-page"] .dashboard-business-performance-metrics {
-        grid-template-columns: 1fr;
-        width: 100%;
-      }
-      [data-testid="dashboard-page"] .dashboard-business-performance-card { height: 42px; }
-      [data-testid="dashboard-page"] .dashboard-business-performance-hero {
-        min-height: 0 !important;
-        padding: 16px !important;
-      }
-    }
-  `;
-  document.head.appendChild(style);
+  const style = document.createElement("style"); style.id="dashboard-business-performance-style";
+  style.textContent=`
+    [data-testid="dashboard-page"] .dashboard-business-performance-hero{position:relative!important;min-width:0!important;min-height:136px!important;padding:18px 26px!important;overflow:hidden!important;box-sizing:border-box!important;border-radius:16px!important;background:linear-gradient(115deg,#173b78 0%,#1f4f98 52%,#285fa8 100%)!important;border:1px solid rgba(37,99,235,.28)!important;box-shadow:0 7px 20px rgba(15,23,42,.16)!important}
+    [data-testid="dashboard-page"] .dashboard-business-performance-metrics{position:absolute;right:18px;top:50%;transform:translateY(-50%);z-index:4;display:grid;grid-template-columns:82px 102px 82px;gap:4px;width:274px}
+    [data-testid="dashboard-page"] .dashboard-business-performance-card{min-width:0;height:38px;padding:4px 6px;box-sizing:border-box;border:1px solid rgba(255,255,255,.9);border-radius:6px;background:rgba(255,255,255,.96);box-shadow:0 2px 6px rgba(15,23,42,.11);color:#0f172a;backdrop-filter:blur(6px)}
+    [data-testid="dashboard-page"] .dashboard-business-performance-card span{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:7px;font-weight:700;letter-spacing:.07em;line-height:1;color:#64748b}
+    [data-testid="dashboard-page"] .dashboard-business-performance-card strong{display:block;margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;line-height:1;font-weight:750;letter-spacing:-.02em}
+    [data-testid="dashboard-page"] .dashboard-business-performance-percentage{background:rgba(239,246,255,.98);border-color:rgba(147,197,253,.85)}
+    [data-testid="dashboard-page"] .dashboard-business-performance-percentage strong{color:#2563eb}
+    @media(min-width:1200px){[data-testid="dashboard-page"] .dashboard-business-performance-hero>h2,[data-testid="dashboard-page"] .dashboard-business-performance-hero>p,[data-testid="dashboard-page"] .dashboard-business-performance-hero>div:first-child{max-width:calc(100% - 300px)!important}}
+    @media(max-width:1199px){[data-testid="dashboard-page"] .dashboard-business-performance-metrics{position:relative;right:auto;top:auto;transform:none;grid-template-columns:82px 102px 82px;width:274px;margin:8px 0 0 auto}[data-testid="dashboard-page"] .dashboard-business-performance-hero{min-height:158px!important}}
+    @media(max-width:767px){[data-testid="dashboard-page"] .dashboard-business-performance-metrics{grid-template-columns:1fr;width:100%}[data-testid="dashboard-page"] .dashboard-business-performance-card{height:42px}[data-testid="dashboard-page"] .dashboard-business-performance-hero{min-height:0!important;padding:16px!important}}
+  `; document.head.appendChild(style);
 };
-
-const findHero = () =>
-  Array.from(document.querySelectorAll<HTMLElement>('[data-testid="dashboard-page"] section')).find(
-    (section) => section.querySelector("h2")?.textContent?.trim() === "Business performance at a glance",
-  );
-
-const ensureMetrics = async () => {
-  if (window.location.pathname !== "/") return;
-
-  const hero = findHero();
-  if (!hero || hero.querySelector(".dashboard-business-performance-metrics")) return;
-  hero.classList.add("dashboard-business-performance-hero");
-  injectStyles();
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/dashboard?client_version=20260912`, {
-      credentials: "include",
-    });
-    if (!response.ok) return;
-
-    const data = await response.json();
-    const target = Number(data?.sales_target) || 0;
-    const achievement = Number(data?.target_achievement) || 0;
-
-    const achievementForPercentage =
-      target >= 1_000_000_000 && achievement > 0 && achievement < 1_000_000_000
-        ? achievement * 1_000_000
-        : achievement;
-    const percentage = target > 0 ? (achievementForPercentage / target) * 100 : 0;
-
-    const metrics = document.createElement("div");
-    metrics.className = "dashboard-business-performance-metrics";
-    metrics.innerHTML = `
-      <div class="dashboard-business-performance-card dashboard-business-performance-target">
-        <span>TARGET</span>
-        <strong>${compactMoney(target)}</strong>
-      </div>
-      <div class="dashboard-business-performance-card dashboard-business-performance-achievement">
-        <span>PENCAPAIAN</span>
-        <strong>${compactMoney(achievement)}</strong>
-      </div>
-      <div class="dashboard-business-performance-card dashboard-business-performance-percentage">
-        <span>PENCAPAIAN %</span>
-        <strong>${percentage.toFixed(2)}%</strong>
-      </div>
-    `;
-
-    hero.appendChild(metrics);
-  } catch {
-    // Dashboard remains usable if the auxiliary performance request fails.
-  }
-};
-
-const boot = () => void ensureMetrics();
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", boot, { once: true });
-} else {
-  boot();
-}
-
-const observer = new MutationObserver(() => {
-  if (findHero()) {
-    void ensureMetrics();
-    observer.disconnect();
-  }
-});
-observer.observe(document.body, { childList: true, subtree: true });
+const findHero=()=>Array.from(document.querySelectorAll<HTMLElement>('[data-testid="dashboard-page"] section')).find(section=>section.querySelector("h2")?.textContent?.trim()==="Business performance at a glance");
+const ensureMetrics=async()=>{if(window.location.pathname!=="/")return;const hero=findHero();if(!hero||hero.querySelector(".dashboard-business-performance-metrics"))return;hero.classList.add("dashboard-business-performance-hero");injectStyles();try{const response=await fetch(`${API_BASE_URL}/dashboard?client_version=20260912`,{credentials:"include"});if(!response.ok)return;const data=await response.json();const target=Number(data?.sales_target)||0;const achievement=Number(data?.target_achievement)||0;const achievementForPercentage=target>=1_000_000_000&&achievement>0&&achievement<1_000_000_000?achievement*1_000_000:achievement;const percentage=target>0?(achievementForPercentage/target)*100:0;const metrics=document.createElement("div");metrics.className="dashboard-business-performance-metrics";metrics.innerHTML=`<div class="dashboard-business-performance-card dashboard-business-performance-target"><span>TARGET</span><strong>${compactMoney(target)}</strong></div><div class="dashboard-business-performance-card dashboard-business-performance-achievement"><span>PENCAPAIAN</span><strong>${compactMoney(achievement)}</strong></div><div class="dashboard-business-performance-card dashboard-business-performance-percentage"><span>PENCAPAIAN %</span><strong>${percentage.toFixed(2)}%</strong></div>`;hero.appendChild(metrics)}catch{/* Dashboard remains usable if auxiliary request fails. */}};
+const boot=()=>void ensureMetrics();if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();const observer=new MutationObserver(()=>{if(findHero()){void ensureMetrics();observer.disconnect()}});observer.observe(document.body,{childList:true,subtree:true});
