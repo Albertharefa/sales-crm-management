@@ -63,11 +63,26 @@ function syncOtherSourceField(): void {
   }
 }
 
-function installFetchGuard(): void {
-  if (window.__wellracomCustomerSourceFetchGuard) return;
+function rewriteCustomerCreateBody(body: Document | XMLHttpRequestBodyInit | null): Document | XMLHttpRequestBodyInit | null {
+  if (!customSourceValue.trim() || typeof body !== "string") return body;
+
+  try {
+    const payload = JSON.parse(body) as Record<string, unknown>;
+    if (payload.source === CUSTOM_SOURCE_LABEL) {
+      payload.source = customSourceValue.trim();
+      return JSON.stringify(payload);
+    }
+  } catch {
+    // Leave non-JSON requests untouched.
+  }
+
+  return body;
+}
+
+function installRequestGuards(): void {
+  if (window.__wellracomCustomerSourceRequestGuard) return;
 
   const originalFetch = window.fetch.bind(window);
-
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const requestUrl =
       typeof input === "string"
@@ -75,42 +90,49 @@ function installFetchGuard(): void {
         : input instanceof URL
           ? input.toString()
           : input.url;
+    const method = (
+      init?.method ?? (input instanceof Request ? input.method : "GET")
+    ).toUpperCase();
 
-    const method = (init?.method ?? (input instanceof Request ? input.method : "GET"))
-      .toUpperCase();
-
-    if (
-      method === "POST" &&
-      requestUrl.includes("/customers") &&
-      customSourceValue.trim()
-    ) {
-      const body = init?.body;
-
-      if (typeof body === "string") {
-        try {
-          const payload = JSON.parse(body) as Record<string, unknown>;
-          if (payload.source === CUSTOM_SOURCE_LABEL) {
-            payload.source = customSourceValue.trim();
-            return originalFetch(input, {
-              ...init,
-              body: JSON.stringify(payload),
-            });
-          }
-        } catch {
-          // Leave non-JSON requests untouched.
-        }
+    if (method === "POST" && requestUrl.includes("/customers")) {
+      const rewrittenBody = rewriteCustomerCreateBody(init?.body ?? null);
+      if (rewrittenBody !== (init?.body ?? null)) {
+        return originalFetch(input, { ...init, body: rewrittenBody });
       }
     }
 
     return originalFetch(input, init);
   };
 
-  window.__wellracomCustomerSourceFetchGuard = true;
+  const originalOpen = XMLHttpRequest.prototype.open;
+  const originalSend = XMLHttpRequest.prototype.send;
+  const requestMeta = new WeakMap<XMLHttpRequest, { method: string; url: string }>();
+
+  XMLHttpRequest.prototype.open = function (
+    method: string,
+    url: string | URL,
+    async?: boolean,
+    username?: string | null,
+    password?: string | null,
+  ) {
+    requestMeta.set(this, { method: method.toUpperCase(), url: String(url) });
+    return originalOpen.call(this, method, url, async ?? true, username ?? null, password ?? null);
+  };
+
+  XMLHttpRequest.prototype.send = function (body?: Document | XMLHttpRequestBodyInit | null) {
+    const meta = requestMeta.get(this);
+    if (meta?.method === "POST" && meta.url.includes("/customers")) {
+      body = rewriteCustomerCreateBody(body ?? null);
+    }
+    return originalSend.call(this, body);
+  };
+
+  window.__wellracomCustomerSourceRequestGuard = true;
 }
 
 declare global {
   interface Window {
-    __wellracomCustomerSourceFetchGuard?: boolean;
+    __wellracomCustomerSourceRequestGuard?: boolean;
   }
 }
 
@@ -118,7 +140,7 @@ function startCustomerSourceEnhancement(): void {
   if (observerStarted) return;
   observerStarted = true;
 
-  installFetchGuard();
+  installRequestGuards();
   syncOtherSourceField();
 
   const observer = new MutationObserver(() => {
@@ -132,7 +154,10 @@ function startCustomerSourceEnhancement(): void {
 
   document.addEventListener("change", (event) => {
     const target = event.target;
-    if (target instanceof HTMLSelectElement && target.dataset.testid === SOURCE_TEST_ID) {
+    if (
+      target instanceof HTMLSelectElement &&
+      target.dataset.testid === SOURCE_TEST_ID
+    ) {
       syncOtherSourceField();
     }
   });
