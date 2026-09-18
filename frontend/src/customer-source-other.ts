@@ -1,193 +1,164 @@
-import axios from "axios";
+import { api } from "./lib/api";
 
-const CUSTOM_SOURCE_LABEL = "Lainnya";
+const CUSTOM_LABEL = "Lainnya";
 const SOURCE_TEST_ID = "customer-source-input";
+const INDUSTRY_TEST_ID = "customer-industry-input";
 const OTHER_SOURCE_INPUT_ID = "customer-source-other-input";
+const OTHER_INDUSTRY_INPUT_ID = "customer-industry-other-input";
 
 let customSourceValue = "";
+let customIndustryValue = "";
 let observerStarted = false;
-let axiosInterceptorInstalled = false;
+let apiInterceptorInstalled = false;
 
-function getSourceSelect(): HTMLSelectElement | null {
+function getSelect(testId: string): HTMLSelectElement | null {
   return document.querySelector<HTMLSelectElement>(
-    `select[data-testid="${SOURCE_TEST_ID}"]`,
+    `select[data-testid="${testId}"]`,
   );
 }
 
-function getOrCreateOtherInput(select: HTMLSelectElement): HTMLInputElement {
-  const existing = document.getElementById(
-    OTHER_SOURCE_INPUT_ID,
-  ) as HTMLInputElement | null;
+function getOrCreateOtherInput(
+  select: HTMLSelectElement,
+  inputId: string,
+  placeholder: string,
+  value: string,
+  onInput: (value: string) => void,
+): HTMLInputElement {
+  const existing = document.getElementById(inputId) as HTMLInputElement | null;
   if (existing) return existing;
 
   const input = document.createElement("input");
-  input.id = OTHER_SOURCE_INPUT_ID;
+  input.id = inputId;
   input.type = "text";
-  input.placeholder = "Tulis sumber lainnya...";
+  input.placeholder = placeholder;
   input.autocomplete = "off";
   input.className =
     "mt-2 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30";
-  input.value = customSourceValue;
-
-  input.addEventListener("input", () => {
-    customSourceValue = input.value;
-  });
+  input.value = value;
+  input.addEventListener("input", () => onInput(input.value));
 
   select.insertAdjacentElement("afterend", input);
   return input;
 }
 
-function syncOtherSourceField(): void {
-  const select = getSourceSelect();
-  const existing = document.getElementById(OTHER_SOURCE_INPUT_ID);
+function ensureOtherOption(select: HTMLSelectElement): void {
+  const exists = Array.from(select.options).some(
+    (option) => option.value === CUSTOM_LABEL,
+  );
+  if (!exists) {
+    const option = document.createElement("option");
+    option.value = CUSTOM_LABEL;
+    option.textContent = CUSTOM_LABEL;
+    select.appendChild(option);
+  }
+}
+
+function syncOtherField(
+  select: HTMLSelectElement | null,
+  inputId: string,
+  placeholder: string,
+  value: string,
+  setValue: (next: string) => void,
+): void {
+  const existing = document.getElementById(inputId);
 
   if (!select) {
-    customSourceValue = "";
+    setValue("");
     existing?.remove();
     return;
   }
 
-  const otherOption = Array.from(select.options).find(
-    (option) => option.value === CUSTOM_SOURCE_LABEL,
-  );
+  ensureOtherOption(select);
 
-  if (!otherOption) {
-    const option = document.createElement("option");
-    option.value = CUSTOM_SOURCE_LABEL;
-    option.textContent = CUSTOM_SOURCE_LABEL;
-    select.appendChild(option);
-  }
-
-  if (select.value === CUSTOM_SOURCE_LABEL) {
-    getOrCreateOtherInput(select);
+  if (select.value === CUSTOM_LABEL) {
+    getOrCreateOtherInput(
+      select,
+      inputId,
+      placeholder,
+      value,
+      setValue,
+    );
   } else {
-    customSourceValue = "";
+    setValue("");
     existing?.remove();
   }
 }
 
-function rewriteCustomerCreateBody(body: unknown): unknown {
-  if (!customSourceValue.trim()) return body;
+function syncCustomerCustomFields(): void {
+  syncOtherField(
+    getSelect(SOURCE_TEST_ID),
+    OTHER_SOURCE_INPUT_ID,
+    "Tulis sumber lainnya...",
+    customSourceValue,
+    (next) => {
+      customSourceValue = next;
+    },
+  );
 
-  try {
-    if (typeof body === "string") {
-      const payload = JSON.parse(body) as Record<string, unknown>;
-      if (payload.source === CUSTOM_SOURCE_LABEL) {
-        payload.source = customSourceValue.trim();
-        return JSON.stringify(payload);
-      }
-    }
-
-    if (body && typeof body === "object" && "source" in body) {
-      const payload = body as Record<string, unknown>;
-      if (payload.source === CUSTOM_SOURCE_LABEL) {
-        payload.source = customSourceValue.trim();
-      }
-    }
-  } catch {
-    // Leave non-JSON requests untouched.
-  }
-
-  return body;
+  syncOtherField(
+    getSelect(INDUSTRY_TEST_ID),
+    OTHER_INDUSTRY_INPUT_ID,
+    "Tulis industri lainnya...",
+    customIndustryValue,
+    (next) => {
+      customIndustryValue = next;
+    },
+  );
 }
 
-function installAxiosRequestGuard(): void {
-  if (axiosInterceptorInstalled) return;
+function rewriteCustomerCreatePayload(data: unknown): unknown {
+  if (!data || typeof data !== "object") return data;
 
-  axios.interceptors.request.use((config) => {
+  const payload = data as Record<string, unknown>;
+  let changed = false;
+  const next = { ...payload };
+
+  if (
+    next.source === CUSTOM_LABEL &&
+    customSourceValue.trim()
+  ) {
+    next.source = customSourceValue.trim();
+    changed = true;
+  }
+
+  if (
+    next.industry === CUSTOM_LABEL &&
+    customIndustryValue.trim()
+  ) {
+    next.industry = customIndustryValue.trim();
+    changed = true;
+  }
+
+  return changed ? next : data;
+}
+
+function installApiRequestGuard(): void {
+  if (apiInterceptorInstalled) return;
+
+  api.interceptors.request.use((config) => {
     const method = String(config.method ?? "get").toUpperCase();
     const url = String(config.url ?? "");
 
     if (method === "POST" && /(?:^|\/)customers(?:$|\/)/.test(url)) {
-      const rewritten = rewriteCustomerCreateBody(config.data);
-      if (rewritten !== config.data) {
-        config.data = rewritten;
-      }
+      config.data = rewriteCustomerCreatePayload(config.data);
     }
 
     return config;
   });
 
-  axiosInterceptorInstalled = true;
+  apiInterceptorInstalled = true;
 }
 
-function installBrowserRequestGuards(): void {
-  if (window.__wellracomCustomerSourceRequestGuard) return;
-
-  const originalFetch = window.fetch.bind(window);
-  window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-    const requestUrl =
-      typeof input === "string"
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input.url;
-    const method = (
-      init?.method ?? (input instanceof Request ? input.method : "GET")
-    ).toUpperCase();
-
-    if (method === "POST" && requestUrl.includes("/customers")) {
-      const originalBody = init?.body ?? null;
-      const rewrittenBody = rewriteCustomerCreateBody(originalBody);
-      if (rewrittenBody !== originalBody) {
-        return originalFetch(input, { ...init, body: rewrittenBody as BodyInit });
-      }
-    }
-
-    return originalFetch(input, init);
-  };
-
-  const originalOpen = XMLHttpRequest.prototype.open;
-  const originalSend = XMLHttpRequest.prototype.send;
-  const requestMeta = new WeakMap<XMLHttpRequest, { method: string; url: string }>();
-
-  XMLHttpRequest.prototype.open = function (
-    method: string,
-    url: string | URL,
-    async?: boolean,
-    username?: string | null,
-    password?: string | null,
-  ) {
-    requestMeta.set(this, { method: method.toUpperCase(), url: String(url) });
-    return originalOpen.call(
-      this,
-      method,
-      url,
-      async ?? true,
-      username ?? null,
-      password ?? null,
-    );
-  };
-
-  XMLHttpRequest.prototype.send = function (
-    body?: Document | XMLHttpRequestBodyInit | null,
-  ) {
-    const meta = requestMeta.get(this);
-    if (meta?.method === "POST" && meta.url.includes("/customers")) {
-      body = rewriteCustomerCreateBody(body) as Document | XMLHttpRequestBodyInit | null;
-    }
-    return originalSend.call(this, body);
-  };
-
-  window.__wellracomCustomerSourceRequestGuard = true;
-}
-
-declare global {
-  interface Window {
-    __wellracomCustomerSourceRequestGuard?: boolean;
-  }
-}
-
-function startCustomerSourceEnhancement(): void {
+function startCustomerCustomFieldEnhancement(): void {
   if (observerStarted) return;
   observerStarted = true;
 
-  installAxiosRequestGuard();
-  installBrowserRequestGuards();
-  syncOtherSourceField();
+  // IMPORTANT: use the same axios instance as apiPost/apiPut.
+  installApiRequestGuard();
+  syncCustomerCustomFields();
 
   const observer = new MutationObserver(() => {
-    syncOtherSourceField();
+    syncCustomerCustomFields();
   });
 
   observer.observe(document.body, {
@@ -199,19 +170,22 @@ function startCustomerSourceEnhancement(): void {
     const target = event.target;
     if (
       target instanceof HTMLSelectElement &&
-      target.dataset.testid === SOURCE_TEST_ID
+      (target.dataset.testid === SOURCE_TEST_ID ||
+        target.dataset.testid === INDUSTRY_TEST_ID)
     ) {
-      syncOtherSourceField();
+      syncCustomerCustomFields();
     }
   });
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", startCustomerSourceEnhancement, {
-    once: true,
-  });
+  document.addEventListener(
+    "DOMContentLoaded",
+    startCustomerCustomFieldEnhancement,
+    { once: true },
+  );
 } else {
-  startCustomerSourceEnhancement();
+  startCustomerCustomFieldEnhancement();
 }
 
 export {};
