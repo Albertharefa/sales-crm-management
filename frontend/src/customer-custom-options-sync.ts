@@ -31,7 +31,21 @@ const BASE_SOURCES = [
   'Lainnya',
 ];
 
+const SYNC_ATTR = 'data-customer-options-synced';
 const clean = (value: unknown) => String(value ?? '').trim();
+
+let syncPromise: Promise<CustomerOptionResponse> | null = null;
+const syncedElements = new WeakSet<HTMLSelectElement>();
+
+function loadCustomerOptions() {
+  if (!syncPromise) {
+    syncPromise = apiGet<CustomerOptionResponse>('/customers?page=1&page_size=100')
+      .finally(() => {
+        syncPromise = null;
+      });
+  }
+  return syncPromise;
+}
 
 function appendMissingOptions(select: HTMLSelectElement, values: string[]) {
   const existing = new Set(
@@ -48,20 +62,20 @@ function appendMissingOptions(select: HTMLSelectElement, values: string[]) {
   }
 }
 
-async function syncCustomerCustomOptions() {
-  if (window.location.pathname !== '/customers') return;
-
-  const industrySelect = document.querySelector<HTMLSelectElement>(
-    '[data-testid="customer-industry-input"]',
-  );
-  const sourceSelect = document.querySelector<HTMLSelectElement>(
-    '[data-testid="customer-source-input"]',
-  );
-
+async function syncCustomerCustomOptions(
+  industrySelect: HTMLSelectElement | null,
+  sourceSelect: HTMLSelectElement | null,
+) {
   if (!industrySelect && !sourceSelect) return;
 
+  const targets = [industrySelect, sourceSelect].filter(
+    (select): select is HTMLSelectElement => Boolean(select),
+  );
+
+  if (targets.length > 0 && targets.every((select) => syncedElements.has(select))) return;
+
   try {
-    const response = await apiGet<CustomerOptionResponse>('/customers?page=1&page_size=100');
+    const response = await loadCustomerOptions();
     const rows = response?.items ?? [];
 
     const industries = [...BASE_INDUSTRIES];
@@ -78,21 +92,45 @@ async function syncCustomerCustomOptions() {
       }
     }
 
-    if (industrySelect) appendMissingOptions(industrySelect, industries);
-    if (sourceSelect) appendMissingOptions(sourceSelect, sources);
+    if (industrySelect) {
+      appendMissingOptions(industrySelect, industries);
+      industrySelect.setAttribute(SYNC_ATTR, 'true');
+      syncedElements.add(industrySelect);
+    }
+
+    if (sourceSelect) {
+      appendMissingOptions(sourceSelect, sources);
+      sourceSelect.setAttribute(SYNC_ATTR, 'true');
+      syncedElements.add(sourceSelect);
+    }
   } catch {
     // Keep the normal static options if the custom-option lookup fails.
   }
 }
 
-let timer: number | undefined;
+function findCustomerOptionSelects() {
+  if (window.location.pathname !== '/customers') return;
+
+  const industrySelect = document.querySelector<HTMLSelectElement>(
+    '[data-testid="customer-industry-input"]',
+  );
+  const sourceSelect = document.querySelector<HTMLSelectElement>(
+    '[data-testid="customer-source-input"]',
+  );
+
+  if (!industrySelect && !sourceSelect) return;
+
+  void syncCustomerCustomOptions(industrySelect, sourceSelect);
+}
+
+let observer: MutationObserver | undefined;
 
 function startCustomerOptionSync() {
-  if (timer !== undefined) window.clearInterval(timer);
-  timer = window.setInterval(() => {
-    void syncCustomerCustomOptions();
-  }, 1500);
-  void syncCustomerCustomOptions();
+  observer?.disconnect();
+  observer = new MutationObserver(() => findCustomerOptionSelects());
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  findCustomerOptionSelects();
 }
 
 startCustomerOptionSync();
