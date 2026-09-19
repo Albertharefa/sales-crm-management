@@ -1,0 +1,78 @@
+/* Customer Detail > Sales Pipeline table
+   Fixed, content-driven column widths so Opportunity/Stage never collide.
+   The table keeps its geometry while the viewport zooms or becomes narrower;
+   the wrapper scrolls horizontally instead of squeezing columns. */
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table {
+  width: 1160px !important;
+  min-width: 1160px !important;
+  max-width: none !important;
+  table-layout: fixed !important;
+  border-collapse: collapse;
+}
+
+/* Locked column widths: sized for the actual data we display. */
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table th:nth-child(1),
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td:nth-child(1) {
+  width: 380px !important;
+  min-width: 380px !important;
+  max-width: 380px !important;
+}
+
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table th:nth-child(2),
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td:nth-child(2) {
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+}
+
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table th:nth-child(3),
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td:nth-child(3) {
+  width: 210px !important;
+  min-width: 210px !important;
+  max-width: 210px !important;
+}
+
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table th:nth-child(4),
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td:nth-child(4) {
+  width: 210px !important;
+  min-width: 210px !important;
+  max-width: 210px !important;
+}
+
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table th:nth-child(5),
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td:nth-child(5) {
+  width: 180px !important;
+  min-width: 180px !important;
+  max-width: 180px !important;
+}
+
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table th,
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td {
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Keep the Stage badge inside its own column and never allow it to overlap. */
+[data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto > table td:nth-child(2) > * {
+  max-width: 150px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+  [data-testid="customer-detail-page"] > section:last-of-type > div:last-child > .overflow-x-auto {
+    padding-bottom: 2px;
+  }
+}
