@@ -1,12 +1,40 @@
-/* Keep the original Wellracom CRM logo asset. Fill the logo header more fully without recreating the logo. */
+/* FINAL SIDEBAR LOGO LAYOUT
+   Use the Wellracom mark only. The CRM title is rendered once by AppShell below it.
+   Do not use the old combined logo asset as a background. */
 aside[data-testid="sidebar-navigation"] > div:first-child > div.flex {
-  background-image: url('/wellracom-crm-logo.svg');
+  background-image: none !important;
+  background-color: transparent !important;
   background-repeat: no-repeat;
-  background-position: center center;
-  background-size: 135% auto;
+  background-position: center;
+  background-size: contain;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  text-align: center !important;
+  overflow: hidden !important;
 }
 
-/* The same original asset is rendered through the background above. */
+/* One Wellracom logo, centered above the single CRM title. */
 aside[data-testid="sidebar-navigation"] > div:first-child > div.flex > img {
-  visibility: hidden;
+  visibility: visible !important;
+  display: block !important;
+  width: 76px !important;
+  height: 76px !important;
+  flex: 0 0 76px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  margin: 0 auto !important;
+}
+
+/* Keep the title compact, bold and centered inside the white header. */
+aside[data-testid="sidebar-navigation"] > div:first-child > div.flex > div {
+  width: 100% !important;
+  margin: 0 !important;
+  text-align: center !important;
+  font-size: 17px !important;
+  line-height: 1.05 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: #0f172a !important;
 }
