@@ -1,11 +1,12 @@
-/* Use the existing repository logo asset directly. No recreated/generated logo. */
+/* Keep the original Wellracom CRM logo asset. Fill the logo header more fully without recreating the logo. */
 aside[data-testid="sidebar-navigation"] > div:first-child > div.flex {
   background-image: url('/wellracom-crm-logo.svg');
   background-repeat: no-repeat;
-  background-position: center;
-  background-size: contain;
+  background-position: center center;
+  background-size: 135% auto;
 }
 
+/* The same original asset is rendered through the background above. */
 aside[data-testid="sidebar-navigation"] > div:first-child > div.flex > img {
   visibility: hidden;
 }
