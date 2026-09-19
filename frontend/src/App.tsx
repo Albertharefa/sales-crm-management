@@ -22,6 +22,7 @@ import Settings from './pages/Settings';
 import './customer-source-column';
 import './customer-detail-pipeline-table.css';
 import './globalEscapeListener';
+import './quotation-po-action-icons.css';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
