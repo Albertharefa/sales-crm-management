@@ -38,10 +38,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return <div className="min-h-svh bg-slate-50 text-slate-900" data-testid="crm-app-shell">
     <Toaster position="top-right" richColors />
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[radial-gradient(circle_at_18%_8%,rgba(255,193,7,.34),transparent_22%),radial-gradient(circle_at_78%_28%,rgba(255,94,0,.38),transparent_28%),radial-gradient(circle_at_45%_72%,rgba(220,38,38,.34),transparent_32%),linear-gradient(155deg,#4a0909_0%,#7f1d1d_34%,#c2410c_68%,#8a4b08_100%)] text-white shadow-2xl shadow-slate-950/30 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`} data-testid="sidebar-navigation">
-      <div className="relative flex h-[160px] shrink-0 items-center justify-center overflow-hidden border-b border-slate-200 bg-white px-3 py-3" data-testid="sidebar-logo-header">
-        <div className="flex h-full w-full flex-col items-center justify-center gap-0.5 overflow-hidden text-center">
-          <img src="/wellracom-logo.svg?v=20260919" alt="Wellracom" className="block h-[108px] w-[108px] shrink-0 object-contain" data-testid="wellracom-logo" />
-          <div className="w-full text-center text-[18px] font-extrabold leading-[1.02] tracking-[-0.02em] text-slate-950">CRM SALES<br />MANAGEMENT</div>
+      <div className="relative flex h-[160px] shrink-0 items-center justify-center overflow-hidden border-b border-slate-200 bg-white" data-testid="sidebar-logo-header">
+        <div className="flex h-full w-full flex-col items-center justify-center overflow-hidden text-center">
+          <img src="/wellracom-logo.svg?v=20260919" alt="Wellracom" className="block h-[120px] w-[120px] shrink-0 object-contain" data-testid="wellracom-logo" />
+          <div className="w-full px-1 text-center text-[20px] font-extrabold leading-[0.98] tracking-[-0.025em] text-slate-950">CRM SALES<br />MANAGEMENT</div>
         </div>
         <button className="absolute right-3 top-3 ml-auto text-slate-700 lg:hidden" onClick={() => setMobileOpen(false)} data-testid="sidebar-close-button"><X className="size-5" /></button>
       </div>
