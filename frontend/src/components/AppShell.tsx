@@ -16,90 +16,32 @@ const navGroups = [
   { label: "MANAGEMENT", items: [{ label: "Sales Team", to: "/sales-team", icon: Target }, { label: "Target Sales", to: "/sales-targets", icon: Target }, { label: "Audit Log", to: "/audit-log", icon: ShieldCheck }] },
   { label: "ADMINISTRATION", items: [{ label: "Users", to: "/users", icon: Users }, { label: "Products", to: "/products", icon: Boxes }, { label: "Settings", to: "/settings", icon: Settings }] },
 ];
-
 const roleAllowedPrefixes: Record<string, string[]> = {
   SUPER_ADMIN: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products", "/settings"],
   SALES_MANAGER: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products", "/settings"],
   SALES: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/products", "/settings"],
 };
-
-function canAccessPath(pathname: string, role: string) {
-  if (pathname === "/") return true;
-  const prefixes = roleAllowedPrefixes[role] ?? [];
-  return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
-
-export function useCurrentUser() {
-  return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/me"), retry: false, staleTime: 60_000 });
-}
+function canAccessPath(pathname: string, role: string) { if (pathname === "/") return true; const prefixes = roleAllowedPrefixes[role] ?? []; return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)); }
+export function useCurrentUser() { return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/me"), retry: false, staleTime: 60_000 }); }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const location = useLocation(); const navigate = useNavigate(); const queryClient = useQueryClient();
   const { data: user, error: sessionError, isLoading: sessionLoading, isError: sessionFailed, refetch: refetchSession } = useCurrentUser();
   const [mobileOpen, setMobileOpen] = useState(false);
-
-  async function logout() {
-    await endSession();
-    queryClient.clear();
-    toast.success("Sesi berhasil diakhiri");
-    navigate("/login");
-  }
-
-  useEffect(() => {
-    if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) {
-      queryClient.clear();
-      navigate("/login", { replace: true });
-    }
-  }, [navigate, queryClient, sessionError]);
-
-  useEffect(() => {
-    if (location.pathname !== "/" || !user?.name) return;
-
-    const syncDashboardWelcome = () => {
-      const expected = `Selamat Datang, ${user.name}!`;
-      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-      const welcomePattern = /^Selamat Datang,\s*[^!]+!$/;
-      let node = walker.nextNode();
-      while (node) {
-        const text = node.textContent?.trim() ?? "";
-        if (welcomePattern.test(text) && text !== expected) node.textContent = expected;
-        node = walker.nextNode();
-      }
-    };
-
-    syncDashboardWelcome();
-    const observer = new MutationObserver(syncDashboardWelcome);
-    observer.observe(document.body, { childList: true, subtree: true });
-    return () => observer.disconnect();
-  }, [location.pathname, user?.name]);
-
+  async function logout() { await endSession(); queryClient.clear(); toast.success("Sesi berhasil diakhiri"); navigate("/login"); }
+  useEffect(() => { if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) { queryClient.clear(); navigate("/login", { replace: true }); } }, [navigate, queryClient, sessionError]);
+  useEffect(() => { if (location.pathname !== "/" || !user?.name) return; const syncDashboardWelcome = () => { const expected = `Selamat Datang, ${user.name}!`; const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const welcomePattern = /^Selamat Datang,\s*[^!]+!$/; let node = walker.nextNode(); while (node) { const text = node.textContent?.trim() ?? ""; if (welcomePattern.test(text) && text !== expected) node.textContent = expected; node = walker.nextNode(); } }; syncDashboardWelcome(); const observer = new MutationObserver(syncDashboardWelcome); observer.observe(document.body, { childList: true, subtree: true }); return () => observer.disconnect(); }, [location.pathname, user?.name]);
   if (sessionLoading) return <div className="flex min-h-svh items-center justify-center bg-slate-50" data-testid="session-loading"><div className="text-center"><div className="mx-auto size-8 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" /><p className="mt-4 text-sm text-slate-500">Memverifikasi sesi CRM...</p></div></div>;
-  if (sessionFailed) {
-    if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) return <Navigate to="/login" replace />;
-    const status = axios.isAxiosError(sessionError) ? sessionError.response?.status : undefined;
-    return <div className="flex min-h-svh items-center justify-center bg-slate-50 p-6" data-testid="session-error"><div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm"><h1 className="font-heading text-lg font-semibold">Sesi tidak tersedia</h1><p className="mt-2 text-sm text-slate-500">{status ? `Server mengembalikan HTTP ${status}. Pastikan MongoDB dan Railway Variables sudah benar.` : "Kami tidak dapat memverifikasi sesi Anda. Coba lagi atau masuk kembali."}</p><Button className="mt-5" onClick={() => void refetchSession()} data-testid="session-retry-button">Coba lagi</Button></div></div>;
-  }
-  if (!user) return <Navigate to="/login" replace />;
-  if (!canAccessPath(location.pathname, user.role)) return <Navigate to="/" replace state={{ accessDenied: true }} />;
-
-  const visibleGroups = navGroups.map(group => ({
-    ...group,
-    items: group.items.filter(item => {
-      if (item.label === "Users") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
-      if (item.label === "Audit Log" || item.label === "Sales Team" || item.label === "Target Sales") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER";
-      return true;
-    }),
-  })).filter(group => group.items.length > 0);
-
+  if (sessionFailed) { if (axios.isAxiosError(sessionError) && sessionError.response?.status === 401) return <Navigate to="/login" replace />; const status = axios.isAxiosError(sessionError) ? sessionError.response?.status : undefined; return <div className="flex min-h-svh items-center justify-center bg-slate-50 p-6" data-testid="session-error"><div className="max-w-sm rounded-xl border border-slate-200 bg-white p-6 text-center shadow-sm"><h1 className="font-heading text-lg font-semibold">Sesi tidak tersedia</h1><p className="mt-2 text-sm text-slate-500">{status ? `Server mengembalikan HTTP ${status}. Pastikan MongoDB dan Railway Variables sudah benar.` : "Kami tidak dapat memverifikasi sesi Anda. Coba lagi atau masuk kembali."}</p><Button className="mt-5" onClick={() => void refetchSession()} data-testid="session-retry-button">Coba lagi</Button></div></div>; }
+  if (!user) return <Navigate to="/login" replace />; if (!canAccessPath(location.pathname, user.role)) return <Navigate to="/" replace state={{ accessDenied: true }} />;
+  const visibleGroups = navGroups.map(group => ({ ...group, items: group.items.filter(item => { if (item.label === "Users") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER"; if (item.label === "Audit Log" || item.label === "Sales Team" || item.label === "Target Sales") return user.role === "SUPER_ADMIN" || user.role === "SALES_MANAGER"; return true; }) })).filter(group => group.items.length > 0);
   return <div className="min-h-svh bg-slate-50 text-slate-900" data-testid="crm-app-shell">
     <Toaster position="top-right" richColors />
     <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[radial-gradient(circle_at_18%_8%,rgba(255,193,7,.34),transparent_22%),radial-gradient(circle_at_78%_28%,rgba(255,94,0,.38),transparent_28%),radial-gradient(circle_at_45%_72%,rgba(220,38,38,.34),transparent_32%),linear-gradient(155deg,#4a0909_0%,#7f1d1d_34%,#c2410c_68%,#8a4b08_100%)] text-white shadow-2xl shadow-slate-950/30 transition-transform duration-200 lg:translate-x-0 ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`} data-testid="sidebar-navigation">
       <div className="relative flex h-[160px] shrink-0 items-center justify-center overflow-hidden border-b border-slate-200 bg-white px-3 py-3" data-testid="sidebar-logo-header">
-        <div className="flex h-full w-full flex-col items-center justify-center gap-1 overflow-hidden">
-          <img src="/wellracom-mark.svg" alt="Wellracom" className="block h-[94px] w-[94px] shrink-0 object-contain" data-testid="wellracom-logo" />
-          <div className="text-center text-[18px] font-extrabold leading-[1.02] tracking-[-0.02em] text-slate-950">CRM SALES<br />MANAGEMENT</div>
+        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 overflow-hidden text-center">
+          <img src="/wellracom-logo.svg?v=20260919" alt="Wellracom" className="block h-[88px] w-[88px] shrink-0 object-contain" data-testid="wellracom-logo" />
+          <div className="w-full text-center text-[17px] font-extrabold leading-[1.05] tracking-[-0.02em] text-slate-950">CRM SALES<br />MANAGEMENT</div>
         </div>
         <button className="absolute right-3 top-3 ml-auto text-slate-700 lg:hidden" onClick={() => setMobileOpen(false)} data-testid="sidebar-close-button"><X className="size-5" /></button>
       </div>
