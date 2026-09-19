@@ -21,6 +21,7 @@ import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
 import './customer-source-column';
 import './customer-detail-pipeline-table.css';
+import './globalEscapeListener';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
