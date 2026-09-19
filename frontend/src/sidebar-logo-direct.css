@@ -1,0 +1,11 @@
+/* Use the existing repository logo asset directly. No recreated/generated logo. */
+aside[data-testid="sidebar-navigation"] > div:first-child > div.flex {
+  background-image: url('/wellracom-crm-logo.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+aside[data-testid="sidebar-navigation"] > div:first-child > div.flex > img {
+  visibility: hidden;
+}
