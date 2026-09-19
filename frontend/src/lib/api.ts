@@ -10,9 +10,74 @@ export const api = axios.create({
   },
 });
 
+let pendingGetRequests = 0;
+let loadingTimer: number | undefined;
+
+function ensureGlobalLoadingOverlay() {
+  if (typeof document === 'undefined') return;
+  if (document.getElementById('crm-global-data-loading')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'crm-global-data-loading';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.style.cssText = [
+    'position:fixed',
+    'inset:0',
+    'z-index:99999',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'background:rgba(248,250,252,.78)',
+    'backdrop-filter:blur(2px)',
+    'pointer-events:auto',
+  ].join(';');
+  overlay.innerHTML = '<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 8px 30px rgba(15,23,42,.12);font:600 14px/1.2 Arial,sans-serif;color:#334155"><span style="width:18px;height:18px;border:2px solid #cbd5e1;border-top-color:#2563eb;border-radius:50%;animation:crmGlobalSpin .7s linear infinite"></span><span>Memuat data CRM...</span></div>';
+
+  if (!document.getElementById('crm-global-data-loading-style')) {
+    const style = document.createElement('style');
+    style.id = 'crm-global-data-loading-style';
+    style.textContent = '@keyframes crmGlobalSpin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+
+  document.body.appendChild(overlay);
+}
+
+function beginGlobalGetLoading() {
+  if (typeof window === 'undefined' || window.location.pathname === '/login') return;
+  pendingGetRequests += 1;
+  if (loadingTimer !== undefined) window.clearTimeout(loadingTimer);
+  loadingTimer = window.setTimeout(() => {
+    if (pendingGetRequests > 0) ensureGlobalLoadingOverlay();
+  }, 80);
+}
+
+function endGlobalGetLoading() {
+  if (pendingGetRequests > 0) pendingGetRequests -= 1;
+  if (pendingGetRequests !== 0 || typeof document === 'undefined') return;
+  if (loadingTimer !== undefined && typeof window !== 'undefined') {
+    window.clearTimeout(loadingTimer);
+    loadingTimer = undefined;
+  }
+  document.getElementById('crm-global-data-loading')?.remove();
+}
+
+api.interceptors.request.use(
+  config => {
+    if (String(config.method ?? 'get').toLowerCase() === 'get') beginGlobalGetLoading();
+    return config;
+  },
+  error => Promise.reject(error),
+);
+
 api.interceptors.response.use(
-  response => response,
+  response => {
+    if (String(response.config.method ?? 'get').toLowerCase() === 'get') endGlobalGetLoading();
+    return response;
+  },
   error => {
+    if (String(error?.config?.method ?? 'get').toLowerCase() === 'get') endGlobalGetLoading();
     if (error?.response?.status === 401 && window.location.pathname !== '/login') {
       window.location.assign('/login');
     }
