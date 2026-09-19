@@ -1,19 +1,20 @@
-const setEditQuotationPpnDefault = () => {
-  const modalTitle = document.querySelector('[data-testid="modal-title"]')?.textContent?.trim();
-  if (modalTitle !== "Edit Quotation") return;
+// Set the PPN field to 11% only while the Quotation Edit modal is open.
+const applyDefaultPpn = () => {
+  const editModal = Array.from(document.querySelectorAll('[role="dialog"]')).find((dialog) =>
+    (dialog.textContent || '').includes('Edit Quotation'),
+  );
+  if (!editModal) return;
 
-  const taxInputs = document.querySelectorAll<HTMLInputElement>('[data-testid^="quotation-tax-input-"]');
-  taxInputs.forEach((input) => {
-    if (input.value === "11") return;
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-    setter?.call(input, "11");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
+  editModal.querySelectorAll<HTMLInputElement>('[data-testid^="quotation-tax-input-"]').forEach((input) => {
+    if (input.value !== '11') {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setter?.call(input, '11');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
   });
 };
 
-document.addEventListener("click", (event) => {
-  const target = event.target as Element | null;
-  if (!target?.closest('[data-testid^="quotation-edit-"]')) return;
-  window.setTimeout(setEditQuotationPpnDefault, 0);
-});
+const observer = new MutationObserver(applyDefaultPpn);
+observer.observe(document.body, { childList: true, subtree: true });
+applyDefaultPpn();
