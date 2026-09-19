@@ -1,11 +1,13 @@
 /* Keep existing action handlers intact; hide only the duplicate Edit text. */
 button[data-testid^="quotation-edit-"],
-button[data-testid^="purchase-order-edit-"] {
+button[data-testid^="purchase-order-edit-"],
+[data-testid="purchase-orders-table"] button[title="Edit"] {
   font-size: 0 !important;
   line-height: 0 !important;
 }
 
 button[data-testid^="quotation-edit-"] svg,
-button[data-testid^="purchase-order-edit-"] svg {
+button[data-testid^="purchase-order-edit-"] svg,
+[data-testid="purchase-orders-table"] button[title="Edit"] svg {
   margin-right: 0 !important;
 }
