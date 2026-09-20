@@ -120,6 +120,15 @@ const renderData = (root: HTMLElement, items: Opportunity[]) => {
 let rendering = false;
 let refreshTimer: number | undefined;
 let waitTimer: number | undefined;
+let pipelineDataPromise: Promise<Opportunity[]> | undefined;
+
+const getPipelineData = () => {
+  if (!pipelineDataPromise) {
+    const cached = readCache();
+    pipelineDataPromise = cached ? Promise.resolve(cached) : fetchPipeline();
+  }
+  return pipelineDataPromise;
+};
 
 const renderAnalytics = async () => {
   if (window.location.pathname !== "/pipeline" || rendering) return false;
@@ -144,7 +153,7 @@ const renderAnalytics = async () => {
 
   rendering = true;
   try {
-    const items = await fetchPipeline();
+    const items = await getPipelineData();
     writeCache(items);
     renderData(root, items);
     root.dataset.hasData = "true";
@@ -163,11 +172,18 @@ const renderAnalytics = async () => {
 const boot = () => {
   if (window.location.pathname !== "/pipeline") {
     document.querySelector(".crm-pipeline-analytics")?.remove();
+    pipelineDataPromise = undefined;
     return;
   }
+  // Start analytics data loading immediately, in parallel with the main Pipeline page.
+  void getPipelineData();
   void renderAnalytics();
   if (!refreshTimer) {
-    refreshTimer = window.setInterval(() => void renderAnalytics(), 15000);
+    refreshTimer = window.setInterval(() => {
+      pipelineDataPromise = undefined;
+      void getPipelineData();
+      void renderAnalytics();
+    }, 15000);
   }
 };
 
@@ -194,6 +210,8 @@ document.addEventListener("change", (event) => {
   const target = event.target as HTMLElement | null;
   if (target?.closest("table")) window.setTimeout(() => {
     try { sessionStorage.removeItem(CACHE_KEY); } catch { /* ignore */ }
+    pipelineDataPromise = undefined;
+    void getPipelineData();
     void renderAnalytics();
   }, 300);
 });
