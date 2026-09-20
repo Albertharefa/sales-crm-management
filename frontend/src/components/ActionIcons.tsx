@@ -1,5 +1,5 @@
-import React from "react";
 import { Eye, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export type ActionIconProps = {
   onView?: () => void;
@@ -8,10 +8,13 @@ export type ActionIconProps = {
   canView?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
+  viewTitle?: string;
+  editTitle?: string;
+  deleteTitle?: string;
+  viewTestId?: string;
+  editTestId?: string;
+  deleteTestId?: string;
 };
-
-const iconButtonClass =
-  "inline-flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-300";
 
 export default function ActionIcons({
   onView,
@@ -20,23 +23,53 @@ export default function ActionIcons({
   canView = true,
   canEdit = true,
   canDelete = true,
+  viewTitle = "View",
+  editTitle = "Edit",
+  deleteTitle = "Delete",
+  viewTestId,
+  editTestId,
+  deleteTestId,
 }: ActionIconProps) {
   return (
     <div className="flex items-center gap-1">
       {canView && onView && (
-        <button type="button" className={iconButtonClass} onClick={onView} title="View" aria-label="View">
-          <Eye className="h-4 w-4" />
-        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onView}
+          title={viewTitle}
+          aria-label={viewTitle}
+          data-testid={viewTestId}
+        >
+          <Eye className="size-4 text-blue-600" />
+        </Button>
       )}
       {canEdit && onEdit && (
-        <button type="button" className={iconButtonClass} onClick={onEdit} title="Edit" aria-label="Edit">
-          <Pencil className="h-4 w-4" />
-        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onEdit}
+          title={editTitle}
+          aria-label={editTitle}
+          data-testid={editTestId}
+        >
+          <Pencil className="size-4 text-slate-600" />
+        </Button>
       )}
       {canDelete && onDelete && (
-        <button type="button" className={iconButtonClass} onClick={onDelete} title="Delete" aria-label="Delete">
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onDelete}
+          title={deleteTitle}
+          aria-label={deleteTitle}
+          data-testid={deleteTestId}
+        >
+          <Trash2 className="size-4 text-red-500" />
+        </Button>
       )}
     </div>
   );
