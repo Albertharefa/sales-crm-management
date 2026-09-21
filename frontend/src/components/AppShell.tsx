@@ -21,7 +21,11 @@ const roleAllowedPrefixes: Record<string, string[]> = {
   SALES_MANAGER: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/sales-team", "/sales-targets", "/audit-log", "/users", "/products", "/settings"],
   SALES: ["/customers", "/pipeline", "/activities", "/quotations", "/purchase-orders", "/order-monitoring", "/products", "/settings"],
 };
-function canAccessPath(pathname: string, role: string) { if (pathname === "/") return true; const prefixes = roleAllowedPrefixes[role] ?? []; return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`)); }
+function canAccessPath(pathname: string, role: string) {
+  if (pathname === "/" || pathname === "/csv-preview") return true;
+  const prefixes = roleAllowedPrefixes[role] ?? [];
+  return prefixes.some(prefix => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
 export function useCurrentUser() { return useQuery({ queryKey: ["me"], queryFn: () => apiGet<User>("/me"), retry: false, staleTime: 60_000 }); }
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
