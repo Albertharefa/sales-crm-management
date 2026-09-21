@@ -19,12 +19,14 @@ import SalesTargets from './pages/SalesTargets';
 import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
+import CsvPreview from './pages/CsvPreview';
 import './customer-source-column';
 import './customer-detail-pipeline-table.css';
 import './globalEscapeListener';
 import './quotation-po-action-icons.css';
 import './customer-location-dropdown';
 import './customer-pic-position-dropdown';
+import './globalCsvExportPreview';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
@@ -37,6 +39,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/csv-preview" element={<Protected><CsvPreview /></Protected>} />
         <Route path="/" element={<Protected><Home /></Protected>} />
         <Route path="/customers" element={<Protected><Customers /></Protected>} />
         <Route path="/customers/:customerId" element={<Protected><CustomerDetail /></Protected>} />
