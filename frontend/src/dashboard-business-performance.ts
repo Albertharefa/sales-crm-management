@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+import { queryClient } from "@/lib/queryClient";
 
 const compactMoney = (value: number) => new Intl.NumberFormat("id-ID", { style:"currency", currency:"IDR", notation:"compact", maximumFractionDigits:1 }).format(Number(value)||0).replace("IDR","Rp");
 
@@ -20,6 +20,51 @@ const injectStyles = () => {
     @media(max-width:767px){[data-testid="dashboard-page"] .dashboard-business-performance-metrics{grid-template-columns:1fr;width:100%}[data-testid="dashboard-page"] .dashboard-business-performance-card{width:100%!important;height:58px!important;padding:8px 10px!important}[data-testid="dashboard-page"] .dashboard-business-performance-card strong{font-size:16px;margin-top:5px}[data-testid="dashboard-page"] .dashboard-business-performance-card span{font-size:9px}[data-testid="dashboard-page"] .dashboard-business-performance-hero{min-height:0!important;padding:16px!important}}
   `; document.head.appendChild(style);
 };
+
 const findHero=()=>Array.from(document.querySelectorAll<HTMLElement>('[data-testid="dashboard-page"] section')).find(section=>section.querySelector("h2")?.textContent?.trim()==="Business performance at a glance");
-const ensureMetrics=async()=>{if(window.location.pathname!=="/")return;const hero=findHero();if(!hero||hero.querySelector(".dashboard-business-performance-metrics"))return;hero.classList.add("dashboard-business-performance-hero");injectStyles();try{const response=await fetch(`${API_BASE_URL}/dashboard?client_version=20260912`,{credentials:"include"});if(!response.ok)return;const data=await response.json();const target=Number(data?.sales_target)||0;const achievement=Number(data?.po_value)||0;const percentage=target>0?(achievement/target)*100:0;const metrics=document.createElement("div");metrics.className="dashboard-business-performance-metrics";metrics.innerHTML=`<div class="dashboard-business-performance-card dashboard-business-performance-target"><span>TARGET</span><strong>${compactMoney(target)}</strong></div><div class="dashboard-business-performance-card dashboard-business-performance-achievement"><span>PENCAPAIAN</span><strong>${compactMoney(achievement)}</strong></div><div class="dashboard-business-performance-card dashboard-business-performance-percentage"><span>PENCAPAIAN %</span><strong>${percentage.toFixed(2)}%</strong></div>`;hero.appendChild(metrics)}catch{/* Dashboard remains usable if auxiliary request fails. */}};
-const boot=()=>void ensureMetrics();if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot,{once:true});else boot();const observer=new MutationObserver(()=>{if(findHero()){void ensureMetrics();observer.disconnect()}});observer.observe(document.body,{childList:true,subtree:true});
+
+const renderMetrics = (data: any) => {
+  if (window.location.pathname !== "/") return;
+  const hero = findHero();
+  if (!hero || !data) return;
+
+  hero.classList.add("dashboard-business-performance-hero");
+  injectStyles();
+
+  const target = Number(data?.sales_target) || 0;
+  const achievement = Number(data?.po_value) || 0;
+  const percentage = target > 0 ? (achievement / target) * 100 : 0;
+
+  let metrics = hero.querySelector<HTMLElement>(".dashboard-business-performance-metrics");
+  if (!metrics) {
+    metrics = document.createElement("div");
+    metrics.className = "dashboard-business-performance-metrics";
+    metrics.innerHTML = `
+      <div class="dashboard-business-performance-card dashboard-business-performance-target"><span>TARGET</span><strong></strong></div>
+      <div class="dashboard-business-performance-card dashboard-business-performance-achievement"><span>PENCAPAIAN</span><strong></strong></div>
+      <div class="dashboard-business-performance-card dashboard-business-performance-percentage"><span>PENCAPAIAN %</span><strong></strong></div>`;
+    hero.appendChild(metrics);
+  }
+
+  const targetValue = metrics.querySelector<HTMLElement>(".dashboard-business-performance-target strong");
+  const achievementValue = metrics.querySelector<HTMLElement>(".dashboard-business-performance-achievement strong");
+  const percentageValue = metrics.querySelector<HTMLElement>(".dashboard-business-performance-percentage strong");
+  if (targetValue) targetValue.textContent = compactMoney(target);
+  if (achievementValue) achievementValue.textContent = compactMoney(achievement);
+  if (percentageValue) percentageValue.textContent = `${percentage.toFixed(2)}%`;
+};
+
+const scheduleRender = (data: any) => {
+  requestAnimationFrame(() => renderMetrics(data));
+};
+
+const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
+  const query = event?.query;
+  if (!query || !Array.isArray(query.queryKey) || query.queryKey[0] !== "dashboard") return;
+  const data = query.state.data;
+  if (!data) return;
+  scheduleRender(data);
+});
+
+// Keep the subscription alive for SPA navigation; no DOM observer or polling is used.
+void unsubscribe;
