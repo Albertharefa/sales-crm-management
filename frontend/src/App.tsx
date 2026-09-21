@@ -23,6 +23,7 @@ import './customer-source-column';
 import './customer-detail-pipeline-table.css';
 import './globalEscapeListener';
 import './quotation-po-action-icons.css';
+import './customer-location-dropdown';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
