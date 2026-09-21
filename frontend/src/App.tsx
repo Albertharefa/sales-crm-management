@@ -24,6 +24,7 @@ import './customer-detail-pipeline-table.css';
 import './globalEscapeListener';
 import './quotation-po-action-icons.css';
 import './customer-location-dropdown';
+import './customer-pic-position-dropdown';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
