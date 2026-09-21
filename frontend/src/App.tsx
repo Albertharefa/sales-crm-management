@@ -25,7 +25,6 @@ import './globalEscapeListener';
 import './quotation-po-action-icons.css';
 import './customer-location-dropdown';
 import './customer-pic-position-dropdown';
-import './customer-account-name-sync';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
