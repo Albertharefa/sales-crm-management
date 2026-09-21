@@ -103,6 +103,31 @@ function createSelect(input: HTMLInputElement, attr: string) {
   return select;
 }
 
+// Keep the visual order consistent with the CRM data model:
+// Province first, then City/Regency. This only changes DOM position;
+// it does not change the Customer payload, database, or API contract.
+function ensureProvinceBeforeCity(
+  provinceInput: HTMLInputElement,
+  cityInput: HTMLInputElement,
+) {
+  let provinceAncestor: HTMLElement | null = provinceInput.parentElement;
+  let cityAncestor: HTMLElement | null = cityInput.parentElement;
+
+  while (provinceAncestor && cityAncestor && provinceAncestor.parentElement !== cityAncestor.parentElement) {
+    provinceAncestor = provinceAncestor.parentElement;
+    cityAncestor = cityAncestor.parentElement;
+  }
+
+  const parent = provinceAncestor?.parentElement;
+  if (!parent || !cityAncestor || provinceAncestor === cityAncestor) return;
+
+  if (provinceAncestor !== parent.firstElementChild && cityAncestor === parent.firstElementChild) {
+    parent.insertBefore(provinceAncestor, cityAncestor);
+  } else if (provinceAncestor.nextElementSibling !== cityAncestor) {
+    parent.insertBefore(provinceAncestor, cityAncestor);
+  }
+}
+
 async function setupLocationFields() {
   if (!isCreateForm()) return;
 
@@ -114,6 +139,7 @@ async function setupLocationFields() {
   );
   if (!provinceInput || !cityInput) return;
 
+  ensureProvinceBeforeCity(provinceInput, cityInput);
   ensureStyle();
 
   const provinceSelect = createSelect(
