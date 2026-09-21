@@ -21,6 +21,26 @@ async function syncDashboardWelcome() {
   }
 }
 
-void syncDashboardWelcome();
+const navigationEvent = "crm:navigation";
 
-window.addEventListener("popstate", () => void syncDashboardWelcome());
+const originalPushState = window.history.pushState.bind(window.history);
+window.history.pushState = ((...args: Parameters<History["pushState"]>) => {
+  const result = originalPushState(...args);
+  window.dispatchEvent(new Event(navigationEvent));
+  return result;
+}) as History["pushState"];
+
+const originalReplaceState = window.history.replaceState.bind(window.history);
+window.history.replaceState = ((...args: Parameters<History["replaceState"]>) => {
+  const result = originalReplaceState(...args);
+  window.dispatchEvent(new Event(navigationEvent));
+  return result;
+}) as History["replaceState"];
+
+const syncAfterNavigation = () => {
+  window.setTimeout(() => void syncDashboardWelcome(), 0);
+};
+
+void syncDashboardWelcome();
+window.addEventListener("popstate", syncAfterNavigation);
+window.addEventListener(navigationEvent, syncAfterNavigation);
