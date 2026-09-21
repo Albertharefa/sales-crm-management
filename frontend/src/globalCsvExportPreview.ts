@@ -1,17 +1,24 @@
-const EXPORT_PREFIX = "/api/v1/exports/";
+const isCsvExportPath = (path: string) => {
+  const pathname = path.split("?")[0];
+  return pathname.startsWith("/api/v1/exports/") || pathname.includes("/export") || pathname.includes("/exports/");
+};
 
 function toAbsolutePath(value: string) {
-  try { return new URL(value, window.location.origin).pathname + new URL(value, window.location.origin).search; }
-  catch { return value; }
+  try {
+    const url = new URL(value, window.location.origin);
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return value;
+  }
 }
 
 if (typeof window !== "undefined") {
   const originalOpen = window.open.bind(window);
+
   window.open = ((url?: string | URL, target?: string, features?: string) => {
     if (url) {
-      const raw = String(url);
-      const path = toAbsolutePath(raw);
-      if (path.startsWith(EXPORT_PREFIX)) {
+      const path = toAbsolutePath(String(url));
+      if (isCsvExportPath(path)) {
         const previewUrl = `/csv-preview?source=${encodeURIComponent(path)}&title=${encodeURIComponent("CSV Export Preview")}`;
         return originalOpen(previewUrl, target || "_blank", features);
       }
