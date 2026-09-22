@@ -12,6 +12,7 @@ const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "curren
 const percent = (value: number) => `${Number(value || 0).toFixed(1)}%`;
 const multiple = (value: number) => `${Number(value || 0).toFixed(1)}x`;
 type TeamRow = SalesTeamMetric & { id: string };
+type TargetSummary = { year: number; personal_target: number; team_target: number; manager: { id: string; name: string; role: string }; members: { id: string; name: string; role: string; target: number }[] };
 
 export default function SalesTeam() {
   const currentYear = new Date().getFullYear();
@@ -30,6 +31,7 @@ export default function SalesTeam() {
 
   const query = useQuery({ queryKey: ["sales-team", search, salesId, status, year], queryFn: () => apiGet<SalesTeamMetric[]>(`/sales-team?${queryParams.toString()}`) });
   const salesOptions = useQuery({ queryKey: ["sales-team-sales-options"], queryFn: () => apiGet<{ id: string; name: string }[]>("/sales-targets/options"), staleTime: 60_000 });
+  const targetSummary = useQuery({ queryKey: ["sales-team-target-summary", year], queryFn: () => apiGet<TargetSummary>(`/sales-targets/summary?year=${year}`), staleTime: 30_000 });
   const rows: TeamRow[] = (query.data ?? []).map((item, index) => ({ ...item, id: `${index}-${item.sales}` }));
   const pagedRows = useMemo(() => rows.slice((page - 1) * pageSize, page * pageSize), [rows, page, pageSize]);
   const totals = rows.reduce((sum, item) => ({ target: sum.target + item.target, won: sum.won + item.won, open: sum.open + item.open_pipeline, weighted: sum.weighted + item.weighted, po: sum.po + item.po, poValue: sum.poValue + item.po_value, activities: sum.activities + item.activities, overdueActivities: sum.overdueActivities + item.overdue_activities, indent: sum.indent + item.indent, overdue: sum.overdue + item.overdue }), { target: 0, won: 0, open: 0, weighted: 0, po: 0, poValue: 0, activities: 0, overdueActivities: 0, indent: 0, overdue: 0 });
@@ -40,10 +42,22 @@ export default function SalesTeam() {
   const totalLostCount = rows.reduce((sum, item) => sum + item.lost_count, 0);
   const totalWinRate = totalWonCount + totalLostCount ? totalWonCount / (totalWonCount + totalLostCount) * 100 : 0;
   const resetFilters = () => { setSearch(""); setSalesId(""); setStatus(""); setYear(String(currentYear)); setPage(1); };
+  const managerSummary = targetSummary.data?.manager ? targetSummary.data : null;
 
   return (
     <div data-testid="sales-team-page">
       <PageHeader title="Sales Team & KPI" description="Performance sales berdasarkan target, pipeline, closing, aktivitas, dan purchase order" onRefresh={() => window.location.reload()} onExport={() => window.open("/api/v1/exports/sales-team", "_blank")} />
+      {managerSummary && (
+        <section className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-600">SALES MANAGER</div><h2 className="mt-1 font-heading text-lg font-semibold text-slate-900">{managerSummary.manager.name}</h2><p className="text-xs text-slate-500">Target personal, target team, dan target masing-masing sales — {year}</p></div></div>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Personal Target Manager</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(managerSummary.personal_target)}</div></div>
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-4"><div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">Team Target</div><div className="mt-2 font-mono text-xl font-semibold text-blue-800">{money(managerSummary.team_target)}</div></div>
+            <div className="rounded-lg border border-slate-200 bg-white p-4"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Sales Dalam Team</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{managerSummary.members.filter(item => item.role === "SALES").length}</div></div>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{managerSummary.members.map(item => <div key={item.id} className="rounded-lg border border-slate-100 bg-slate-50 p-3"><div className="text-xs font-medium text-slate-700">{item.name}</div><div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{item.role === "SALES_MANAGER" ? "Personal Manager" : "Personal Sales"}</div><div className="mt-2 font-mono text-sm font-semibold text-slate-900">{money(item.target)}</div></div>)}</div>
+        </section>
+      )}
       <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-[360px_360px] xl:grid-cols-[360px_360px_360px_360px]">
         <div className="relative w-full"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder="Cari nama sales..." className="h-10 w-full pl-9" data-testid="sales-team-search-input" /></div>
         <select className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" value={salesId} onChange={(e) => { setSalesId(e.target.value); setPage(1); }} data-testid="sales-team-sales-filter"><option value="">Semua sales</option>{(salesOptions.data ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
