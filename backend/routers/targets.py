@@ -81,7 +81,7 @@ def _member_row(item: dict, target_by_id: dict[str, float], achievement_by_id: d
 
 
 @router.get("/sales-targets")
-async def list_sales_targets(user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER"))):
+async def list_sales_targets(user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER", "SALES"))):
     allowed_ids = await visible_owner_ids(user)
     query = {} if allowed_ids is None else {"sales_id": {"$in": allowed_ids}}
     docs = await db.sales_targets.find(query, {"_id": 0}).sort([("year", -1), ("sales_name", 1)]).to_list(5000)
@@ -98,18 +98,31 @@ async def list_sales_targets(user: dict = Depends(require_roles("SUPER_ADMIN", "
 
 
 @router.get("/sales-targets/options")
-async def sales_target_options(user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER"))):
+async def sales_target_options(user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER", "SALES"))):
     role = str(user.get("role") or "").strip().upper()
     query = {"role": {"$in": ["SALES", "SALES_MANAGER"]}, "status": {"$nin": ["INACTIVE", "DISABLED"]}}
     if role == "SALES_MANAGER":
         query = {"$or": [{"id": user["id"]}, {"manager_id": user["id"], "role": "SALES"}], "status": {"$nin": ["INACTIVE", "DISABLED"]}}
+    elif role == "SALES":
+        query = {"id": user["id"], "role": "SALES", "status": {"$nin": ["INACTIVE", "DISABLED"]}}
     users = await db.users.find(query, {"_id": 0, "id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(1000)
     return [{"id": str(item["id"]), "name": str(item["name"]), "role": str(item.get("role") or "SALES")} for item in users if item.get("id") and item.get("name")]
 
 
 @router.get("/sales-targets/summary")
-async def sales_target_summary(year: int = 2026, user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER"))):
+async def sales_target_summary(year: int = 2026, user: dict = Depends(require_roles("SUPER_ADMIN", "SALES_MANAGER", "SALES"))):
     role = str(user.get("role") or "").strip().upper()
+    if role == "SALES":
+        owner = await db.users.find_one({"id": user["id"], "role": "SALES"}, {"_id": 0, "id": 1, "name": 1, "role": 1})
+        if not owner:
+            raise HTTPException(status_code=404, detail="User target tidak ditemukan")
+        owner_rows = [owner]
+        targets = await db.sales_targets.find({"year": year, "sales_id": user["id"]}, {"_id": 0, "sales_id": 1, "sales_name": 1, "target": 1}).to_list(10)
+        target_by_id = {str(item.get("sales_id")): float(item.get("target", 0) or 0) for item in targets}
+        achievement_by_id = await _achievement_by_owner(owner_rows, year)
+        row = _member_row(owner, target_by_id, achievement_by_id, "SALES")
+        return {"year": year, "personal_target": row["target"], "personal_achievement": row["achievement"], "personal_achievement_pct": row["achievement_pct"], "team_target": row["target"], "team_achievement": row["achievement"], "team_achievement_pct": row["achievement_pct"], "manager": {"id": owner["id"], "name": owner["name"], "role": owner["role"]}, "members": [row]}
+
     if role == "SALES_MANAGER":
         manager = await db.users.find_one({"id": user["id"], "role": "SALES_MANAGER"}, {"_id": 0, "id": 1, "name": 1, "role": 1})
         members = await db.users.find({"manager_id": user["id"], "role": "SALES"}, {"_id": 0, "id": 1, "name": 1, "role": 1}).sort("name", 1).to_list(1000)
