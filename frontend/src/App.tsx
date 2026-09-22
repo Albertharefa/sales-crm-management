@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
-import AppShell from './components/AppShell';
+import AppShell, { useCurrentUser } from './components/AppShell';
 import Login from './pages/LoginProduction';
 import ResetPassword from './pages/ResetPassword';
 import Home from './pages/Home';
@@ -16,6 +16,7 @@ import Activities from './pages/Activities';
 import Products from './pages/Products';
 import SalesTeam from './pages/SalesTeam';
 import SalesTargets from './pages/SalesTargets';
+import SalesTargetsSalesView from './pages/SalesTargetsSalesView';
 import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
@@ -30,6 +31,11 @@ import './globalCsvExportPreview';
 
 function Protected({ children }: { children: React.ReactNode }) {
   return <AppShell>{children}</AppShell>;
+}
+
+function SalesTargetsRoute() {
+  const { data: user } = useCurrentUser();
+  return user?.role === 'SALES' ? <SalesTargetsSalesView /> : <SalesTargets />;
 }
 
 export default function App() {
@@ -52,7 +58,7 @@ export default function App() {
         <Route path="/activities" element={<Protected><Activities /></Protected>} />
         <Route path="/products" element={<Protected><Products /></Protected>} />
         <Route path="/sales-team" element={<Protected><SalesTeam /></Protected>} />
-        <Route path="/sales-targets" element={<Protected><SalesTargets /></Protected>} />
+        <Route path="/sales-targets" element={<Protected><SalesTargetsRoute /></Protected>} />
         <Route path="/users" element={<Protected><Users /></Protected>} />
         <Route path="/audit-log" element={<Protected><AuditLog /></Protected>} />
         <Route path="/settings" element={<Protected><Settings /></Protected>} />
