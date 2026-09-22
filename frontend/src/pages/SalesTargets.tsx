@@ -54,6 +54,7 @@ export default function SalesTargets() {
   const [userFilter, setUserFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [selectedManagerId, setSelectedManagerId] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [form, setForm] = useState({ sales_id: "", year: String(new Date().getFullYear()), target: "" });
@@ -100,6 +101,7 @@ export default function SalesTargets() {
   const isManagementView = Boolean(summary.data && "managers" in summary.data);
   const managerSummary = isManagerView ? summary.data as ManagerTargetSummary : null;
   const managementSummary = isManagementView ? summary.data as ManagementTargetSummary : null;
+  const selectedManager = useMemo(() => managementSummary?.managers.find(manager => manager.id === selectedManagerId) ?? null, [managementSummary, selectedManagerId]);
 
   return (
     <div data-testid="sales-targets-page">
@@ -115,49 +117,51 @@ export default function SalesTargets() {
 
       {managementSummary && (
         <section className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" data-testid="management-target-summary">
-          <div className="mb-4 flex items-end justify-between gap-3">
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="font-heading text-sm font-semibold text-slate-900">Target Personal & Target Tim Sales Manager</h2>
-              <p className="text-xs text-slate-500">Management dapat melihat target setiap Sales Manager beserta target personal seluruh anggota teamnya.</p>
+              <p className="text-xs text-slate-500">Pilih Sales Manager untuk melihat target personal, target tim, dan target masing-masing Sales.</p>
             </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{managementSummary.managers.length} Manager</span>
+            <div className="w-full md:w-72">
+              <label htmlFor="management-manager-filter" className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Sales Manager</label>
+              <select id="management-manager-filter" className={selectClass + " h-10 w-full"} value={selectedManagerId} onChange={e => setSelectedManagerId(e.target.value)} data-testid="management-manager-filter">
+                <option value="">— Pilih Sales Manager —</option>
+                {managementSummary.managers.map(manager => <option key={manager.id} value={manager.id}>{manager.name}</option>)}
+              </select>
+            </div>
           </div>
-          {managementSummary.managers.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">Belum ada Sales Manager yang terdaftar.</div>
+          {!selectedManager ? (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">Silakan pilih Sales Manager untuk melihat detail target.</div>
           ) : (
-            <div className="space-y-4">
-              {managementSummary.managers.map(manager => (
-                <div key={manager.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4" data-testid={`manager-target-card-${manager.id}`}>
-                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-semibold text-slate-900">{manager.name}</div>
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sales Manager</div>
-                    </div>
-                    <div className="text-xs text-slate-500">{manager.members.filter(item => item.role === "SALES").length} Sales dalam team</div>
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div className="rounded-lg border border-slate-200 bg-white p-4">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Target Personal</div>
-                      <div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(manager.personal_target)}</div>
-                      <div className="mt-1 text-xs text-slate-500">Target pribadi {manager.name}</div>
-                    </div>
-                    <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">Target Tim</div>
-                      <div className="mt-2 font-mono text-xl font-semibold text-blue-700">{money(manager.team_target)}</div>
-                      <div className="mt-1 text-xs text-slate-500">Manager + seluruh Sales dalam team</div>
-                    </div>
-                  </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                    {manager.members.map(member => (
-                      <div key={member.id} className="rounded-lg border border-slate-200 bg-white p-3">
-                        <div className="text-xs font-medium text-slate-700">{member.name}</div>
-                        <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{member.role === "SALES_MANAGER" ? "Personal Manager" : "Personal Sales"}</div>
-                        <div className="mt-2 font-mono text-sm font-semibold text-slate-900">{money(member.target)}</div>
-                      </div>
-                    ))}
-                  </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-4" data-testid={`manager-target-card-${selectedManager.id}`}>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">{selectedManager.name}</div>
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sales Manager</div>
                 </div>
-              ))}
+                <div className="text-xs text-slate-500">{selectedManager.members.filter(item => item.role === "SALES").length} Sales dalam team</div>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="rounded-lg border border-slate-200 bg-white p-4">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Target Personal</div>
+                  <div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(selectedManager.personal_target)}</div>
+                  <div className="mt-1 text-xs text-slate-500">Target pribadi {selectedManager.name}</div>
+                </div>
+                <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+                  <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">Target Tim</div>
+                  <div className="mt-2 font-mono text-xl font-semibold text-blue-700">{money(selectedManager.team_target)}</div>
+                  <div className="mt-1 text-xs text-slate-500">Manager + seluruh Sales dalam team</div>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {selectedManager.members.map(member => (
+                  <div key={member.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="text-xs font-medium text-slate-700">{member.name}</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{member.role === "SALES_MANAGER" ? "Personal Manager" : "Personal Sales"}</div>
+                    <div className="mt-2 font-mono text-sm font-semibold text-slate-900">{money(member.target)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </section>
