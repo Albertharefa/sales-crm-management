@@ -23,13 +23,14 @@ export default function DataTable<T extends { id: string }>({
   columns: Column<T>[]; items: T[]; loading?: boolean; empty?: string; testId: string;
   total?: number; page?: number; pageSize?: number; onPage?: (page: number) => void; onPageSize?: (pageSize: number) => void;
 }) {
+  const expandedHeight = testId === "users-table" || testId === "audit-log-table";
   return (
     <div className="crm-data-table-card flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" data-testid={testId}>
       <div
         className="crm-data-table-viewport min-w-0 overflow-auto overscroll-contain"
         style={{
-          height: "clamp(240px, calc(100svh - 380px), 520px)",
-          maxHeight: "calc(100svh - 380px)",
+          height: expandedHeight ? "calc(100svh - 260px)" : "clamp(240px, calc(100svh - 380px), 520px)",
+          maxHeight: expandedHeight ? "calc(100svh - 260px)" : "calc(100svh - 380px)",
           scrollbarGutter: "stable both-edges",
           WebkitOverflowScrolling: "touch",
         }}
