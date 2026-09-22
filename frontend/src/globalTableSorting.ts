@@ -3,6 +3,7 @@ type SortDirection = 'asc' | 'desc';
 type SortState = { index: number; direction: SortDirection };
 
 const states = new WeakMap<HTMLTableElement, SortState>();
+const PIPELINE_STAGES = new Set(['Lead', 'Qualification', 'Proposal', 'Negotiation', 'Won', 'Lost']);
 
 function normalize(value: string) {
   return value.replace(/\s+/g, ' ').trim();
@@ -135,13 +136,36 @@ function enhanceAllTables() {
   document.querySelectorAll<HTMLTableElement>('table').forEach(enhanceHeader);
 }
 
+function freezePipelineKanbanHeaders() {
+  const page = document.querySelector<HTMLElement>('[data-testid="pipeline-page"]');
+  if (!page) return;
+
+  page.querySelectorAll<HTMLElement>('*').forEach((element) => {
+    if (element.closest('table, select, option')) return;
+    if (normalize(element.textContent ?? '') !== element.textContent?.trim()) return;
+    if (!PIPELINE_STAGES.has(normalize(element.textContent ?? ''))) return;
+    if (element.dataset.pipelineStageFreezeReady === 'true') return;
+
+    element.dataset.pipelineStageFreezeReady = 'true';
+    element.style.position = 'sticky';
+    element.style.top = '0px';
+    element.style.zIndex = '20';
+    element.style.background = 'white';
+  });
+}
+
+function enhanceAll() {
+  enhanceAllTables();
+  freezePipelineKanbanHeaders();
+}
+
 let scheduled = false;
 function scheduleEnhance() {
   if (scheduled) return;
   scheduled = true;
   requestAnimationFrame(() => {
     scheduled = false;
-    enhanceAllTables();
+    enhanceAll();
   });
 }
 
@@ -152,21 +176,17 @@ document.addEventListener('click', (event) => {
   }
 }, true);
 
-// React data tables such as Sales Pipeline can be mounted after the initial
-// global scan. Hover/focus on the table gives the sorter one lightweight,
-// event-driven opportunity to enhance the freshly rendered headers without
-// MutationObserver or polling.
 document.addEventListener('pointerover', (event) => {
   const target = event.target as HTMLElement | null;
-  if (target?.closest('table')) scheduleEnhance();
+  if (target?.closest('table') || target?.closest('[data-testid="pipeline-page"]')) scheduleEnhance();
 }, true);
 
 document.addEventListener('focusin', (event) => {
   const target = event.target as HTMLElement | null;
-  if (target?.closest('table')) scheduleEnhance();
+  if (target?.closest('table') || target?.closest('[data-testid="pipeline-page"]')) scheduleEnhance();
 }, true);
 
 window.addEventListener('popstate', scheduleEnhance);
 window.addEventListener('hashchange', scheduleEnhance);
 
-enhanceAllTables();
+enhanceAll();
