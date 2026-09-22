@@ -1,9 +1,6 @@
 type SortDirection = 'asc' | 'desc';
 
-type SortState = {
-  index: number;
-  direction: SortDirection;
-};
+type SortState = { index: number; direction: SortDirection };
 
 const states = new WeakMap<HTMLTableElement, SortState>();
 
@@ -14,16 +11,12 @@ function normalize(value: string) {
 function numericValue(value: string): number | null {
   const text = normalize(value).replace(/Rp|IDR|%/gi, '').trim();
   if (!text) return null;
-
   const cleaned = text.replace(/[^0-9,.-]/g, '');
   if (!cleaned || !/[0-9]/.test(cleaned)) return null;
-
-  // Indonesian-style thousands separators: 4.000.000 or 1.250,50.
   if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) {
     const parsed = Number(cleaned.replace(/\./g, '').replace(',', '.'));
     return Number.isFinite(parsed) ? parsed : null;
   }
-
   const parsed = Number(cleaned.replace(/,/g, ''));
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -63,10 +56,7 @@ function updateHeaderIndicators(table: HTMLTableElement, activeIndex: number, di
 
 function sortTable(table: HTMLTableElement, columnIndex: number) {
   const header = table.tHead?.rows[0]?.cells[columnIndex];
-  if (!header) return;
-
-  const label = header.textContent ?? '';
-  if (isExcludedHeader(label)) return;
+  if (!header || isExcludedHeader(header.textContent ?? '')) return;
 
   const previous = states.get(table);
   const direction: SortDirection = previous?.index === columnIndex && previous.direction === 'asc' ? 'desc' : 'asc';
@@ -74,7 +64,6 @@ function sortTable(table: HTMLTableElement, columnIndex: number) {
 
   const tbody = table.tBodies[0];
   if (!tbody) return;
-
   const rows = Array.from(tbody.rows).filter(row => !row.querySelector('[data-global-sort-skeleton]'));
   const indexed = rows.map((row, originalIndex) => ({ row, originalIndex }));
 
@@ -82,8 +71,7 @@ function sortTable(table: HTMLTableElement, columnIndex: number) {
     const a = normalize(left.row.cells[columnIndex]?.textContent ?? '');
     const b = normalize(right.row.cells[columnIndex]?.textContent ?? '');
     const result = compareValues(a, b);
-    if (result !== 0) return direction === 'asc' ? result : -result;
-    return left.originalIndex - right.originalIndex;
+    return result === 0 ? left.originalIndex - right.originalIndex : direction === 'asc' ? result : -result;
   });
 
   const fragment = document.createDocumentFragment();
@@ -103,7 +91,6 @@ function enhanceHeader(table: HTMLTableElement) {
 
     const original = cell.textContent ?? '';
     cell.textContent = '';
-
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.globalSortButton = 'true';
@@ -129,11 +116,8 @@ function enhanceAllTables() {
   document.querySelectorAll<HTMLTableElement>('table').forEach(enhanceHeader);
 }
 
-// Lightweight global enhancement: no MutationObserver, polling, or data/API changes.
-// It enhances tables already rendered by CRM pages and retries only on route/React changes.
-let lastUrl = location.href;
+// Lightweight global enhancement: no MutationObserver, polling, or API/data changes.
 let scheduled = false;
-
 function scheduleEnhance() {
   if (scheduled) return;
   scheduled = true;
@@ -145,16 +129,12 @@ function scheduleEnhance() {
 
 document.addEventListener('click', (event) => {
   const target = event.target as HTMLElement | null;
-  if (target?.closest('a,button,[role="button"]')) scheduleEnhance();
+  if (target?.closest('a,button,[role="button"]')) {
+    requestAnimationFrame(scheduleEnhance);
+  }
 }, true);
 
 window.addEventListener('popstate', scheduleEnhance);
+window.addEventListener('hashchange', scheduleEnhance);
 
-setInterval(() => {
-  if (location.href !== lastUrl) {
-    lastUrl = location.href;
-    scheduleEnhance();
-  }
-}, 500);
-
-scheduleEnhance();
+enhanceAllTables();
