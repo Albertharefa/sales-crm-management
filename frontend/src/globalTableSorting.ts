@@ -3,7 +3,6 @@ type SortDirection = 'asc' | 'desc';
 type SortState = { index: number; direction: SortDirection };
 
 const states = new WeakMap<HTMLTableElement, SortState>();
-const PIPELINE_STAGES = new Set(['Lead', 'Qualification', 'Proposal', 'Negotiation', 'Won', 'Lost']);
 
 function normalize(value: string) {
   return value.replace(/\s+/g, ' ').trim();
@@ -140,17 +139,18 @@ function freezePipelineKanbanHeaders() {
   const page = document.querySelector<HTMLElement>('[data-testid="pipeline-page"]');
   if (!page) return;
 
-  page.querySelectorAll<HTMLElement>('*').forEach((element) => {
-    if (element.closest('table, select, option')) return;
-    if (normalize(element.textContent ?? '') !== element.textContent?.trim()) return;
-    if (!PIPELINE_STAGES.has(normalize(element.textContent ?? ''))) return;
-    if (element.dataset.pipelineStageFreezeReady === 'true') return;
+  page.querySelectorAll<HTMLElement>('[data-testid^="pipeline-kanban-column-"]').forEach((column) => {
+    const header = column.querySelector<HTMLElement>(':scope > .mb-3.flex.items-center.justify-between');
+    if (!header) return;
 
-    element.dataset.pipelineStageFreezeReady = 'true';
-    element.style.position = 'sticky';
-    element.style.top = '0px';
-    element.style.zIndex = '20';
-    element.style.background = 'white';
+    header.dataset.pipelineStageFreezeReady = 'true';
+    header.style.position = 'sticky';
+    header.style.top = '0px';
+    header.style.zIndex = '30';
+    header.style.background = 'rgb(241 245 249 / 0.98)';
+    header.style.marginTop = '-0.75rem';
+    header.style.paddingTop = '0.75rem';
+    header.style.paddingBottom = '0.75rem';
   });
 }
 
