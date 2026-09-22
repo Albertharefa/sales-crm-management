@@ -27,6 +27,7 @@ import './customer-source-column'
 import './customer-contact-card-polish.css'
 import './customer-contact-card-polish'
 import './quotation-edit-ppn-default'
+import './globalTableSorting'
 import App from './App.tsx'
 import { queryClient } from './lib/queryClient'
 
