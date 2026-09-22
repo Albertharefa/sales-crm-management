@@ -21,7 +21,26 @@ type SalesTarget = {
 };
 
 type UserOption = { id: string; name: string; role: string };
-type TargetSummary = { year: number; personal_target: number; team_target: number; manager: { id: string; name: string; role: string }; members: { id: string; name: string; role: string; target: number }[] };
+type TargetMember = { id: string; name: string; role: string; target: number };
+type ManagerSummary = {
+  id: string;
+  name: string;
+  personal_target: number;
+  team_target: number;
+  members: TargetMember[];
+};
+type ManagerTargetSummary = {
+  year: number;
+  personal_target: number;
+  team_target: number;
+  manager: { id: string; name: string; role: string };
+  members: TargetMember[];
+};
+type ManagementTargetSummary = {
+  year: number;
+  managers: ManagerSummary[];
+};
+type TargetSummary = ManagerTargetSummary | ManagementTargetSummary;
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(Number(value || 0));
 
@@ -77,18 +96,73 @@ export default function SalesTargets() {
   const openEdit = (item: SalesTarget) => { setViewing(null); setEditing(item); setForm({ sales_id: item.sales_id, year: String(item.year), target: String(item.target) }); setModal(true); };
   const handleDelete = (item: SalesTarget) => { if (window.confirm(`Hapus target ${item.sales_name} tahun ${item.year}?`)) remove.mutate(item.id); };
   const totalTarget = visibleTargets.reduce((sum, item) => sum + Number(item.target || 0), 0);
-  const isManagerView = Boolean(summary.data?.manager);
+  const isManagerView = Boolean(summary.data && "manager" in summary.data);
+  const isManagementView = Boolean(summary.data && "managers" in summary.data);
+  const managerSummary = isManagerView ? summary.data as ManagerTargetSummary : null;
+  const managementSummary = isManagementView ? summary.data as ManagementTargetSummary : null;
 
   return (
     <div data-testid="sales-targets-page">
       <PageHeader title="Target Sales" description="Target personal Sales dan Sales Manager; Team Target Manager adalah penjumlahan target personal Manager dan Sales di bawahnya." action={{ label: "Tambah / Set Target", onClick: openCreate }} onRefresh={() => window.location.reload()} />
-      {isManagerView && summary.data && (
-        <div className="mb-5 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Personal Target Manager</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(summary.data.personal_target)}</div></div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Team Target</div><div className="mt-2 font-mono text-xl font-semibold text-blue-700">{money(summary.data.team_target)}</div></div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Anggota Team</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{summary.data.members.filter(item => item.role === "SALES").length} Sales</div></div>
+
+      {managerSummary && (
+        <div className="mb-5 grid gap-3 md:grid-cols-2 lg:grid-cols-3" data-testid="manager-target-summary">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Personal Target Manager</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(managerSummary.personal_target)}</div></div>
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Team Target</div><div className="mt-2 font-mono text-xl font-semibold text-blue-700">{money(managerSummary.team_target)}</div></div>
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Anggota Team</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{managerSummary.members.filter(item => item.role === "SALES").length} Sales</div></div>
         </div>
       )}
+
+      {managementSummary && (
+        <section className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm" data-testid="management-target-summary">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="font-heading text-sm font-semibold text-slate-900">Target Personal & Target Tim Sales Manager</h2>
+              <p className="text-xs text-slate-500">Management dapat melihat target setiap Sales Manager beserta target personal seluruh anggota teamnya.</p>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">{managementSummary.managers.length} Manager</span>
+          </div>
+          {managementSummary.managers.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">Belum ada Sales Manager yang terdaftar.</div>
+          ) : (
+            <div className="space-y-4">
+              {managementSummary.managers.map(manager => (
+                <div key={manager.id} className="rounded-lg border border-slate-200 bg-slate-50/70 p-4" data-testid={`manager-target-card-${manager.id}`}>
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{manager.name}</div>
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Sales Manager</div>
+                    </div>
+                    <div className="text-xs text-slate-500">{manager.members.filter(item => item.role === "SALES").length} Sales dalam team</div>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-lg border border-slate-200 bg-white p-4">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Target Personal</div>
+                      <div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(manager.personal_target)}</div>
+                      <div className="mt-1 text-xs text-slate-500">Target pribadi {manager.name}</div>
+                    </div>
+                    <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+                      <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-600">Target Tim</div>
+                      <div className="mt-2 font-mono text-xl font-semibold text-blue-700">{money(manager.team_target)}</div>
+                      <div className="mt-1 text-xs text-slate-500">Manager + seluruh Sales dalam team</div>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                    {manager.members.map(member => (
+                      <div key={member.id} className="rounded-lg border border-slate-200 bg-white p-3">
+                        <div className="text-xs font-medium text-slate-700">{member.name}</div>
+                        <div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{member.role === "SALES_MANAGER" ? "Personal Manager" : "Personal Sales"}</div>
+                        <div className="mt-2 font-mono text-sm font-semibold text-slate-900">{money(member.target)}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <div className="crm-filter-grid mb-5">
         <div className="relative w-full"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Cari nama user..." className="h-10 w-full pl-9" data-testid="sales-target-search-input" /></div>
         <select className={selectClass + " h-10"} value={userFilter} onChange={e => { setUserFilter(e.target.value); setPage(1); }} data-testid="sales-target-user-filter"><option value="">Semua user</option>{users.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
@@ -96,10 +170,13 @@ export default function SalesTargets() {
         <select className={selectClass + " h-10"} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }} data-testid="sales-target-status-filter"><option value="">Semua status</option><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
         <div className="flex h-10 items-center gap-2"><span className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-slate-500">Tahun</span><select className={selectClass + " h-10 flex-1"} value={yearFilter} onChange={e => { setYearFilter(e.target.value); setPage(1); }} data-testid="sales-target-year-filter">{[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(year => <option key={year} value={year}>{year}</option>)}</select></div>
       </div>
+
       <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Total Target {yearFilter}</div><div className="mt-2 font-mono text-xl font-semibold text-slate-900">{money(totalTarget)}</div></div>
-      {isManagerView && summary.data && (
-        <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-3"><h2 className="font-heading text-sm font-semibold text-slate-900">Target Personal & Team</h2><p className="text-xs text-slate-500">Team Target = Personal Target Manager + seluruh target personal Sales.</p></div><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{summary.data.members.map(item => <div key={item.id} className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-medium text-slate-600">{item.name}</div><div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{item.role === "SALES_MANAGER" ? "Personal Manager" : "Personal Sales"}</div><div className="mt-2 font-mono text-sm font-semibold text-slate-900">{money(item.target)}</div></div>)}</div></div>
+
+      {managerSummary && (
+        <div className="mb-5 rounded-lg border border-slate-200 bg-white p-4 shadow-sm"><div className="mb-3"><h2 className="font-heading text-sm font-semibold text-slate-900">Target Personal & Team</h2><p className="text-xs text-slate-500">Team Target = Personal Target Manager + seluruh target personal Sales.</p></div><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{managerSummary.members.map(item => <div key={item.id} className="rounded-lg bg-slate-50 p-3"><div className="text-xs font-medium text-slate-600">{item.name}</div><div className="mt-1 text-[10px] uppercase tracking-wider text-slate-400">{item.role === "SALES_MANAGER" ? "Personal Manager" : "Personal Sales"}</div><div className="mt-2 font-mono text-sm font-semibold text-slate-900">{money(item.target)}</div></div>)}</div></div>
       )}
+
       <DataTable testId="sales-targets-table" items={pagedTargets} loading={targets.isLoading} total={visibleTargets.length} page={page} pageSize={pageSize} onPage={setPage} onPageSize={size => { setPageSize(size); setPage(1); }} columns={[
         { key: "sales", label: "User", render: i => <span className="font-medium">{i.sales_name}</span> },
         { key: "role", label: "Peran", render: i => i.owner_role === "SALES_MANAGER" ? "Sales Manager" : "Sales" },
