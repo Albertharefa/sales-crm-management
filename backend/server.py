@@ -22,12 +22,48 @@ from security.permissions import has_permission, permission_policy, normalize_ro
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 
+async def _safe_demo_targets(sales: list[dict]) -> None:
+    """Ensure the legacy demo seed cannot create monthly duplicates.
+
+    Production target integrity is annual: one sales_id + one year = one target.
+    The legacy seed attempted 12 monthly documents and now conflicts with the
+    unique annual constraint. Keep exactly one demo annual target for the first
+    active sales user without touching non-demo production targets.
+    """
+    if not sales:
+        return
+    sales_user = sales[0]
+    year = datetime.now(timezone.utc).year
+    existing = await db.sales_targets.find_one(
+        {"is_demo": True, "sales_id": sales_user["id"], "year": year},
+        {"_id": 0, "id": 1},
+    )
+    if existing:
+        return
+    await db.sales_targets.insert_one({
+        "id": secrets.token_hex(12),
+        "sales_id": sales_user["id"],
+        "sales_name": sales_user["name"],
+        "year": year,
+        "target": 500000000.0,
+        "is_demo": True,
+        "demo_label": "CRM UI demo data",
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc),
+    })
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
     await ensure_admin_user()
-    from seed_demo_data import seed_demo_data
-    await seed_demo_data()
+    import seed_demo_data as demo_seed
+    original_ensure_targets = demo_seed._ensure_targets
+    demo_seed._ensure_targets = _safe_demo_targets
+    try:
+        await demo_seed.seed_demo_data()
+    finally:
+        demo_seed._ensure_targets = original_ensure_targets
     yield
     await close_mongo_connection()
 
