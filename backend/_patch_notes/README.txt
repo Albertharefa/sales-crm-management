@@ -1,0 +1,1 @@
+This directory is temporary patch documentation. The target seed fix must be implemented in the existing seed code: replace legacy 12-month target generation with one annual target per sales_id/year, using duplicate-safe upsert semantics. Keep the MongoDB unique sales_id+year index.
