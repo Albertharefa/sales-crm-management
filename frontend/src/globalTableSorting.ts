@@ -55,8 +55,6 @@ function renumberRows(table: HTMLTableElement) {
   rows.forEach((row, index) => {
     const numberCell = row.cells[0];
     if (!numberCell) return;
-
-    // Keep the No column as a visual row index: 1, 2, 3... after every sort.
     numberCell.textContent = String(index + 1);
   });
 }
@@ -95,8 +93,6 @@ function sortTable(table: HTMLTableElement, columnIndex: number) {
   indexed.forEach(({ row }) => fragment.appendChild(row));
   tbody.appendChild(fragment);
 
-  // No is never sorted with the other columns. It always reflects the
-  // current visible row order: 1, 2, 3... after sorting.
   renumberRows(table);
   updateHeaderIndicators(table, columnIndex, direction);
 }
@@ -132,7 +128,6 @@ function enhanceHeader(table: HTMLTableElement) {
     button.addEventListener('click', () => sortTable(table, index));
   });
 
-  // Normalize the initial No column as well, without changing any data values.
   renumberRows(table);
 }
 
@@ -140,7 +135,6 @@ function enhanceAllTables() {
   document.querySelectorAll<HTMLTableElement>('table').forEach(enhanceHeader);
 }
 
-// Lightweight global enhancement: no MutationObserver, polling, or API/data changes.
 let scheduled = false;
 function scheduleEnhance() {
   if (scheduled) return;
@@ -156,6 +150,20 @@ document.addEventListener('click', (event) => {
   if (target?.closest('a,button,[role="button"]')) {
     requestAnimationFrame(scheduleEnhance);
   }
+}, true);
+
+// React data tables such as Sales Pipeline can be mounted after the initial
+// global scan. Hover/focus on the table gives the sorter one lightweight,
+// event-driven opportunity to enhance the freshly rendered headers without
+// MutationObserver or polling.
+document.addEventListener('pointerover', (event) => {
+  const target = event.target as HTMLElement | null;
+  if (target?.closest('table')) scheduleEnhance();
+}, true);
+
+document.addEventListener('focusin', (event) => {
+  const target = event.target as HTMLElement | null;
+  if (target?.closest('table')) scheduleEnhance();
 }, true);
 
 window.addEventListener('popstate', scheduleEnhance);
