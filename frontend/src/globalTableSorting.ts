@@ -44,6 +44,23 @@ function isExcludedHeader(label: string) {
   return /^(no|aksi|action|actions)$/i.test(normalize(label));
 }
 
+function renumberRows(table: HTMLTableElement) {
+  const firstHeader = table.tHead?.rows[0]?.cells[0];
+  if (!firstHeader || !/^no$/i.test(normalize(firstHeader.textContent ?? ''))) return;
+
+  const rows = Array.from(table.tBodies[0]?.rows ?? []).filter(
+    row => !row.querySelector('[data-global-sort-skeleton]'),
+  );
+
+  rows.forEach((row, index) => {
+    const numberCell = row.cells[0];
+    if (!numberCell) return;
+
+    // Keep the No column as a visual row index: 1, 2, 3... after every sort.
+    numberCell.textContent = String(index + 1);
+  });
+}
+
 function updateHeaderIndicators(table: HTMLTableElement, activeIndex: number, direction: SortDirection) {
   Array.from(table.tHead?.rows[0]?.cells ?? []).forEach((cell, index) => {
     const button = cell.querySelector<HTMLElement>('[data-global-sort-button]');
@@ -77,6 +94,10 @@ function sortTable(table: HTMLTableElement, columnIndex: number) {
   const fragment = document.createDocumentFragment();
   indexed.forEach(({ row }) => fragment.appendChild(row));
   tbody.appendChild(fragment);
+
+  // No is never sorted with the other columns. It always reflects the
+  // current visible row order: 1, 2, 3... after sorting.
+  renumberRows(table);
   updateHeaderIndicators(table, columnIndex, direction);
 }
 
@@ -110,6 +131,9 @@ function enhanceHeader(table: HTMLTableElement) {
     cell.dataset.globalSortReady = 'true';
     button.addEventListener('click', () => sortTable(table, index));
   });
+
+  // Normalize the initial No column as well, without changing any data values.
+  renumberRows(table);
 }
 
 function enhanceAllTables() {
