@@ -1,4 +1,4 @@
-/* Sales Pipeline only — compact, responsive, space-efficient visual override */
+/* Sales Pipeline only — compact, responsive, readable visual override */
 [data-testid="pipeline-page"] .crm-summary-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important;margin-bottom:7px!important;padding-bottom:7px!important}
 [data-testid="pipeline-page"] .crm-summary-grid>*{height:70px!important;min-height:70px!important;max-height:70px!important}
 [data-testid="pipeline-page"] .crm-summary-grid>*>*{height:70px!important;min-height:70px!important;max-height:70px!important;padding:8px 10px 8px 13px!important}
@@ -7,9 +7,11 @@
 [data-testid="pipeline-page"] .crm-summary-grid [data-slot="card-content"]>div:last-child{margin-top:3px!important;font-size:20px!important;line-height:1.15!important;font-weight:700!important}
 [data-testid="pipeline-page"]>.mb-5.rounded-xl{margin-bottom:8px!important;padding:5px 8px!important;min-height:29px!important}
 [data-testid="pipeline-page"]>.mb-5.rounded-xl *{line-height:1.15!important}
+
+/* Main Sales Pipeline table — keep columns and density, but make text readable. */
 [data-testid="pipeline-page"] table{table-layout:fixed!important;width:100%!important}
-[data-testid="pipeline-page"] table th,[data-testid="pipeline-page"] table td{padding:6px 8px!important;font-size:11px!important}
-[data-testid="pipeline-page"] table th{height:32px!important;font-size:9px!important}
+[data-testid="pipeline-page"] table th,[data-testid="pipeline-page"] table td{padding:6px 8px!important;font-size:17px!important;line-height:1.2!important}
+[data-testid="pipeline-page"] table th{height:34px!important;font-size:20px!important;line-height:1.15!important;font-weight:800!important;letter-spacing:.01em!important}
 [data-testid="pipeline-page"] table tbody tr{height:44px!important}
 [data-testid="pipeline-page"] table td:nth-child(1){width:3%!important}
 [data-testid="pipeline-page"] table td:nth-child(2){width:17%!important}
@@ -21,19 +23,47 @@
 [data-testid="pipeline-page"] table td:nth-child(8){width:11%!important}
 [data-testid="pipeline-page"] table td:nth-child(9){width:10%!important}
 [data-testid="pipeline-page"] table td:nth-child(10){width:7%!important}
-[data-testid="pipeline-page"] table td:nth-child(8) select{height:27px!important;font-size:10px!important;padding:0 5px!important}
+[data-testid="pipeline-page"] table td:nth-child(8) select{height:32px!important;font-size:15px!important;padding:0 6px!important}
 [data-testid="pipeline-page"] table td:nth-child(10) button{width:28px!important;height:28px!important}
+
+/* PIPELINE ANALYTICS — larger typography without enlarging the border/card footprint. */
 [data-testid="pipeline-page"] .crm-pipeline-analytics{margin:-2px 0 12px!important;border-radius:11px!important}
-[data-testid="pipeline-page"] .crm-pipeline-analytics-head{padding:11px 14px 9px!important}
-[data-testid="pipeline-page"] .crm-pipeline-analytics-head h3{font-size:15px!important}
-[data-testid="pipeline-page"] .crm-pipeline-analytics-grid{gap:14px!important;padding:12px 14px!important}
-[data-testid="pipeline-page"] .crm-pipeline-stage-chart{gap:9px!important}
-[data-testid="pipeline-page"] .crm-stage-track{height:8px!important;margin-top:4px!important}
-[data-testid="pipeline-page"] .crm-pipeline-insight-card{grid-template-columns:88px minmax(0,1fr)!important;gap:11px!important;padding:10px!important}
-[data-testid="pipeline-page"] .crm-pipeline-donut{width:82px!important;height:82px!important}
+[data-testid="pipeline-page"] .crm-pipeline-analytics-head{padding:10px 14px 8px!important}
+[data-testid="pipeline-page"] .crm-pipeline-eyebrow{font-size:13px!important;line-height:1.15!important;letter-spacing:.13em!important;font-weight:900!important}
+[data-testid="pipeline-page"] .crm-pipeline-analytics-head h3{font-size:22px!important;line-height:1.15!important;font-weight:850!important;margin:3px 0 2px!important}
+[data-testid="pipeline-page"] .crm-pipeline-analytics-head p{font-size:14px!important;line-height:1.25!important;font-weight:600!important}
+[data-testid="pipeline-page"] .crm-pipeline-live{font-size:11px!important;padding:5px 9px!important}
+[data-testid="pipeline-page"] .crm-pipeline-analytics-grid{grid-template-columns:minmax(0,1.65fr) minmax(300px,.72fr)!important;gap:12px!important;padding:11px 14px!important}
+[data-testid="pipeline-page"] .crm-pipeline-stage-chart{gap:8px!important}
+[data-testid="pipeline-page"] .crm-stage-meta{grid-template-columns:10px 110px 1fr auto!important;gap:7px!important;font-size:17px!important;line-height:1.15!important}
+[data-testid="pipeline-page"] .crm-stage-name{font-size:17px!important;font-weight:850!important}
+[data-testid="pipeline-page"] .crm-stage-count{font-size:15px!important;font-weight:650!important}
+[data-testid="pipeline-page"] .crm-stage-meta strong{font-size:17px!important;font-weight:900!important}
+[data-testid="pipeline-page"] .crm-stage-track{height:8px!important;margin:4px 0 2px 127px!important}
+[data-testid="pipeline-page"] .crm-stage-weighted{margin-left:127px!important;font-size:14px!important;line-height:1.15!important;font-weight:650!important}
+[data-testid="pipeline-page"] .crm-stage-weighted b{font-size:14px!important;font-weight:850!important}
+
+/* Insight panel beside Pipeline Analytics — same readable compact treatment as Dashboard Order Health. */
+[data-testid="pipeline-page"] .crm-pipeline-insight-card{grid-template-columns:92px minmax(0,1fr)!important;gap:10px!important;padding:9px!important}
+[data-testid="pipeline-page"] .crm-pipeline-donut{width:84px!important;height:84px!important}
+[data-testid="pipeline-page"] .crm-pipeline-donut b{font-size:29px!important;font-weight:900!important}
+[data-testid="pipeline-page"] .crm-pipeline-donut span{font-size:10px!important;margin-top:4px!important}
 [data-testid="pipeline-page"] .crm-pipeline-insights{gap:6px!important}
-[data-testid="pipeline-page"] .crm-pipeline-analytics-footer{gap:16px!important;padding:8px 14px!important}
+[data-testid="pipeline-page"] .crm-pipeline-insights div{font-size:16px!important;line-height:1.15!important;font-weight:650!important;gap:8px!important}
+[data-testid="pipeline-page"] .crm-pipeline-insights b{font-size:18px!important;font-weight:900!important}
+[data-testid="pipeline-page"] .crm-pipeline-analytics-footer{gap:16px!important;padding:7px 14px!important;font-size:14px!important;line-height:1.15!important}
+[data-testid="pipeline-page"] .crm-pipeline-analytics-footer b{font-size:16px!important;font-weight:900!important}
+
 [data-testid="pipeline-page"] [data-testid^="pipeline-kanban-column-"]{min-width:185px!important;padding:8px!important}
 [data-testid="pipeline-page"] [data-testid^="pipeline-kanban-column-"] [data-slot="card-content"]{padding:9px!important}
-@media(max-width:900px){[data-testid="pipeline-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}[data-testid="pipeline-page"] .crm-pipeline-analytics-grid{grid-template-columns:1fr!important}}
-@media(max-width:560px){[data-testid="pipeline-page"] .crm-summary-grid{grid-template-columns:1fr!important}}
+
+@media(max-width:900px){
+  [data-testid="pipeline-page"] .crm-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  [data-testid="pipeline-page"] .crm-pipeline-analytics-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:560px){
+  [data-testid="pipeline-page"] .crm-summary-grid{grid-template-columns:1fr!important}
+  [data-testid="pipeline-page"] .crm-pipeline-analytics-head h3{font-size:20px!important}
+  [data-testid="pipeline-page"] .crm-stage-meta{grid-template-columns:10px 86px 1fr auto!important}
+  [data-testid="pipeline-page"] .crm-stage-track,[data-testid="pipeline-page"] .crm-stage-weighted{margin-left:102px!important}
+}
