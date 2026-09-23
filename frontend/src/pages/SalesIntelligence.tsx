@@ -16,7 +16,7 @@ function Metric({ label, value, note, icon: Icon, tone = "blue" }: { label: stri
 function Empty({ text }: { text: string }) { return <div className="p-6 text-sm text-slate-500">{text}</div>; }
 
 export default function SalesIntelligence() {
-  const query = useQuery({ queryKey: ["sales-intelligence"], queryFn: () => apiGet<DashboardMetrics>("/dashboard"), staleTime: 30_000, retry: 1 });
+  const query = useQuery({ queryKey: ["sales-intelligence"], queryFn: () => apiGet<DashboardMetrics>("/dashboard"), staleTime: 30_000, refetchInterval: 300_000, retry: 1 });
   const data = query.data;
   if (query.isLoading) return <div className="space-y-5"><div className="h-28 animate-pulse rounded-xl bg-slate-200" /><div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-36 animate-pulse rounded-xl bg-white border border-slate-200" />)}</div></div>;
   if (query.isError || !data) return <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><div className="font-semibold">Sales Intelligence gagal mengambil data Dashboard.</div><Button variant="outline" size="sm" className="mt-3" onClick={() => query.refetch()}><RefreshCw className="mr-2 size-4" />Coba lagi</Button></div>;
