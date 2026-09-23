@@ -31,6 +31,7 @@ import './customer-pic-position-dropdown';
 import './globalCsvExportPreview';
 import './sales-target-filter-placement.css';
 import './dashboard-font-scale.css';
+import './pipeline-compact-override.css';
 
 function Protected({ children }: { children: React.ReactNode }) { return <AppShell>{children}</AppShell>; }
 function SalesTargetsRoute() { const { data: user } = useCurrentUser(); return user?.role === 'SALES' ? <SalesTargetsSalesView /> : <SalesTargets />; }
