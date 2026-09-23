@@ -17,6 +17,7 @@ import Products from './pages/Products';
 import SalesTeam from './pages/SalesTeam';
 import SalesTargets from './pages/SalesTargets';
 import SalesTargetsSalesView from './pages/SalesTargetsSalesView';
+import SalesIntelligence from './pages/SalesIntelligence';
 import Users from './pages/Users';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
@@ -30,41 +31,20 @@ import './customer-pic-position-dropdown';
 import './globalCsvExportPreview';
 import './sales-target-filter-placement.css';
 
-function Protected({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
-}
-
-function SalesTargetsRoute() {
-  const { data: user } = useCurrentUser();
-  return user?.role === 'SALES' ? <SalesTargetsSalesView /> : <SalesTargets />;
-}
-
+function Protected({ children }: { children: React.ReactNode }) { return <AppShell>{children}</AppShell>; }
+function SalesTargetsRoute() { const { data: user } = useCurrentUser(); return user?.role === 'SALES' ? <SalesTargetsSalesView /> : <SalesTargets />; }
 export default function App() {
-  return (
-    <>
-      <Toaster position="top-right" richColors />
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/csv-preview" element={<Protected><CsvPreview /></Protected>} />
-        <Route path="/" element={<Protected><Home /></Protected>} />
-        <Route path="/customers" element={<Protected><Customers /></Protected>} />
-        <Route path="/customers/:customerId" element={<Protected><CustomerDetail /></Protected>} />
-        <Route path="/pipeline" element={<Protected><Pipeline /></Protected>} />
-        <Route path="/quotations" element={<Protected><Quotations /></Protected>} />
-        <Route path="/quotations/:quotationId/print" element={<QuotationPrint />} />
-        <Route path="/purchase-orders" element={<Protected><PurchaseOrders /></Protected>} />
-        <Route path="/purchase-orders/:orderId" element={<Protected><PurchaseOrderDetail /></Protected>} />
-        <Route path="/order-monitoring" element={<Protected><OrderMonitoring /></Protected>} />
-        <Route path="/activities" element={<Protected><Activities /></Protected>} />
-        <Route path="/products" element={<Protected><Products /></Protected>} />
-        <Route path="/sales-team" element={<Protected><SalesTeam /></Protected>} />
-        <Route path="/sales-targets" element={<Protected><SalesTargetsRoute /></Protected>} />
-        <Route path="/users" element={<Protected><Users /></Protected>} />
-        <Route path="/audit-log" element={<Protected><AuditLog /></Protected>} />
-        <Route path="/settings" element={<Protected><Settings /></Protected>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </>
-  );
+  return <><Toaster position="top-right" richColors /><Routes>
+    <Route path="/login" element={<Login />} /><Route path="/reset-password" element={<ResetPassword />} />
+    <Route path="/csv-preview" element={<Protected><CsvPreview /></Protected>} /><Route path="/" element={<Protected><Home /></Protected>} />
+    <Route path="/sales-intelligence" element={<Protected><SalesIntelligence /></Protected>} />
+    <Route path="/customers" element={<Protected><Customers /></Protected>} /><Route path="/customers/:customerId" element={<Protected><CustomerDetail /></Protected>} />
+    <Route path="/pipeline" element={<Protected><Pipeline /></Protected>} /><Route path="/quotations" element={<Protected><Quotations /></Protected>} />
+    <Route path="/quotations/:quotationId/print" element={<QuotationPrint />} /><Route path="/purchase-orders" element={<Protected><PurchaseOrders /></Protected>} />
+    <Route path="/purchase-orders/:orderId" element={<Protected><PurchaseOrderDetail /></Protected>} /><Route path="/order-monitoring" element={<Protected><OrderMonitoring /></Protected>} />
+    <Route path="/activities" element={<Protected><Activities /></Protected>} /><Route path="/products" element={<Protected><Products /></Protected>} />
+    <Route path="/sales-team" element={<Protected><SalesTeam /></Protected>} /><Route path="/sales-targets" element={<Protected><SalesTargetsRoute /></Protected>} />
+    <Route path="/users" element={<Protected><Users /></Protected>} /><Route path="/audit-log" element={<Protected><AuditLog /></Protected>} /><Route path="/settings" element={<Protected><Settings /></Protected>} />
+    <Route path="*" element={<Navigate to="/" replace />} />
+  </Routes></>;
 }
