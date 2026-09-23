@@ -1,0 +1,29 @@
+/* Global filter placement: keep filters directly above their data table. */
+
+[data-testid="sales-team-page"],
+[data-testid="sales-targets-page"] {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sales Team & KPI */
+[data-testid="sales-team-page"] > .mb-7 { order: 1; }
+[data-testid="sales-team-page"] > section { order: 2; }
+[data-testid="sales-team-page"] > .mb-6.grid { order: 3; }
+[data-testid="sales-team-page"] > .mb-6.rounded-lg { order: 4; }
+[data-testid="sales-team-page"] > .mb-5.grid { order: 5; }
+[data-testid="sales-team-page"] > .mb-4.flex { order: 6; }
+[data-testid="sales-team-page"] > .crm-data-table-card { order: 7; }
+
+/* Target Sales */
+[data-testid="sales-targets-page"] > .mb-7 { order: 1; }
+[data-testid="sales-targets-page"] > section { order: 2; }
+[data-testid="sales-targets-page"] > .mb-5:not(.crm-filter-grid) { order: 3; }
+[data-testid="sales-targets-page"] > .crm-filter-grid { order: 5; }
+[data-testid="sales-targets-page"] > .crm-data-table-card { order: 6; }
+
+/* Keep the filter block visually attached to the table. */
+[data-testid="sales-team-page"] > .mb-5.grid,
+[data-testid="sales-targets-page"] > .crm-filter-grid {
+  margin-bottom: 1rem;
+}
