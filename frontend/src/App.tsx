@@ -30,6 +30,7 @@ import './customer-location-dropdown';
 import './customer-pic-position-dropdown';
 import './globalCsvExportPreview';
 import './sales-target-filter-placement.css';
+import './dashboard-font-scale.css';
 
 function Protected({ children }: { children: React.ReactNode }) { return <AppShell>{children}</AppShell>; }
 function SalesTargetsRoute() { const { data: user } = useCurrentUser(); return user?.role === 'SALES' ? <SalesTargetsSalesView /> : <SalesTargets />; }
