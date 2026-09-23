@@ -3,24 +3,114 @@ from typing import Any
 from fastapi import HTTPException
 
 ROLES = {"SUPER_ADMIN", "SALES_MANAGER", "SALES"}
+
+# Granular RBAC: ROLE x MODULE x ACTION.
+# Data scope is enforced by the individual routers: SUPER_ADMIN=ALL,
+# SALES_MANAGER=TEAM, SALES=SELF where applicable.
 PERMISSIONS: dict[str, set[str]] = {
-    "SUPER_ADMIN": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "customers.delete", "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "activities.view", "activities.create", "activities.edit", "activities.delete", "quotations.view", "quotations.create", "quotations.edit", "quotations.approve", "quotations.delete", "quotations.export", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "purchase_orders.export", "order_monitoring.view", "order_monitoring.update", "sales_team.view", "sales_team.manage", "sales_targets.view", "sales_targets.manage", "users.view", "users.create", "users.edit", "users.delete", "users.reset_password", "products.view", "products.create", "products.edit", "products.delete", "audit_log.view", "ai.use", "uploads.use", "system.options", "integrity.audit"},
-    "SALES_MANAGER": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "customers.delete", "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "activities.view", "activities.create", "activities.edit", "activities.delete", "quotations.view", "quotations.create", "quotations.edit", "quotations.delete", "quotations.approve", "quotations.export", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "purchase_orders.export", "order_monitoring.view", "order_monitoring.update", "sales_team.view", "sales_targets.view", "sales_targets.manage", "users.view", "products.view", "audit_log.view", "ai.use", "uploads.use", "system.options"},
-    "SALES": {"dashboard.view", "customers.view", "customers.create", "customers.edit", "customers.delete", "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "activities.view", "activities.create", "activities.edit", "activities.delete", "quotations.view", "quotations.create", "quotations.edit", "quotations.delete", "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "order_monitoring.view", "order_monitoring.update", "sales_targets.view", "products.view", "ai.use", "uploads.use", "system.options"},
+    "SUPER_ADMIN": {
+        "dashboard.view",
+        "customers.view", "customers.create", "customers.edit", "customers.delete", "customers.export",
+        "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "pipeline.export",
+        "activities.view", "activities.create", "activities.edit", "activities.delete", "activities.export",
+        "quotations.view", "quotations.create", "quotations.edit", "quotations.approve", "quotations.delete", "quotations.export",
+        "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "purchase_orders.export",
+        "order_monitoring.view", "order_monitoring.update",
+        "sales_team.view", "sales_team.manage", "sales_team.export",
+        "sales_targets.view", "sales_targets.manage",
+        "users.view", "users.create", "users.edit", "users.delete", "users.reset_password",
+        "products.view", "products.create", "products.edit", "products.delete", "products.export",
+        "audit_log.view",
+        "ai.use", "uploads.use", "system.options", "integrity.audit",
+    },
+    "SALES_MANAGER": {
+        "dashboard.view",
+        "customers.view", "customers.create", "customers.edit", "customers.delete", "customers.export",
+        "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.delete", "pipeline.export",
+        "activities.view", "activities.create", "activities.edit", "activities.delete", "activities.export",
+        "quotations.view", "quotations.create", "quotations.edit", "quotations.approve", "quotations.delete", "quotations.export",
+        "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.delete", "purchase_orders.export",
+        "order_monitoring.view", "order_monitoring.update",
+        "sales_team.view", "sales_targets.view", "sales_targets.manage",
+        "users.view",
+        "products.view", "products.export",
+        "audit_log.view",
+        "ai.use", "uploads.use", "system.options",
+    },
+    "SALES": {
+        "dashboard.view",
+        "customers.view", "customers.create", "customers.edit", "customers.export",
+        "pipeline.view", "pipeline.create", "pipeline.edit", "pipeline.export",
+        "activities.view", "activities.create", "activities.edit", "activities.export",
+        "quotations.view", "quotations.create", "quotations.edit", "quotations.export",
+        "purchase_orders.view", "purchase_orders.create", "purchase_orders.edit", "purchase_orders.export",
+        "order_monitoring.view", "order_monitoring.update",
+        "sales_targets.view",
+        "products.view", "products.export",
+        "ai.use", "uploads.use", "system.options",
+    },
 }
+
+# Human-readable policy used by documentation/UI integrations.
+ROLE_SCOPE: dict[str, str] = {
+    "SUPER_ADMIN": "ALL",
+    "SALES_MANAGER": "TEAM",
+    "SALES": "SELF",
+}
+
+MODULE_ACTIONS: dict[str, tuple[str, ...]] = {
+    "dashboard": ("view",),
+    "customers": ("view", "create", "edit", "delete", "export"),
+    "pipeline": ("view", "create", "edit", "delete", "export"),
+    "activities": ("view", "create", "edit", "delete", "export"),
+    "quotations": ("view", "create", "edit", "approve", "delete", "export"),
+    "purchase_orders": ("view", "create", "edit", "delete", "export"),
+    "order_monitoring": ("view", "update"),
+    "sales_team": ("view", "manage", "export"),
+    "sales_targets": ("view", "manage"),
+    "users": ("view", "create", "edit", "delete", "reset_password"),
+    "products": ("view", "create", "edit", "delete", "export"),
+    "audit_log": ("view",),
+    "security": ("ai", "uploads", "system_options", "integrity_audit"),
+}
+
 
 def normalize_role(user: dict[str, Any]) -> str:
     return str(user.get("role") or "").strip().upper()
 
+
 def has_permission(user: dict[str, Any], permission: str) -> bool:
     return permission in PERMISSIONS.get(normalize_role(user), set())
+
 
 def require_permission(user: dict[str, Any], permission: str) -> None:
     if normalize_role(user) not in ROLES or not has_permission(user, permission):
         raise HTTPException(status_code=403, detail="Anda tidak memiliki izin untuk tindakan ini")
 
+
 def permissions_for_role(role: str) -> list[str]:
     return sorted(PERMISSIONS.get(str(role or "").strip().upper(), set()))
+
+
+def role_permission_matrix() -> list[dict[str, Any]]:
+    """Return the canonical RBAC matrix without exposing user data."""
+    rows: list[dict[str, Any]] = []
+    for module, actions in MODULE_ACTIONS.items():
+        for action in actions:
+            permission = f"{module}.{action}"
+            rows.append({
+                "module": module,
+                "action": action,
+                "permission": permission,
+                "super_admin": permission in PERMISSIONS["SUPER_ADMIN"],
+                "sales_manager": permission in PERMISSIONS["SALES_MANAGER"],
+                "sales": permission in PERMISSIONS["SALES"],
+                "scope_super_admin": "ALL" if permission in PERMISSIONS["SUPER_ADMIN"] else "NONE",
+                "scope_sales_manager": "TEAM" if permission in PERMISSIONS["SALES_MANAGER"] else "NONE",
+                "scope_sales": "SELF" if permission in PERMISSIONS["SALES"] else "NONE",
+            })
+    return rows
+
 
 def permission_policy(path: str, method: str) -> str | None:
     path = path.rstrip("/") or "/"
@@ -81,6 +171,7 @@ def permission_policy(path: str, method: str) -> str | None:
     if route.startswith("/options"): return "system.options"
     return None
 
+
 def _crud_permission(module: str, method: str) -> str:
     if method == "GET": return f"{module}.view"
     if method == "POST": return f"{module}.create"
@@ -88,7 +179,9 @@ def _crud_permission(module: str, method: str) -> str:
     if method == "DELETE": return f"{module}.delete"
     return f"{module}.view"
 
+
 def role_matrix() -> list[dict[str, Any]]:
+    """Backward-compatible summary matrix used by existing UI."""
     modules = [("Dashboard", "dashboard"), ("Customers", "customers"), ("Sales Pipeline", "pipeline"), ("Aktivitas", "activities"), ("Quotations", "quotations"), ("Purchase Orders", "purchase_orders"), ("Order Monitoring", "order_monitoring"), ("Sales Team", "sales_team"), ("Target Sales", "sales_targets"), ("Users", "users"), ("Products", "products"), ("Audit Log", "audit_log")]
     result = []
     for label, module in modules:
