@@ -12,9 +12,8 @@ type DashboardMetrics = {
   weighted_pipeline: number;
   won_value: number;
   lost_value?: number;
-  won_count?: number;
-  lost_count?: number;
-  po?: number;
+  win_rate?: number;
+  total_po: number;
   po_value: number;
   open_orders?: number;
   completed_orders?: number;
@@ -52,7 +51,7 @@ export default function SalesTargetsSalesView() {
   const year = new Date().getFullYear();
   const targets = useQuery({ queryKey: ["sales-targets", "self"], queryFn: () => apiGet<SalesTarget[]>("/sales-targets") });
   const summary = useQuery({ queryKey: ["sales-target-summary", "self", year], queryFn: () => apiGet<TargetSummary>(`/sales-targets/summary?year=${year}`), staleTime: 30_000 });
-  const dashboard = useQuery({ queryKey: ["sales-target-self-dashboard", year], queryFn: () => apiGet<DashboardMetrics>(`/dashboard?period=365d`), staleTime: 30_000 });
+  const dashboard = useQuery({ queryKey: ["sales-target-self-dashboard", year], queryFn: () => apiGet<DashboardMetrics>("/dashboard"), staleTime: 30_000 });
 
   const target = (targets.data ?? []).find(item => item.sales_id === user?.id && item.year === year) ?? null;
   const targetValue = summary.data?.personal_target ?? target?.target ?? 0;
@@ -60,9 +59,7 @@ export default function SalesTargetsSalesView() {
   const pct = targetValue > 0 ? achievementValue / targetValue * 100 : 0;
   const tone = pct >= 100 ? "border-emerald-200 bg-emerald-50 text-emerald-700" : pct >= 50 ? "border-blue-200 bg-blue-50 text-blue-700" : pct >= 25 ? "border-amber-200 bg-amber-50 text-amber-700" : "border-rose-200 bg-rose-50 text-rose-700";
   const gap = Math.max(0, targetValue - achievementValue);
-  const wonCount = dashboard.data?.won_count ?? 0;
-  const lostCount = dashboard.data?.lost_count ?? 0;
-  const winRate = wonCount + lostCount > 0 ? wonCount / (wonCount + lostCount) * 100 : 0;
+  const winRate = dashboard.data?.win_rate ?? 0;
   const coverage = gap > 0 ? (dashboard.data?.open_pipeline ?? 0) / gap : 0;
   const detailRow: DetailRow = {
     id: user?.id ?? "self",
@@ -75,7 +72,7 @@ export default function SalesTargetsSalesView() {
     weighted: dashboard.data?.weighted_pipeline ?? 0,
     coverage,
     win_rate: winRate,
-    po: dashboard.data?.po ?? 0,
+    po: dashboard.data?.total_po ?? 0,
     po_value: dashboard.data?.po_value ?? 0,
     activities: dashboard.data?.activities ?? 0,
     overdue_activities: dashboard.data?.overdue_activities ?? 0,
