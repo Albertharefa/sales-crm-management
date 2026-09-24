@@ -92,11 +92,22 @@ class DashboardService:
         opportunity_pipeline = [
             {"$match": opportunity_filter},
             {"$set": {"safe_value": _number("value"), "safe_probability": _number("probability"), "safe_created_at": _date("created_at"), "safe_target_close": _date("target_close"), "safe_stage": {"$ifNull": ["$stage", "Unknown"]}, "safe_sales_name": {"$ifNull": ["$sales_name", "Unassigned"]}}},
+            {"$set": {
+                "is_closed_won": {"$or": [
+                    {"$eq": ["$safe_stage", "Won"]},
+                    {"$regexMatch": {"input": {"$toString": "$safe_stage"}, "regex": r"^closed\\s+won$", "options": "i"}},
+                ]},
+                "is_closed_lost": {"$or": [
+                    {"$eq": ["$safe_stage", "Lost"]},
+                    {"$regexMatch": {"input": {"$toString": "$safe_stage"}, "regex": r"^closed\\s+lost$", "options": "i"}},
+                ]},
+            }},
+            {"$set": {"is_closed": {"$or": ["$is_closed_won", "$is_closed_lost"]}}},
             {"$facet": {
-                "totals": [{"$group": {"_id": None, "total_opportunities": {"$sum": 1}, "open_pipeline": {"$sum": {"$cond": [{"$in": ["$safe_stage", ["Won", "Lost"]]}, 0, "$safe_value"]}}, "weighted_pipeline": {"$sum": {"$cond": [{"$in": ["$safe_stage", ["Won", "Lost"]]}, 0, {"$multiply": ["$safe_value", {"$divide": ["$safe_probability", 100]}]}]}}, "won_value": {"$sum": {"$cond": [{"$eq": ["$safe_stage", "Won"]}, "$safe_value", 0]}}, "lost_value": {"$sum": {"$cond": [{"$eq": ["$safe_stage", "Lost"]}, "$safe_value", 0]}}, "won_count": {"$sum": {"$cond": [{"$eq": ["$safe_stage", "Won"]}, 1, 0]}}, "lost_count": {"$sum": {"$cond": [{"$eq": ["$safe_stage", "Lost"]}, 1, 0]}}}}],
+                "totals": [{"$group": {"_id": None, "total_opportunities": {"$sum": 1}, "open_pipeline": {"$sum": {"$cond": ["$is_closed", 0, "$safe_value"]}}, "weighted_pipeline": {"$sum": {"$cond": ["$is_closed", 0, {"$multiply": ["$safe_value", {"$divide": ["$safe_probability", 100]}]}]}}, "won_value": {"$sum": {"$cond": ["$is_closed_won", "$safe_value", 0]}}, "lost_value": {"$sum": {"$cond": ["$is_closed_lost", "$safe_value", 0]}}, "won_count": {"$sum": {"$cond": ["$is_closed_won", 1, 0]}}, "lost_count": {"$sum": {"$cond": ["$is_closed_lost", 1, 0]}}}}],
                 "by_stage": [{"$group": {"_id": "$safe_stage", "count": {"$sum": 1}, "value": {"$sum": "$safe_value"}}}, {"$sort": {"value": -1}}],
-                "by_salesperson": [{"$match": {"safe_stage": {"$nin": ["Won", "Lost"]}}}, {"$group": {"_id": "$safe_sales_name", "count": {"$sum": 1}, "value": {"$sum": "$safe_value"}}}, {"$sort": {"value": -1}}, {"$limit": 10}],
-                "risks": [{"$match": {"safe_stage": {"$nin": ["Won", "Lost"]}}}, {"$set": {"risk_reason": {"$switch": {"branches": [{"case": {"$and": [{"$ne": ["$safe_target_close", None]}, {"$lt": ["$safe_target_close", current]}]}, "then": "Expected close terlewat"}, {"case": {"$and": [{"$ne": ["$safe_created_at", None]}, {"$lt": ["$safe_created_at", stalled_before]}]}, "then": "Tidak bergerak >30 hari"}, {"case": {"$in": [{"$ifNull": ["$next_action", ""]}, ["", None]]}, "then": "Next action belum diisi"}], "default": None}}}}, {"$match": {"risk_reason": {"$ne": None}}}, {"$sort": {"safe_value": -1}}, {"$limit": 8}, {"$project": {"_id": 0, "id": 1, "opportunity_id": 1, "name": 1, "customer_name": {"$ifNull": ["$customer_name", "—"]}, "sales_name": 1, "value": "$safe_value", "stage": "$safe_stage", "expected_close": {"$cond": [{"$ne": ["$safe_target_close", None]}, {"$dateToString": {"date": "$safe_target_close", "format": "%Y-%m-%d"}}, None]}, "reason": "$risk_reason"}}],
+                "by_salesperson": [{"$match": {"is_closed": False}}, {"$group": {"_id": "$safe_sales_name", "count": {"$sum": 1}, "value": {"$sum": "$safe_value"}}}, {"$sort": {"value": -1}}, {"$limit": 10}],
+                "risks": [{"$match": {"is_closed": False}}, {"$set": {"risk_reason": {"$switch": {"branches": [{"case": {"$and": [{"$ne": ["$safe_target_close", None]}, {"$lt": ["$safe_target_close", current]}]}, "then": "Expected close terlewat"}, {"case": {"$and": [{"$ne": ["$safe_created_at", None]}, {"$lt": ["$safe_created_at", stalled_before]}]}, "then": "Tidak bergerak >30 hari"}, {"case": {"$in": [{"$ifNull": ["$next_action", ""]}, ["", None]]}, "then": "Next action belum diisi"}], "default": None}}}}, {"$match": {"risk_reason": {"$ne": None}}}, {"$sort": {"safe_value": -1}}, {"$limit": 8}, {"$project": {"_id": 0, "id": 1, "opportunity_id": 1, "name": 1, "customer_name": {"$ifNull": ["$customer_name", "—"]}, "sales_name": 1, "value": "$safe_value", "stage": "$safe_stage", "expected_close": {"$cond": [{"$ne": ["$safe_target_close", None]}, {"$dateToString": {"date": "$safe_target_close", "format": "%Y-%m-%d"}}, None]}, "reason": "$risk_reason"}}],
             }},
         ]
 
