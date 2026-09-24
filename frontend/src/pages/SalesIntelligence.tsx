@@ -34,7 +34,7 @@ export default function SalesIntelligence() {
   const winRate = Number(data.win_rate) || 0;
   const forecastGap = Math.max(0, target - forecast);
   const forecastSurplus = Math.max(0, forecast - target);
-  const forecastOnTarget = target > 0 && forecast === target;
+  const forecastOnTarget = target > 0 && Math.abs(forecast - target) < 0.005;
   const noForecastTarget = target <= 0;
   const forecastAchievement = target > 0 ? (forecast / target) * 100 : 0;
   const forecastNote = noForecastTarget ? "No sales target configured" : `${percent(forecastAchievement)} dari target`;
