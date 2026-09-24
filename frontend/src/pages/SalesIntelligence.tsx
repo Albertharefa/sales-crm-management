@@ -44,7 +44,8 @@ export default function SalesIntelligence() {
   const maxMonthly = Math.max(...data.monthly_sales_performance.map(row => Math.max(Number(row.actual) || 0, Number(row.target) || 0)), 1);
   const openOpps = data.pipeline_by_stage.reduce((sum, row) => {
     const stage = String(row.name || "").trim().toLowerCase();
-    return stage === "won" || stage === "lost" ? sum : sum + Number(row.count || 0);
+    const isClosed = stage === "won" || stage === "lost" || stage.includes("closed won") || stage.includes("closed lost");
+    return isClosed ? sum : sum + Number(row.count || 0);
   }, 0);
 
   return <div className="space-y-4" data-testid="sales-intelligence-page">
