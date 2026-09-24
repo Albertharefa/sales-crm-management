@@ -64,7 +64,7 @@ class DashboardService:
         visibility = await _visibility(user)
 
         def scoped(extra: dict[str, Any] | None = None) -> dict[str, Any]:
-            clauses: list[dict[str, Any]] = [visibility]
+            clauses: list[dict[str, Any]] = [{"is_demo": {"$ne": True}}, visibility]
             if sales_id:
                 clauses.append({"sales_id": sales_id})
             if customer_id:
@@ -122,7 +122,7 @@ class DashboardService:
 
         quotation_pipeline = [
             {"$match": quotation_filter},
-            {"$set": {"safe_total": _number("grand_total"), "safe_status": {"$ifNull": ["$status", "Draft"]}}},
+            {"$set": {"safe_total": _number("grand_total"), "safe_status": {"$ifNull": ["$status", "Draft"]}},
             {"$group": {"_id": None, "total_quotation": {"$sum": 1}, "active_quotations": {"$sum": {"$cond": [{"$in": ["$safe_status", INACTIVE_QUOTATION_STATUSES]}, 0, 1]}}, "quotation_value": {"$sum": {"$cond": [{"$in": ["$safe_status", INACTIVE_QUOTATION_STATUSES]}, 0, "$safe_total"]}}}},
         ]
 
