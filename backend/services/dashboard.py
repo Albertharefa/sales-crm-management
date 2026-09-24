@@ -86,7 +86,7 @@ class DashboardService:
         opportunity_filter = scoped(opportunity_extra)
         activity_filter = scoped({"date": {"$gte": since}}) if since else scoped()
         quotation_filter = scoped({"date": {"$gte": since}}) if since else scoped()
-        order_filter = scoped({"date": {"gte": since}}) if since else scoped()
+        order_filter = scoped({"date": {"$gte": since}}) if since else scoped()
         target_filter = scoped()
 
         opportunity_pipeline = [
