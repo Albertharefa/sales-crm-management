@@ -86,7 +86,7 @@ class DashboardService:
         opportunity_filter = scoped(opportunity_extra)
         activity_filter = scoped({"date": {"$gte": since}}) if since else scoped()
         quotation_filter = scoped({"date": {"$gte": since}}) if since else scoped()
-        order_filter = scoped({"date": {"$gte": since}}) if since else scoped()
+        order_filter = scoped({"date": {"gte": since}}) if since else scoped()
         target_filter = scoped()
 
         opportunity_pipeline = [
@@ -95,11 +95,11 @@ class DashboardService:
             {"$set": {
                 "is_closed_won": {"$or": [
                     {"$eq": ["$safe_stage", "Won"]},
-                    {"$regexMatch": {"input": {"$toString": "$safe_stage"}, "regex": r"^closed\\s+won$", "options": "i"}},
+                    {"$regexMatch": {"input": {"$toString": "$safe_stage"}, "regex": "^closed[ ]+won$", "options": "i"}},
                 ]},
                 "is_closed_lost": {"$or": [
                     {"$eq": ["$safe_stage", "Lost"]},
-                    {"$regexMatch": {"input": {"$toString": "$safe_stage"}, "regex": r"^closed\\s+lost$", "options": "i"}},
+                    {"$regexMatch": {"input": {"$toString": "$safe_stage"}, "regex": "^closed[ ]+lost$", "options": "i"}},
                 ]},
             }},
             {"$set": {"is_closed": {"$or": ["$is_closed_won", "$is_closed_lost"]}}},
