@@ -53,17 +53,24 @@ async def _safe_demo_targets(sales: list[dict]) -> None:
     })
 
 
+def _demo_seed_enabled() -> bool:
+    return os.getenv("SEED_DEMO_DATA", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_to_mongo()
     await ensure_admin_user()
-    import seed_demo_data as demo_seed
-    original_ensure_targets = demo_seed._ensure_targets
-    demo_seed._ensure_targets = _safe_demo_targets
-    try:
-        await demo_seed.seed_demo_data()
-    finally:
-        demo_seed._ensure_targets = original_ensure_targets
+    if _demo_seed_enabled():
+        import seed_demo_data as demo_seed
+        original_ensure_targets = demo_seed._ensure_targets
+        demo_seed._ensure_targets = _safe_demo_targets
+        try:
+            await demo_seed.seed_demo_data()
+        finally:
+            demo_seed._ensure_targets = original_ensure_targets
+    else:
+        logging.info("CRM demo seed disabled (SEED_DEMO_DATA=false)")
     yield
     await close_mongo_connection()
 
