@@ -12,6 +12,17 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
+# cPanel does not automatically load a project .env file into Passenger's
+# process environment. Load the preserved production .env before importing
+# the FastAPI application so MongoDB/CORS/security settings are available.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(BASE_DIR, ".env"), override=False)
+except Exception:
+    # Keep startup compatible if python-dotenv is unavailable; dependency
+    # installation is handled by the cPanel deployment configuration.
+    pass
+
 from a2wsgi import ASGIMiddleware
 from server import app
 
