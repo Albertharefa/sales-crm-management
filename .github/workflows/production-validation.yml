@@ -21,7 +21,16 @@ jobs:
           python-version: '3.11'
 
       - name: Validate backend syntax
-        run: python -m compileall -q backend
+        run: |
+          set -e
+          echo "== Python syntax validation =="
+          if python -m compileall -q backend; then
+            echo "Backend Python syntax OK"
+          else
+            echo "Backend Python syntax FAILED. Detailed compiler output:"
+            python -m compileall backend
+            exit 1
+          fi
 
       - name: Validate integrity router wiring
         run: |
