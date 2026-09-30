@@ -79,11 +79,13 @@ app = FastAPI(title="Sales CRM Production API", version="2.1.0", lifespan=lifesp
 
 configured_origins = os.getenv(
     "CORS_ORIGINS",
-    "http://localhost:5173,http://localhost:3000,https://sales-crm-management-production.up.railway.app",
+    "http://localhost:5173,http://localhost:3000,https://sales-crm-management-production.up.railway.app,https://crm.sales.rajaberkatsolusi.com",
 )
 origins = [item.strip() for item in configured_origins.split(",") if item.strip()]
 if "*" in origins:
-    origins = ["http://localhost:5173", "http://localhost:3000", "https://sales-crm-management-production.up.railway.app"]
+    origins = ["http://localhost:5173", "http://localhost:3000", "https://sales-crm-management-production.up.railway.app", "https://crm.sales.rajaberkatsolusi.com"]
+elif "https://crm.sales.rajaberkatsolusi.com" not in origins:
+    origins.append("https://crm.sales.rajaberkatsolusi.com")
 
 app.add_middleware(
     CORSMiddleware,
@@ -169,7 +171,11 @@ async def api_health():
     return await health()
 
 
-FRONTEND_DIST = Path("/app/frontend/dist")
+# Resolve the frontend build relative to this source tree instead of using the
+# Docker-only /app path. This works both on Railway (/app/frontend/dist) and
+# cPanel, where the project normally lives under /home/<user>/crm-rbs/.
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+FRONTEND_DIST = Path(os.getenv("FRONTEND_DIST", str(PROJECT_ROOT / "frontend" / "dist")))
 if FRONTEND_DIST.exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="assets")
 
