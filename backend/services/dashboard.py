@@ -122,7 +122,7 @@ class DashboardService:
 
         quotation_pipeline = [
             {"$match": quotation_filter},
-            {"$set": {"safe_total": _number("grand_total"), "safe_status": {"$ifNull": ["$status", "Draft"]}},
+            {"$set": {"safe_total": _number("grand_total"), "safe_status": {"$ifNull": ["$status", "Draft"]}}},
             {"$group": {"_id": None, "total_quotation": {"$sum": 1}, "active_quotations": {"$sum": {"$cond": [{"$in": ["$safe_status", INACTIVE_QUOTATION_STATUSES]}, 0, 1]}}, "quotation_value": {"$sum": {"$cond": [{"$in": ["$safe_status", INACTIVE_QUOTATION_STATUSES]}, 0, "$safe_total"]}}}},
         ]
 
