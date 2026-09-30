@@ -4,4 +4,5 @@ deployment:
     - export DEPLOYPATH=/home/rajc2417/crm-rbs/backend/
     - /bin/cp -R backend/. $DEPLOYPATH
     - /bin/mkdir -p $DEPLOYPATH/tmp
+    - /home/rajc2417/virtualenv/crm-rbs/backend/3.11/bin/pip install -r $DEPLOYPATH/requirements.txt --disable-pip-version-check
     - /bin/touch $DEPLOYPATH/tmp/restart.txt
