@@ -1,0 +1,68 @@
+name: Deploy CRM to Rumahweb cPanel
+
+on:
+  workflow_run:
+    workflows: ["Production Validation"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.RUMAHWEB_SSH_KEY }}
+        run: |
+          set -e
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 2223 -H rajaberkatsolusi.com >> ~/.ssh/known_hosts
+
+      - name: Deploy main to cPanel Git repository
+        run: |
+          set -euo pipefail
+          ssh -p 2223 -i ~/.ssh/id_ed25519 -o BatchMode=yes rajc2417@rajaberkatsolusi.com 'bash -se' <<'REMOTE'
+          set -euo pipefail
+          APP=/home/rajc2417/repositories/sales-crm-management
+
+          test -d "$APP/.git"
+          cd "$APP"
+
+          echo "== Remote repository =="
+          git remote -v
+
+          echo "== Fetch main =="
+          git fetch origin main
+
+          echo "== Deploy exact main commit =="
+          git reset --hard origin/main
+
+          echo "== Deployed commit =="
+          git rev-parse HEAD
+
+          echo "== Restart Passenger if applicable =="
+          if [ -d "$APP/tmp" ] || [ -f "$APP/passenger_wsgi.py" ]; then
+            mkdir -p "$APP/tmp"
+            touch "$APP/tmp/restart.txt"
+            echo "Passenger restart requested at $APP/tmp/restart.txt"
+          fi
+
+          if [ -d "$APP/backend" ] && [ -f "$APP/backend/passenger_wsgi.py" ]; then
+            mkdir -p "$APP/backend/tmp"
+            touch "$APP/backend/tmp/restart.txt"
+            echo "Passenger restart requested at $APP/backend/tmp/restart.txt"
+          fi
+
+          echo "DEPLOYMENT_OK"
+          REMOTE
+
+      - name: Deployment result
+        run: echo "GitHub main has been deployed to Rumahweb cPanel successfully."
