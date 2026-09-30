@@ -16,6 +16,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build frontend for cPanel
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          npm install
+          npm run build
+
       - name: Prepare SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.RUMAHWEB_SSH_KEY }}
@@ -26,39 +41,52 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -p 2223 -H rajaberkatsolusi.com >> ~/.ssh/known_hosts
 
-      - name: Deploy main to cPanel Git repository
+      - name: Deploy application to cPanel
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.RUMAHWEB_SSH_KEY }}
         run: |
           set -euo pipefail
+          chmod 600 ~/.ssh/id_ed25519
+
+          # Copy backend source into the exact cPanel Python application root.
+          # Existing .env is intentionally preserved because secrets must not live in Git.
+          tar --exclude='__pycache__' --exclude='.env' -czf - -C backend . \
+            | ssh -p 2223 -i ~/.ssh/id_ed25519 -o BatchMode=yes rajc2417@rajaberkatsolusi.com \
+              'mkdir -p /home/rajc2417/crm-rbs/backend && tar -xzf - -C /home/rajc2417/crm-rbs/backend'
+
+          # Copy the production React build to the project-level frontend directory.
+          tar -czf - -C frontend/dist . \
+            | ssh -p 2223 -i ~/.ssh/id_ed25519 -o BatchMode=yes rajc2417@rajaberkatsolusi.com \
+              'mkdir -p /home/rajc2417/crm-rbs/frontend/dist && tar -xzf - -C /home/rajc2417/crm-rbs/frontend/dist'
+
           ssh -p 2223 -i ~/.ssh/id_ed25519 -o BatchMode=yes rajc2417@rajaberkatsolusi.com 'bash -se' <<'REMOTE'
           set -euo pipefail
-          APP=/home/rajc2417/repositories/sales-crm-management
+          APP=/home/rajc2417/crm-rbs/backend
+          VENV=/home/rajc2417/virtualenv/crm-rbs/backend/3.11
 
-          test -d "$APP/.git"
-          cd "$APP"
+          test -f "$APP/passenger_wsgi.py"
+          test -f "$APP/requirements.txt"
+          test -x "$VENV/bin/python"
 
-          echo "== Remote repository =="
-          git remote -v
+          echo "== Python =="
+          "$VENV/bin/python" --version
 
-          echo "== Fetch main =="
-          git fetch origin main
+          echo "== Install/refresh dependencies =="
+          source "$VENV/bin/activate"
+          python -m pip install --disable-pip-version-check -r "$APP/requirements.txt"
 
-          echo "== Deploy exact main commit =="
-          git reset --hard origin/main
+          echo "== Syntax check =="
+          python -m compileall -q "$APP"
 
-          echo "== Deployed commit =="
-          git rev-parse HEAD
+          echo "== Restart Passenger =="
+          mkdir -p "$APP/tmp"
+          touch "$APP/tmp/restart.txt"
 
-          echo "== Restart Passenger if applicable =="
-          if [ -d "$APP/tmp" ] || [ -f "$APP/passenger_wsgi.py" ]; then
-            mkdir -p "$APP/tmp"
-            touch "$APP/tmp/restart.txt"
-            echo "Passenger restart requested at $APP/tmp/restart.txt"
-          fi
-
-          if [ -d "$APP/backend" ] && [ -f "$APP/backend/passenger_wsgi.py" ]; then
-            mkdir -p "$APP/backend/tmp"
-            touch "$APP/backend/tmp/restart.txt"
-            echo "Passenger restart requested at $APP/backend/tmp/restart.txt"
+          echo "== Request AutoSSL check =="
+          if command -v uapi >/dev/null 2>&1; then
+            uapi --output=jsonpretty --user=rajc2417 SSL start_autossl_check || true
+          else
+            echo "uapi command not available; AutoSSL check skipped"
           fi
 
           echo "DEPLOYMENT_OK"
