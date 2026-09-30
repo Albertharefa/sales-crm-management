@@ -1,0 +1,6 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/rajc2417/crm-rbs/backend/
+    - /bin/mkdir -p $DEPLOYPATH
+    - /bin/cp -a backend/. $DEPLOYPATH
