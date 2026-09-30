@@ -1,0 +1,27 @@
+name: Rumahweb Connectivity Check
+
+on:
+  push:
+    paths:
+      - '.github/workflows/rumahweb-connectivity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.RUMAHWEB_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 2223 -H rajaberkatsolusi.com >> ~/.ssh/known_hosts
+
+      - name: Test Rumahweb SSH access
+        run: |
+          ssh -p 2223 -i ~/.ssh/id_ed25519 -o BatchMode=yes rajc2417@rajaberkatsolusi.com 'printf "SSH_OK\n"; whoami; printf "HOME=%s\n" "$HOME"; test -d /home/rajc2417/repositories/sales-crm-management && printf "REPOSITORY_PATH_OK\n" || (printf "REPOSITORY_PATH_MISSING\n"; exit 1)'
